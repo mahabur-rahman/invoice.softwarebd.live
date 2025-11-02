@@ -24,6 +24,7 @@ export interface InvoiceData {
   total: number;
   logo: string | null;
   address: string;
+  creatorCompany: string;
 }
 
 const Page = () => {

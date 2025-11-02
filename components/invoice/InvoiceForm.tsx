@@ -18,6 +18,7 @@ interface InvoiceItem {
 const InvoiceForm = ({ onUpdate }: InvoiceFormProps) => {
   const [client, setClient] = useState("");
   const [clientCompany, setClientCompany] = useState("");
+  const [creatorCompany, setCreatorCompany] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [issueDate, setIssueDate] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -53,6 +54,7 @@ const InvoiceForm = ({ onUpdate }: InvoiceFormProps) => {
     const data: InvoiceData = {
       client,
       clientCompany,
+      creatorCompany,
       currency,
       issueDate,
       dueDate,
@@ -66,11 +68,22 @@ const InvoiceForm = ({ onUpdate }: InvoiceFormProps) => {
       address,
     };
     onUpdate(data);
-  }, [client, clientCompany, currency, issueDate, dueDate, items, notes, discount, paid, logo, address]);
+  }, [client, clientCompany, creatorCompany, currency, issueDate, dueDate, items, notes, discount, paid, logo, address]);
 
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
       <h2 className="text-2xl font-bold mb-4 text-gray-800">Create New Invoice</h2>
+
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700">Your Company Name</label>
+        <input
+          type="text"
+          value={creatorCompany}
+          onChange={(e) => setCreatorCompany(e.target.value)}
+          placeholder="Enter your company name"
+          className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+        />
+      </div>
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700">Upload Company Logo</label>
