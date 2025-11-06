@@ -2,23 +2,148 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useMutation } from "@apollo/client/react";
+import { LOGIN_MUTATION, REGISTER_MUTATION } from "@/lib/graphql/mutations";
+import { useRouter } from "next/navigation";
 
 interface AuthFormProps {
   type: "login" | "register";
 }
 
-const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
-  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
+interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+  userId: string;
+}
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+interface RegisterInput {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+}
+
+interface LoginInput {
+  email: string;
+  password: string;
+}
+
+interface RegisterResponse {
+  register: AuthResponse;
+}
+
+interface LoginResponse {
+  login: AuthResponse;
+}
+
+interface RegisterVariables {
+  registerInput: RegisterInput;
+}
+
+interface LoginVariables {
+  loginInput: LoginInput;
+}
+
+
+const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
+  const router = useRouter()
+  const isRegister = type === "register";
+  const [formData, setFormData] = useState<RegisterInput>({
+    name: "",
+    email: "",
+    password: "",
+    role: "USER",
+  });
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
+
+  const [registerUser, { loading: registerLoading }] = useMutation<
+    RegisterResponse,
+    RegisterVariables
+  >(REGISTER_MUTATION);
+  const [loginUser, { loading: loginLoading }] = useMutation<
+    LoginResponse,
+    LoginVariables
+  >(LOGIN_MUTATION);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(`${type} data:`, formData);
-    // You can handle API call here later
+    setFormError(null);
+    setFormSuccess(null);
+
+    if (isRegister) {
+      // 🟩 Registration logic
+      try {
+        const payload: RegisterVariables = {
+          registerInput: {
+            name: formData.name.trim(),
+            email: formData.email.trim().toLowerCase(),
+            password: formData.password,
+            role: formData.role.trim(),
+          },
+        };
+
+        const { data } = await registerUser({
+          variables: payload,
+          errorPolicy: "none",
+        });
+        console.log("Register data:", data);
+
+        if (data?.register) {
+          setFormSuccess("Account created successfully. You can now log in.");
+          setFormData({ name: "", email: "", password: "", role: "USER" });
+        }
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          setFormError(error.message)
+        } else {
+          setFormError("Something went wrong")
+          console.log("An unknown error occurred:", error);
+        }
+      }
+
+
+      return;
+    }
+
+    // 🟦 Login logic
+    try {
+      const payload: LoginVariables = {
+        loginInput: {
+          email: formData.email.trim().toLowerCase(),
+          password: formData.password,
+        },
+      };
+
+      const { data } = await loginUser({ variables: payload });
+      console.log("Login data:", data);
+
+      if (data?.login) {
+        setFormSuccess("Logged in successfully.");
+        setFormData((prev) => ({ ...prev, password: "", email: "" }));
+        router.push("/")
+      } else {
+        setFormError("Unable to log in. Please try again.");
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setFormError(error.message)
+      } else {
+        setFormError("Something went wrong")
+        console.log("An unknown error occurred:", error);
+      }
+    }
   };
+
+
+
+  const isSubmitting = isRegister ? registerLoading : loginLoading;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -28,7 +153,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {type === "register" && (
+          {isRegister && (
             <div>
               <label className="block text-sm font-medium text-gray-700">Name</label>
               <input
@@ -66,27 +191,40 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
             />
           </div>
 
+          {formError && (
+            <p className="text-sm text-red-600" role="alert">
+              {formError}
+            </p>
+          )}
+
+          {formSuccess && (
+            <p className="text-sm text-green-600" role="status">
+              {formSuccess}
+            </p>
+          )}
+
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+            disabled={isSubmitting}
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-70"
           >
-            {type === "login" ? "Login" : "Register"}
+            {isSubmitting ? "Submitting..." : isRegister ? "Register" : "Login"}
           </button>
         </form>
 
         <p className="text-sm text-center text-gray-600 mt-4">
-          {type === "login" ? (
-            <>
-              Don’t have an account?{" "}
-              <Link href="/register" className="text-blue-600 hover:underline">
-                Register
-              </Link>
-            </>
-          ) : (
+          {isRegister ? (
             <>
               Already have an account?{" "}
               <Link href="/login" className="text-blue-600 hover:underline">
                 Login
+              </Link>
+            </>
+          ) : (
+            <>
+              Don’t have an account?{" "}
+              <Link href="/register" className="text-blue-600 hover:underline">
+                Register
               </Link>
             </>
           )}
