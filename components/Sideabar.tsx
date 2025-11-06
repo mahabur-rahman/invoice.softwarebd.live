@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { FiMenu, FiX, FiFileText, FiSettings } from "react-icons/fi";
+import { FaHome } from "react-icons/fa";
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
@@ -28,6 +29,13 @@ const Sidebar = () => {
       <nav className="flex flex-col mt-4">
         <Link
           href="/"
+          className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+        >
+          <FaHome size={20} />
+          <span className={`${!isOpen && "hidden"}`}>Home</span>
+        </Link>
+        <Link
+          href="/generate-invoice"
           className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
         >
           <FiFileText size={20} />
