@@ -1,21 +1,36 @@
-import Header from "@/components/Header";
-import Sidebar from "@/components/Sideabar";
-import React from "react";
+"use client";
 
+import React, { useState } from "react";
+import Header from "@/components/layout/Header";
+import { Layout as AntLayout } from "antd";
+import Sidebar from "@/components/layout/Sideabar";
+
+const { Content } = AntLayout;
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
-    return (
-        <div className="min-h-screen flex flex-col bg-gray-50">
-            <div className="sticky top-0 z-50">
-                <Header />
-            </div>
+  const [collapsed, setCollapsed] = useState(false);
 
-            <div className="flex flex-1">
-                <Sidebar />
-                <main className="flex-1 p-6 overflow-y-auto">{children}</main>
-            </div>
+  return (
+    <div className="h-screen w-full overflow-hidden flex">
+      <Sidebar collapsed={collapsed} />
+
+      <div className="flex flex-col flex-1 h-full">
+        <Header collapsed={collapsed} setCollapsed={setCollapsed} />
+
+        <div className="flex-1 overflow-hidden relative">
+          <Content
+            className="absolute inset-0 overflow-y-auto p-6 bg-white"
+            style={{
+              borderRadius: 8,
+              margin: "0",
+            }}
+          >
+            {children}
+          </Content>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default Layout;

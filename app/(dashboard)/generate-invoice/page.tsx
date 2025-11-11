@@ -10,7 +10,7 @@ interface InvoiceItem {
   price: number;
 }
 
-export interface InvoiceData {
+export interface InvoiceFormValues {
   client: string;
   clientCompany: string;
   currency: string;
@@ -18,37 +18,24 @@ export interface InvoiceData {
   dueDate: string;
   items: InvoiceItem[];
   notes: string;
-  subtotal: number;
   discount: number;
   paid: number;
+  subtotal: number;
   total: number;
-  logo: string | null;
-  address: string;
-  creatorCompany: string;
 }
 
 const Page = () => {
-  const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("invoiceData");
-        return saved ? (JSON.parse(saved) as InvoiceData) : null;
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
-
-  const handleUpdate = (data: InvoiceData) => {
-    setInvoiceData(data);
-    localStorage.setItem("invoiceData", JSON.stringify(data));
-  };
+  const [invoiceData, setInvoiceData] = useState<InvoiceFormValues | null>(null);
 
   return (
-    <div className="p-6 grid grid-cols-1 xl:grid-cols-2 gap-6">
-      <InvoiceForm onUpdate={handleUpdate} />
-      <InvoicePreview data={invoiceData} />
+    <div className="min-h-screen  flex flex-col gap-8">
+      <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg p-6">
+        <InvoiceForm onUpdate={setInvoiceData} />
+      </div>
+
+      <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg p-6">
+        <InvoicePreview data={invoiceData} />
+      </div>
     </div>
   );
 };
