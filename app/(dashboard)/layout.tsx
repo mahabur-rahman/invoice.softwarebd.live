@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import Header from "@/components/Header";
+import Header from "@/components/layout/Header";
 import { Layout as AntLayout } from "antd";
-import Sidebar from "@/components/Sideabar";
+import Sidebar from "@/components/layout/Sideabar";
 
 const { Content } = AntLayout;
 
