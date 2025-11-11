@@ -57,7 +57,7 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
               {
                 key: "3",
                 icon: <FiFileText size={16} />,
-                label: <Link href="/create-invoice">Create Invoice</Link>,
+                label: <Link href="/generate-invoice">Create Invoice</Link>,
               },
               {
                 key: "4",
