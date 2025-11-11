@@ -1,8 +1,9 @@
 "use client";
 
-import { FiMenu, FiX } from "react-icons/fi";
-import Link from "next/link";
-import { Layout } from "antd";
+import { MdMenuOpen } from "react-icons/md";
+import { Layout, Dropdown, Avatar } from "antd";
+import type { MenuProps } from "antd";
+import { FiLogOut } from "react-icons/fi";
 
 const { Header: AntHeader } = Layout;
 
@@ -12,35 +13,47 @@ interface HeaderProps {
 }
 
 const Header = ({ collapsed, setCollapsed }: HeaderProps) => {
+  const items: MenuProps["items"] = [
+    {
+      key: "1",
+      label: (
+        <button className="flex items-center gap-2 text-red-500 hover:text-red-600">
+          <FiLogOut size={16} />
+          Logout
+        </button>
+      ),
+    },
+  ];
+
   return (
     <AntHeader
-      className="flex items-center justify-between bg-white border-b shadow-sm px-6"
+      className="flex items-center justify-between bg-white! border-b border-gray-200 shadow-sm px-4!"
       style={{ height: 64 }}
     >
+      {/* Left side: toggle + title */}
       <div className="flex items-center gap-4">
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-2 rounded-md hover:bg-gray-100 transition"
+          className="cursor-pointer p-2 rounded-lg hover:bg-gray-100 transition"
         >
-          {collapsed ? <FiMenu size={20} /> : <FiX size={20} />}
+          <MdMenuOpen
+            size={24}
+            className={`transition-transform ${
+              collapsed ? "rotate-180 text-blue-600" : "text-gray-700"
+            }`}
+          />
         </button>
-        <h1 className="text-lg font-semibold text-gray-800">My Dashboard</h1>
+        <h1 className="text-xl font-semibold text-gray-800">My Dashboard</h1>
       </div>
 
-      <nav className="flex items-center gap-6">
-        <Link href="/" className="text-gray-700 hover:text-blue-600 transition">
-          Home
-        </Link>
-        <Link
-          href="/profile"
-          className="text-gray-700 hover:text-blue-600 transition"
-        >
-          Profile
-        </Link>
-        <button className="bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 transition">
-          Logout
-        </button>
-      </nav>
+      {/* Right side: avatar dropdown */}
+      <Dropdown menu={{ items }} placement="bottomRight" arrow>
+        <Avatar
+          size={40}
+          className="cursor-pointer hover:opacity-90 transition"
+          src="https://api.dicebear.com/7.x/avataaars/svg?seed=boss"
+        />
+      </Dropdown>
     </AntHeader>
   );
 };

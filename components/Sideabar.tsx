@@ -27,10 +27,10 @@ const Sidebar = ({ collapsed }: SidebarProps) => {
       className="min-h-screen"
     >
       <div
-        className="flex items-center justify-center h-16 text-lg font-semibold text-gray-800 border-b"
+        className="flex items-center justify-center h-16 text-lg font-semibold text-gray-800 border-b border-gray-200"
         style={{ whiteSpace: "nowrap" }}
       >
-        {!collapsed ? "Menu" : "M"}
+        {!collapsed ? "Sellyx" : "S"}
       </div>
 
       <Menu
