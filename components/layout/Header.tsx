@@ -4,6 +4,7 @@ import { MdMenuOpen } from "react-icons/md";
 import { Layout, Dropdown, Avatar } from "antd";
 import type { MenuProps } from "antd";
 import { FiLogOut } from "react-icons/fi";
+import { useRouter } from "next/navigation";
 
 const { Header: AntHeader } = Layout;
 
@@ -13,11 +14,19 @@ interface HeaderProps {
 }
 
 const Header = ({ collapsed, setCollapsed }: HeaderProps) => {
+  const router = useRouter();
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    router.push("/login"); 
+  };
   const items: MenuProps["items"] = [
     {
       key: "1",
       label: (
-        <button className="flex items-center gap-2 text-red-500 hover:text-red-600">
+        <button className="flex items-center gap-2 text-red-500 hover:text-red-600"
+          onClick={handleLogout}
+
+        >
           <FiLogOut size={16} />
           Logout
         </button>
@@ -38,9 +47,8 @@ const Header = ({ collapsed, setCollapsed }: HeaderProps) => {
         >
           <MdMenuOpen
             size={24}
-            className={`transition-transform ${
-              collapsed ? "rotate-180 text-blue-600" : "text-gray-700"
-            }`}
+            className={`transition-transform ${collapsed ? "rotate-180 text-blue-600" : "text-gray-700"
+              }`}
           />
         </button>
         <h1 className="text-xl font-semibold text-gray-800">My Dashboard</h1>
