@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "codegen": "graphql-codegen"
   },
   "dependencies": {
     "@apollo/client": "^4.0.9",
@@ -22,6 +23,9 @@
     "yup": "^1.7.1"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^6.0.2",
+    "@graphql-codegen/typescript": "^5.0.4",
+    "@graphql-codegen/typescript-operations": "^5.0.4",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
