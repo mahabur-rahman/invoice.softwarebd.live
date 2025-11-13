@@ -125,6 +125,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
       console.log("Login data:", data);
 
       if (data?.login) {
+        localStorage.setItem("user", JSON.stringify(data.login));
         setFormSuccess("Logged in successfully.");
         setFormData((prev) => ({ ...prev, password: "", email: "" }));
         router.push("/")

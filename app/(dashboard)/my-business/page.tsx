@@ -1,8 +1,11 @@
+import BusinessTable from '@/components/business/BusinessTable'
 import React from 'react'
 
 const page = () => {
   return (
-    <div>My Business</div>
+    <div>
+      <BusinessTable />
+    </div>
   )
 }
 
