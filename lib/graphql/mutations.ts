@@ -19,3 +19,14 @@ export const LOGIN_MUTATION = gql`
     }
   }
 `;
+
+
+export const DELETE_BUSINESS = gql`
+  mutation DeleteBusiness($id: ID!) {
+    deleteBusiness(id: $id) {
+      message
+      success
+    }
+  }
+`;
+

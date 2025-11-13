@@ -1,17 +1,38 @@
 "use client";
 
-import React from "react";
-import { Table, Avatar, Spin, Button } from "antd";
+import React, { useState } from "react";
+import { Table, Avatar, Spin, Button, Modal } from "antd";
 import { FiEdit, FiTrash, FiPlus } from "react-icons/fi";
 import { GET_MY_BUSINESSES } from "@/lib/graphql/queries";
 import { GetMyBusinessesQuery } from "@/lib/graphql/generated-types";
-import { useQuery } from "@apollo/client/react";
+import { DELETE_BUSINESS } from "@/lib/graphql/mutations";
+import { useQuery, useMutation } from "@apollo/client/react";
 
 type BusinessRow = GetMyBusinessesQuery["myBusinesses"][0];
 
 const BusinessTable = () => {
   const { data, loading, error } =
     useQuery<GetMyBusinessesQuery>(GET_MY_BUSINESSES);
+
+  const [deleteBusiness] = useMutation(DELETE_BUSINESS, {
+    refetchQueries: [{ query: GET_MY_BUSINESSES }],
+  });
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const openDeleteModal = (id: string) => {
+    setSelectedId(id);
+    setModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    if (selectedId) {
+      await deleteBusiness({ variables: { id: selectedId } });
+      setModalVisible(false);
+      setSelectedId(null);
+    }
+  };
 
   if (loading)
     return (
@@ -24,14 +45,6 @@ const BusinessTable = () => {
     return <div className="text-red-500">Failed to load businesses.</div>;
 
   const businesses = data?.myBusinesses ?? [];
-
-  const handleEdit = (id: string) => {
-    console.log("Edit business:", id);
-  };
-
-  const handleDelete = (id: string) => {
-    console.log("Delete business:", id);
-  };
 
   const columns = [
     {
@@ -88,11 +101,11 @@ const BusinessTable = () => {
         <div className="flex gap-3 text-lg">
           <FiEdit
             className="cursor-pointer text-blue-600 hover:text-blue-800"
-            onClick={() => handleEdit(record._id)}
+            onClick={() => console.log("Edit business:", record._id)}
           />
           <FiTrash
             className="cursor-pointer text-red-500 hover:text-red-700"
-            onClick={() => handleDelete(record._id)}
+            onClick={() => openDeleteModal(record._id)}
           />
         </div>
       ),
@@ -100,25 +113,54 @@ const BusinessTable = () => {
   ];
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Businesses</h2>
-        <Button type="primary" icon={<FiPlus />} className="flex items-center gap-2">
-          Add Business
-        </Button>
-      </div>
+    <>
+      <Modal
+        open={modalVisible}
+        onCancel={() => setModalVisible(false)}
+        footer={null}
+        centered       
+      >
+        <div className="text-center p-4">
+          <h2 className="text-xl font-semibold mb-2">
+            Delete Business?
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Are you sure you want to delete this business?  
+            <br /> This action cannot be undone.
+          </p>
 
-      {/* Table */}
-      <Table<BusinessRow>
-        columns={columns}
-        dataSource={businesses.map((item) => ({
-          ...item,
-          key: item._id,
-        }))}
-        pagination={{ pageSize: 5 }}
-      />
-    </div>
+          <div className="flex justify-center gap-4">
+            <Button onClick={() => setModalVisible(false)}>Cancel</Button>
+            <Button danger type="primary" onClick={confirmDelete}>
+              Delete
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Table Wrapper */}
+      <div className="p-4 bg-white rounded-lg shadow">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Businesses</h2>
+          <Button
+            type="primary"
+            icon={<FiPlus />}
+            className="flex items-center gap-2"
+          >
+            Add Business
+          </Button>
+        </div>
+
+        <Table<BusinessRow>
+          columns={columns}
+          dataSource={businesses.map((item) => ({
+            ...item,
+            key: item._id,
+          }))}
+          pagination={{ pageSize: 5 }}
+        />
+      </div>
+    </>
   );
 };
 
