@@ -92,7 +92,11 @@ const BusinessTable = () => {
       title: "Created At",
       dataIndex: "createdAt",
       key: "createdAt",
-      render: (ts: number) => new Date(ts).toLocaleString(),
+      render: (ts: number) => {
+        // Format date in a consistent way to avoid hydration mismatches
+        const date = new Date(ts);
+        return date.toISOString().replace('T', ' ').substring(0, 19);
+      },
     },
     {
       title: "Actions",

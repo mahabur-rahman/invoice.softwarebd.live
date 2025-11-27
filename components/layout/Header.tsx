@@ -16,8 +16,10 @@ interface HeaderProps {
 const Header = ({ collapsed, setCollapsed }: HeaderProps) => {
   const router = useRouter();
   const handleLogout = () => {
-    localStorage.removeItem("user");
-    router.push("/login"); 
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("user");
+    }
+    router.push("/login");
   };
   const items: MenuProps["items"] = [
     {
