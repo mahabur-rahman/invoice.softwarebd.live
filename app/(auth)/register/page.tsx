@@ -1,11 +1,11 @@
-import AuthForm from '@/components/auth/AuthForm'
+import AuthForm from "@/components/auth/AuthForm";
 
 const page = () => {
-    return (
-        <div>
-            <AuthForm type="register" />
-        </div>
-    )
-}
+  return (
+    <div>
+      <AuthForm type="register" />
+    </div>
+  );
+};
 
-export default page
+export default page;

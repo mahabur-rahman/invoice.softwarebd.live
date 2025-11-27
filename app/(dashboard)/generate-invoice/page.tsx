@@ -25,7 +25,9 @@ export interface InvoiceFormValues {
 }
 
 const Page = () => {
-  const [invoiceData, setInvoiceData] = useState<InvoiceFormValues | null>(null);
+  const [invoiceData, setInvoiceData] = useState<InvoiceFormValues | null>(
+    null
+  );
 
   return (
     <div className="min-h-screen  flex flex-col gap-8">
