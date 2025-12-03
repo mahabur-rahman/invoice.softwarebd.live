@@ -7,6 +7,7 @@ import { GET_MY_BUSINESSES } from "@/lib/graphql/queries";
 import { GetMyBusinessesQuery } from "@/lib/graphql/generated-types";
 import { DELETE_BUSINESS } from "@/lib/graphql/mutations";
 import { useQuery, useMutation } from "@apollo/client/react";
+import Link from "next/link";
 
 type BusinessRow = GetMyBusinessesQuery["myBusinesses"][0];
 
@@ -122,14 +123,14 @@ const BusinessTable = () => {
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         footer={null}
-        centered       
+        centered
       >
         <div className="text-center p-4">
           <h2 className="text-xl font-semibold mb-2">
             Delete Business?
           </h2>
           <p className="text-gray-600 mb-6">
-            Are you sure you want to delete this business?  
+            Are you sure you want to delete this business?
             <br /> This action cannot be undone.
           </p>
 
@@ -146,13 +147,15 @@ const BusinessTable = () => {
       <div className="p-4 bg-white rounded-lg shadow">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Businesses</h2>
-          <Button
-            type="primary"
-            icon={<FiPlus />}
-            className="flex items-center gap-2"
-          >
-            Add Business
-          </Button>
+          <Link href='/my-business/add-new'>
+            <Button
+              type="primary"
+              icon={<FiPlus />}
+              className="flex items-center gap-2"
+            >
+              Add Business
+            </Button>
+          </Link>
         </div>
 
         <Table<BusinessRow>
