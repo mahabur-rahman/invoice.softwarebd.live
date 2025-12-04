@@ -66,15 +66,7 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business }) => {
             websiteUrl: "",
         };
 
-    const [createBusiness, { loading }] = useMutation(CREATE_BUSINESS_MUTATION, {
-        onCompleted: () => {
-            toast?.success("Business created successfully!");
-            router.push('/my-business')
-        },
-        onError: () => {
-            toast?.error("Failed to create business");
-        },
-    });
+    const [createBusiness, { loading }] = useMutation(CREATE_BUSINESS_MUTATION);
     const [updateBusiness] = useMutation(UPDATE_BUSINESS_MUTATION);
 
 
