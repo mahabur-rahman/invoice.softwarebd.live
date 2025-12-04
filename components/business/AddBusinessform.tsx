@@ -9,6 +9,8 @@ import Image from "next/image";
 import { FiTrash, FiUpload } from "react-icons/fi";
 import { useMutation } from "@apollo/client/react";
 import { CREATE_BUSINESS_MUTATION } from "@/lib/graphql/mutations/invoice.mutations";
+import { useToast } from "@/app/providers/ToastProvider";
+import { useRouter } from "next/navigation";
 
 interface Business {
     companyName: string;
@@ -21,15 +23,12 @@ interface Business {
 }
 
 interface AddBusinessFormProps {
-    business?: Business; 
-    onCompleted?: () => void;
+    business?: Business;
 }
 
 const BusinessSchema = Yup.object().shape({
     companyName: Yup.string().required("Company name is required"),
-    contactEmail: Yup.string()
-        .email("Invalid email")
-        .required("Contact email is required"),
+    contactEmail: Yup.string().email("Invalid email").required("Contact email is required"),
     location: Yup.string().required("Location is required"),
     logoUrl: Yup.string().url("Must be a valid URL"),
     ownerId: Yup.string().required("Owner ID is required"),
@@ -37,9 +36,11 @@ const BusinessSchema = Yup.object().shape({
     websiteUrl: Yup.string().url("Must be a valid URL").nullable(),
 });
 
-const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business, onCompleted }) => {
+const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business }) => {
 
-    // 🔥 Get Logged In User ID from Local Storage
+    const toast = useToast();
+    const router = useRouter()
+
     const [userId] = useState(() => {
         if (typeof window !== "undefined") {
             const stored = localStorage.getItem("user");
@@ -66,14 +67,11 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business, onCompleted
 
     const [createBusiness, { loading }] = useMutation(CREATE_BUSINESS_MUTATION, {
         onCompleted: () => {
-            message.success("Business created successfully!");
-
-            if (onCompleted) {
-                onCompleted();
-            }
+            toast?.success("Business created successfully!");
+            router.push('/my-business')
         },
         onError: () => {
-            message.error("Failed to create business");
+            toast?.error("Failed to create business");
         },
     });
 
