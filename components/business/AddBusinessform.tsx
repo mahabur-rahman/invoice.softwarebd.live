@@ -1,12 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Formik, Form } from "formik";
 import * as Yup from "yup";
 import { Input, Button, Upload, message } from "antd";
 import { uploadLogo } from "@/utils/uploadLogo";
 import Image from "next/image";
 import { FiTrash, FiUpload } from "react-icons/fi";
+import { useMutation } from "@apollo/client/react";
+import { CREATE_BUSINESS_MUTATION } from "@/lib/graphql/mutations/invoice.mutations";
 
 interface Business {
     companyName: string;
@@ -19,8 +21,8 @@ interface Business {
 }
 
 interface AddBusinessFormProps {
-    business?: Business; // editing mode
-    onSubmit: (values: Business) => void;
+    business?: Business; 
+    onCompleted?: () => void;
 }
 
 const BusinessSchema = Yup.object().shape({
@@ -32,13 +34,23 @@ const BusinessSchema = Yup.object().shape({
     logoUrl: Yup.string().url("Must be a valid URL"),
     ownerId: Yup.string().required("Owner ID is required"),
     phoneNumber: Yup.string().required("Phone number is required"),
-    websiteUrl: Yup.string().url("Must be a valid URL"),
+    websiteUrl: Yup.string().url("Must be a valid URL").nullable(),
 });
 
-const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
-    business,
-    onSubmit,
-}) => {
+const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business, onCompleted }) => {
+
+    // 🔥 Get Logged In User ID from Local Storage
+    const [userId] = useState(() => {
+        if (typeof window !== "undefined") {
+            const stored = localStorage.getItem("user");
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                return parsed?.userId || "";
+            }
+        }
+        return "";
+    });
+
     const mode = business ? "edit" : "add";
 
     const initialValues: Business =
@@ -47,10 +59,24 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
             contactEmail: "",
             location: "",
             logoUrl: "",
-            ownerId: "",
+            ownerId: userId,
             phoneNumber: "",
             websiteUrl: "",
         };
+
+    const [createBusiness, { loading }] = useMutation(CREATE_BUSINESS_MUTATION, {
+        onCompleted: () => {
+            message.success("Business created successfully!");
+
+            if (onCompleted) {
+                onCompleted();
+            }
+        },
+        onError: () => {
+            message.error("Failed to create business");
+        },
+    });
+
 
     return (
         <div className="w-full bg-white shadow-lg border border-gray-100 rounded-xl p-8">
@@ -62,18 +88,24 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
                 initialValues={initialValues}
                 enableReinitialize
                 validationSchema={BusinessSchema}
-                onSubmit={(values) => onSubmit(values)}
+                onSubmit={async (values) => {
+                    console.log('user id  ', userId)
+                    await createBusiness({
+                        variables: {
+                            createBusinessInput: {
+                                ...values,
+                                ownerId: userId,
+                            },
+                        },
+                    });
+                }}
             >
-                {({
-                    values,
-                    handleChange,
-                    setFieldValue,
-                    errors,
-                    touched,
-                    isSubmitting,
-                }) => (
+                {({ values, handleChange, setFieldValue, errors, touched }) => (
                     <Form>
-                        {/* GRID */}
+
+                        {/* Hidden Owner ID */}
+                        <input type="hidden" name="ownerId" value={userId} />
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                             {/* Company Name */}
@@ -115,24 +147,19 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
                                         try {
                                             const url = await uploadLogo(options);
                                             setFieldValue("logoUrl", url);
-                                        } catch (err) {
+                                        } catch {
                                             message.error("Upload failed");
-                                            console.error(err);
                                         }
                                     }}
                                 >
-                                    <Button
-                                        className="flex items-center gap-2"
-                                        icon={<FiUpload size={18} />}
-                                    >
+                                    <Button className="flex items-center gap-2" icon={<FiUpload size={18} />}>
                                         Upload Logo
                                     </Button>
                                 </Upload>
 
-                                {/* Preview + Remove Button */}
                                 {values.logoUrl && (
-                                    <div className="flex items-center gap-4 mt-3 p-3 rounded-lg">
-                                        <div className="flex items-center justify-center h-20 w-20 rounded-lg overflow-hidden">
+                                    <div className="flex items-center gap-4 mt-3 p-3 rounded-lg bg-gray-50">
+                                        <div className="flex items-center justify-center h-20 w-20 rounded-lg overflow-hidden border">
                                             <Image
                                                 src={values.logoUrl}
                                                 alt="Logo Preview"
@@ -145,29 +172,15 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
                                         <Button
                                             danger
                                             className="flex items-center gap-2"
-                                            onClick={() => {
-                                                setFieldValue("logoUrl", "");
-                                                message.info("Logo removed");
-                                            }}
+                                            onClick={() => setFieldValue("logoUrl", "")}
                                         >
-                                            <FiTrash size={18} />
+                                            <FiTrash size={18} /> Remove
                                         </Button>
                                     </div>
                                 )}
 
                                 {errors.logoUrl && touched.logoUrl && (
                                     <p className="text-red-500 text-sm">{errors.logoUrl}</p>
-                                )}
-                            </div>
-
-
-
-                            {/* Owner ID */}
-                            <div className="flex flex-col gap-1">
-                                <label className="font-medium">Owner ID</label>
-                                <Input name="ownerId" value={values.ownerId} onChange={handleChange} />
-                                {errors.ownerId && touched.ownerId && (
-                                    <p className="text-red-500 text-sm">{errors.ownerId}</p>
                                 )}
                             </div>
 
@@ -194,7 +207,7 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
                         <Button
                             type="primary"
                             htmlType="submit"
-                            loading={isSubmitting}
+                            loading={loading}
                             className="mt-8 w-full h-11 text-lg rounded-lg"
                         >
                             {mode === "add" ? "Create Business" : "Update Business"}
