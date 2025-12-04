@@ -8,18 +8,19 @@ import { uploadLogo } from "@/utils/uploadLogo";
 import Image from "next/image";
 import { FiTrash, FiUpload } from "react-icons/fi";
 import { useMutation } from "@apollo/client/react";
-import { CREATE_BUSINESS_MUTATION } from "@/lib/graphql/mutations/invoice.mutations";
+import { CREATE_BUSINESS_MUTATION, UPDATE_BUSINESS_MUTATION } from "@/lib/graphql/mutations/invoice.mutations";
 import { useToast } from "@/app/providers/ToastProvider";
 import { useRouter } from "next/navigation";
 
 interface Business {
-    companyName: string;
-    contactEmail: string;
-    location: string;
-    logoUrl: string;
-    ownerId: string;
-    phoneNumber: string;
-    websiteUrl: string;
+    _id?: string;
+    companyName: string | null;
+    contactEmail: string | null;
+    location: string | null;
+    logoUrl: string | null;
+    ownerId: string | null;
+    phoneNumber: string | null;
+    websiteUrl: string | null;
 }
 
 interface AddBusinessFormProps {
@@ -74,6 +75,46 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business }) => {
             toast?.error("Failed to create business");
         },
     });
+    const [updateBusiness] = useMutation(UPDATE_BUSINESS_MUTATION);
+
+
+    const sanitizeBusinessInput = (values: Business) => ({
+        companyName: values.companyName ?? "",
+        contactEmail: values.contactEmail ?? "",
+        location: values.location ?? "",
+        logoUrl: values.logoUrl ?? "",
+        ownerId: values.ownerId ?? "",
+        phoneNumber: values.phoneNumber ?? "",
+        websiteUrl: values.websiteUrl ?? "",
+    });
+
+    const handleSubmit = async (values: Business) => {
+        if (mode === "add") {
+            await createBusiness({
+                variables: {
+                    createBusinessInput: {
+                        ...values,
+                        ownerId: userId,
+                    },
+                },
+            });
+
+            toast?.success("Business created successfully!");
+            router.push("/my-business");
+            return;
+        }
+
+        // edit mode
+        await updateBusiness({
+            variables: {
+                id: business!._id,
+                updateBusinessInput: sanitizeBusinessInput(values),
+            },
+        });
+
+        toast?.success("Business updated successfully!");
+        router.push("/my-business");
+    };
 
 
     return (
@@ -86,17 +127,7 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business }) => {
                 initialValues={initialValues}
                 enableReinitialize
                 validationSchema={BusinessSchema}
-                onSubmit={async (values) => {
-                    console.log('user id  ', userId)
-                    await createBusiness({
-                        variables: {
-                            createBusinessInput: {
-                                ...values,
-                                ownerId: userId,
-                            },
-                        },
-                    });
-                }}
+                onSubmit={handleSubmit}
             >
                 {({ values, handleChange, setFieldValue, errors, touched }) => (
                     <Form>
@@ -109,7 +140,8 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business }) => {
                             {/* Company Name */}
                             <div className="flex flex-col gap-1">
                                 <label className="font-medium">Company Name</label>
-                                <Input name="companyName" value={values.companyName} onChange={handleChange} />
+                                <Input name="companyName" value={values.companyName ?? ""} onChange={handleChange} />
+
                                 {errors.companyName && touched.companyName && (
                                     <p className="text-red-500 text-sm">{errors.companyName}</p>
                                 )}
@@ -118,7 +150,7 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business }) => {
                             {/* Contact Email */}
                             <div className="flex flex-col gap-1">
                                 <label className="font-medium">Contact Email</label>
-                                <Input name="contactEmail" value={values.contactEmail} onChange={handleChange} />
+                                <Input name="contactEmail" value={values.contactEmail ?? ""} onChange={handleChange} />
                                 {errors.contactEmail && touched.contactEmail && (
                                     <p className="text-red-500 text-sm">{errors.contactEmail}</p>
                                 )}
@@ -127,7 +159,7 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business }) => {
                             {/* Location */}
                             <div className="flex flex-col gap-1">
                                 <label className="font-medium">Location</label>
-                                <Input name="location" value={values.location} onChange={handleChange} />
+                                <Input name="location" value={values.location ?? ""} onChange={handleChange} />
                                 {errors.location && touched.location && (
                                     <p className="text-red-500 text-sm">{errors.location}</p>
                                 )}
@@ -185,7 +217,7 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business }) => {
                             {/* Phone Number */}
                             <div className="flex flex-col gap-1">
                                 <label className="font-medium">Phone Number</label>
-                                <Input name="phoneNumber" value={values.phoneNumber} onChange={handleChange} />
+                                <Input name="phoneNumber" value={values.phoneNumber ?? ""} onChange={handleChange} />
                                 {errors.phoneNumber && touched.phoneNumber && (
                                     <p className="text-red-500 text-sm">{errors.phoneNumber}</p>
                                 )}
@@ -194,7 +226,7 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business }) => {
                             {/* Website URL */}
                             <div className="flex flex-col gap-1 md:col-span-2">
                                 <label className="font-medium">Website URL</label>
-                                <Input name="websiteUrl" value={values.websiteUrl} onChange={handleChange} />
+                                <Input name="websiteUrl" value={values.websiteUrl ?? ""} onChange={handleChange} />
                                 {errors.websiteUrl && touched.websiteUrl && (
                                     <p className="text-red-500 text-sm">{errors.websiteUrl}</p>
                                 )}

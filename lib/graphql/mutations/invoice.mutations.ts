@@ -8,3 +8,23 @@ export const CREATE_BUSINESS_MUTATION = gql`
   }
 `;
 
+export const UPDATE_BUSINESS_MUTATION = gql`
+  mutation UpdateBusiness(
+    $id: ID!
+    $updateBusinessInput: UpdateBusinessInput!
+  ) {
+    updateBusiness(id: $id, updateBusinessInput: $updateBusinessInput) {
+      _id
+      companyName
+      contactEmail
+      location
+      logoUrl
+      ownerId
+      phoneNumber
+      websiteUrl
+      createdAt
+      updatedAt
+    }
+  }
+`;
+

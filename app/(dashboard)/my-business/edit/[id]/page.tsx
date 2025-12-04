@@ -1,5 +1,6 @@
 "use client";
 
+import AddBusinessForm from "@/components/business/AddBusinessform";
 import { SINGLE_BUSINESS_QUERY } from "@/lib/graphql/queries/invoice.queries";
 import { SingleBusinessQueryResponse } from "@/lib/interfaces/responseTypes";
 import ItemNotFound from "@/utils/ItemNotFound";
@@ -36,15 +37,7 @@ const Page = () => {
 
     return (
         <div className="p-6">
-            <h1 className="text-2xl font-semibold mb-4">Edit Business</h1>
-
-            <p className="text-gray-600 mb-1">
-                <strong>ID:</strong> {business._id}
-            </p>
-
-            <p className="text-gray-800 text-xl">
-                Editing: <strong>{business.companyName}</strong>
-            </p>
+            <AddBusinessForm business={business} />
         </div>
     );
 };
