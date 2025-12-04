@@ -8,10 +8,12 @@ import { GetMyBusinessesQuery } from "@/lib/graphql/generated-types";
 import { DELETE_BUSINESS } from "@/lib/graphql/mutations";
 import { useQuery, useMutation } from "@apollo/client/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type BusinessRow = GetMyBusinessesQuery["myBusinesses"][0];
 
 const BusinessTable = () => {
+  const router = useRouter()
   const { data, loading, error } =
     useQuery<GetMyBusinessesQuery>(GET_MY_BUSINESSES);
 
@@ -94,7 +96,6 @@ const BusinessTable = () => {
       dataIndex: "createdAt",
       key: "createdAt",
       render: (ts: number) => {
-        // Format date in a consistent way to avoid hydration mismatches
         const date = new Date(ts);
         return date.toISOString().replace('T', ' ').substring(0, 19);
       },
@@ -106,7 +107,7 @@ const BusinessTable = () => {
         <div className="flex gap-3 text-lg">
           <FiEdit
             className="cursor-pointer text-blue-600 hover:text-blue-800"
-            onClick={() => console.log("Edit business:", record._id)}
+            onClick={() => router.push(`my-business/edit/${record._id}`)}
           />
           <FiTrash
             className="cursor-pointer text-red-500 hover:text-red-700"
