@@ -4,9 +4,9 @@ import React from "react";
 import { Formik, Form } from "formik";
 import * as Yup from "yup";
 import { Input, Button, Upload, message } from "antd";
-import { UploadOutlined } from "@ant-design/icons";
 import { uploadLogo } from "@/utils/uploadLogo";
 import Image from "next/image";
+import { FiTrash, FiUpload } from "react-icons/fi";
 
 interface Business {
     companyName: string;
@@ -104,12 +104,13 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
                             </div>
 
                             {/* 🔥 Logo Upload */}
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-2">
                                 <label className="font-medium">Business Logo</label>
 
                                 <Upload
                                     maxCount={1}
                                     accept="image/*"
+                                    showUploadList={false}
                                     customRequest={async (options) => {
                                         try {
                                             const url = await uploadLogo(options);
@@ -120,23 +121,46 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
                                         }
                                     }}
                                 >
-                                    <Button icon={<UploadOutlined />}>Upload Logo</Button>
+                                    <Button
+                                        className="flex items-center gap-2"
+                                        icon={<FiUpload size={18} />}
+                                    >
+                                        Upload Logo
+                                    </Button>
                                 </Upload>
 
+                                {/* Preview + Remove Button */}
                                 {values.logoUrl && (
-                                    <Image
-                                        src={values.logoUrl}
-                                        alt="Logo Preview"
-                                        height={50}
-                                        width={50}
-                                        className="w-24 h-24 mt-3 object-cover rounded-lg border"
-                                    />
+                                    <div className="flex items-center gap-4 mt-3 p-3 rounded-lg">
+                                        <div className="flex items-center justify-center h-20 w-20 rounded-lg overflow-hidden">
+                                            <Image
+                                                src={values.logoUrl}
+                                                alt="Logo Preview"
+                                                height={80}
+                                                width={80}
+                                                className="object-cover"
+                                            />
+                                        </div>
+
+                                        <Button
+                                            danger
+                                            className="flex items-center gap-2"
+                                            onClick={() => {
+                                                setFieldValue("logoUrl", "");
+                                                message.info("Logo removed");
+                                            }}
+                                        >
+                                            <FiTrash size={18} />
+                                        </Button>
+                                    </div>
                                 )}
 
                                 {errors.logoUrl && touched.logoUrl && (
                                     <p className="text-red-500 text-sm">{errors.logoUrl}</p>
                                 )}
                             </div>
+
+
 
                             {/* Owner ID */}
                             <div className="flex flex-col gap-1">
