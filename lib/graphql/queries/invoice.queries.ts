@@ -41,3 +41,19 @@ export const GET_ALL_CLIENTS = gql`
     }
   }
 `;
+
+
+export const FIND_ONE_CLIENT = gql`
+  query FindOneClient($id: ID!) {
+    findOneClient(id: $id) {
+      _id
+      name
+      address
+      clientCompanyName
+      email
+      phone
+      businessId
+      userId
+    }
+  }
+`;
