@@ -23,6 +23,11 @@ const ClientSchema = Yup.object().shape({
     businessId: Yup.string().required("Business ID is required"),
 });
 
+
+interface AddNewClientProps {
+    client?: ClientType;
+}
+
 type ClientFormValues = {
     id?: string;
     name: string;
@@ -35,45 +40,28 @@ type ClientFormValues = {
 };
 
 
-const AddNewClient = () => {
+const AddNewClient: React.FC<AddNewClientProps> = ({ client }) => {
     const router = useRouter();
     const params = useSearchParams();
     const userId = useUserStore((state) => state.userId);
 
-    const clientId = params.get("id");
-
-    const { data, loading } = useQuery<{ findOneClient: ClientType }>(
-        FIND_ONE_CLIENT,
-        {
-            variables: { id: clientId },
-            skip: !clientId,
-        }
-    );
-
     const { data: businessList, loading: bizLoading } =
-        useQuery<BusinessQueryResponse>(GET_MY_BUSINESSES_ID);  
+        useQuery<BusinessQueryResponse>(GET_MY_BUSINESSES_ID);
 
     const [createClient] = useMutation(CREATE_CLIENT);
     const [updateClient] = useMutation(UPDATE_CLIENT);
 
-    if (loading)
-        return (
-            <div className="flex justify-center py-10">
-                <Spin size="large" />
-            </div>
-        );
-
     // Default values (add mode)
-    const initialValues: ClientFormValues = clientId
+    const initialValues: ClientFormValues = client
         ? {
-            id: data?.findOneClient?._id || "",
-            name: data?.findOneClient?.name || "",
-            clientCompanyName: data?.findOneClient?.clientCompanyName || "",
-            address: data?.findOneClient?.address || "",
-            email: data?.findOneClient?.email || "",
-            phone: data?.findOneClient?.phone || "",
-            businessId: data?.findOneClient?.businessId || "",
-            userId: data?.findOneClient?.userId || "",
+            id: client?._id || "",
+            name: client?.name || "",
+            clientCompanyName: client?.clientCompanyName || "",
+            address: client?.address || "",
+            email: client?.email || "",
+            phone: client?.phone || "",
+            businessId: client?.businessId || "",
+            userId: client?.userId || "",
         }
         : {
             name: "",
@@ -88,11 +76,11 @@ const AddNewClient = () => {
 
     const handleSubmit = async (values: any) => {
         try {
-            if (clientId) {
+            if (client) {
                 await updateClient({
                     variables: {
                         input: {
-                            id: clientId,
+                            id: client,
                             ...values,
                         },
                     },
@@ -111,123 +99,123 @@ const AddNewClient = () => {
 
     return (
         <div className="w-full bg-white shadow-lg border border-gray-100 rounded-xl p-8">
-      <h2 className="text-2xl font-semibold mb-6 text-gray-800">
-        {clientId ? "Edit Client" : "Add New Client"}
-      </h2>
+            <h2 className="text-2xl font-semibold mb-6 text-gray-800">
+                {client ? "Edit Client" : "Add New Client"}
+            </h2>
 
-      <Formik
-        enableReinitialize
-        initialValues={initialValues}
-        validationSchema={ClientSchema}
-        onSubmit={handleSubmit}
-      >
-        {({ values, handleChange, setFieldValue, errors, touched, isSubmitting }) => (
-          <Form>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-              {/* Client Name */}
-              <div className="flex flex-col gap-1">
-                <label className="font-medium">Client Name</label>
-                <Input
-                  name="name"
-                  value={values.name}
-                  onChange={handleChange}
-                  placeholder="Enter client name"
-                />
-                {errors.name && touched.name && <p className="text-red-500 text-sm">{errors.name}</p>}
-              </div>
-
-              {/* Company Name */}
-              <div className="flex flex-col gap-1">
-                <label className="font-medium">Company Name</label>
-                <Input
-                  name="clientCompanyName"
-                  value={values.clientCompanyName}
-                  onChange={handleChange}
-                  placeholder="Enter company name"
-                />
-                {errors.clientCompanyName && touched.clientCompanyName && (
-                  <p className="text-red-500 text-sm">{errors.clientCompanyName}</p>
-                )}
-              </div>
-
-              {/* Address */}
-              <div className="flex flex-col gap-1">
-                <label className="font-medium">Address</label>
-                <Input
-                  name="address"
-                  value={values.address}
-                  onChange={handleChange}
-                  placeholder="Enter client address"
-                />
-                {errors.address && touched.address && <p className="text-red-500 text-sm">{errors.address}</p>}
-              </div>
-
-              {/* Email */}
-              <div className="flex flex-col gap-1">
-                <label className="font-medium">Email</label>
-                <Input
-                  name="email"
-                  value={values.email}
-                  onChange={handleChange}
-                  placeholder="Enter client email"
-                />
-                {errors.email && touched.email && <p className="text-red-500 text-sm">{errors.email}</p>}
-              </div>
-
-              {/* Phone */}
-              <div className="flex flex-col gap-1">
-                <label className="font-medium">Phone</label>
-                <Input
-                  name="phone"
-                  value={values.phone}
-                  onChange={handleChange}
-                  placeholder="Enter phone number"
-                />
-                {errors.phone && touched.phone && <p className="text-red-500 text-sm">{errors.phone}</p>}
-              </div>
-
-              {/* Business dropdown */}
-              <div className="flex flex-col gap-1">
-                <label className="font-medium">Business</label>
-
-                {bizLoading ? (
-                  <div className="h-10 bg-gray-100 animate-pulse rounded-md" />
-                ) : (
-                  <select
-                    name="businessId"
-                    value={values.businessId}
-                    onChange={handleChange}
-                    className="w-full border px-3 py-2 rounded-md focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select a business</option>
-                    {businessList?.myBusinesses.map((b) => (
-                      <option key={b._id} value={b._id}>
-                        {b.companyName}
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                {errors.businessId && touched.businessId && (
-                  <p className="text-red-500 text-sm">{errors.businessId}</p>
-                )}
-              </div>
-
-            </div>
-
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={isSubmitting}
-              className="mt-8 w-full h-11 text-lg rounded-lg"
+            <Formik
+                enableReinitialize
+                initialValues={initialValues}
+                validationSchema={ClientSchema}
+                onSubmit={handleSubmit}
             >
-              {clientId ? "Update Client" : "Create Client"}
-            </Button>
-          </Form>
-        )}
-      </Formik>
-    </div>
+                {({ values, handleChange, setFieldValue, errors, touched, isSubmitting }) => (
+                    <Form>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                            {/* Client Name */}
+                            <div className="flex flex-col gap-1">
+                                <label className="font-medium">Client Name</label>
+                                <Input
+                                    name="name"
+                                    value={values.name}
+                                    onChange={handleChange}
+                                    placeholder="Enter client name"
+                                />
+                                {errors.name && touched.name && <p className="text-red-500 text-sm">{errors.name}</p>}
+                            </div>
+
+                            {/* Company Name */}
+                            <div className="flex flex-col gap-1">
+                                <label className="font-medium">Company Name</label>
+                                <Input
+                                    name="clientCompanyName"
+                                    value={values.clientCompanyName}
+                                    onChange={handleChange}
+                                    placeholder="Enter company name"
+                                />
+                                {errors.clientCompanyName && touched.clientCompanyName && (
+                                    <p className="text-red-500 text-sm">{errors.clientCompanyName}</p>
+                                )}
+                            </div>
+
+                            {/* Address */}
+                            <div className="flex flex-col gap-1">
+                                <label className="font-medium">Address</label>
+                                <Input
+                                    name="address"
+                                    value={values.address}
+                                    onChange={handleChange}
+                                    placeholder="Enter client address"
+                                />
+                                {errors.address && touched.address && <p className="text-red-500 text-sm">{errors.address}</p>}
+                            </div>
+
+                            {/* Email */}
+                            <div className="flex flex-col gap-1">
+                                <label className="font-medium">Email</label>
+                                <Input
+                                    name="email"
+                                    value={values.email}
+                                    onChange={handleChange}
+                                    placeholder="Enter client email"
+                                />
+                                {errors.email && touched.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+                            </div>
+
+                            {/* Phone */}
+                            <div className="flex flex-col gap-1">
+                                <label className="font-medium">Phone</label>
+                                <Input
+                                    name="phone"
+                                    value={values.phone}
+                                    onChange={handleChange}
+                                    placeholder="Enter phone number"
+                                />
+                                {errors.phone && touched.phone && <p className="text-red-500 text-sm">{errors.phone}</p>}
+                            </div>
+
+                            {/* Business dropdown */}
+                            <div className="flex flex-col gap-1">
+                                <label className="font-medium">Business</label>
+
+                                {bizLoading ? (
+                                    <div className="h-10 bg-gray-100 animate-pulse rounded-md" />
+                                ) : (
+                                    <select
+                                        name="businessId"
+                                        value={values.businessId}
+                                        onChange={handleChange}
+                                        className="w-full border px-3 py-2 rounded-md focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="">Select a business</option>
+                                        {businessList?.myBusinesses.map((b) => (
+                                            <option key={b._id} value={b._id}>
+                                                {b.companyName}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+
+                                {errors.businessId && touched.businessId && (
+                                    <p className="text-red-500 text-sm">{errors.businessId}</p>
+                                )}
+                            </div>
+
+                        </div>
+
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            loading={isSubmitting}
+                            className="mt-8 w-full h-11 text-lg rounded-lg"
+                        >
+                            {client ? "Update Client" : "Create Client"}
+                        </Button>
+                    </Form>
+                )}
+            </Formik>
+        </div>
 
     );
 };
