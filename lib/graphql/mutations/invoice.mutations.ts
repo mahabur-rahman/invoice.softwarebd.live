@@ -28,3 +28,12 @@ export const UPDATE_BUSINESS_MUTATION = gql`
   }
 `;
 
+
+export const DELETE_CLIENT = gql`
+  mutation DeleteClient($id: ID!) {
+    deleteClient(id: $id) {
+      message
+      success
+    }
+  }
+`;
