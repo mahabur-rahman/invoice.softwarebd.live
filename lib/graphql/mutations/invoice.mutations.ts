@@ -28,3 +28,44 @@ export const UPDATE_BUSINESS_MUTATION = gql`
   }
 `;
 
+
+export const DELETE_CLIENT = gql`
+  mutation DeleteClient($id: ID!) {
+    deleteClient(id: $id) {
+      message
+      success
+    }
+  }
+`;
+
+
+export const CREATE_CLIENT = gql`
+  mutation CreateClient($input: CreateClientInput!) {
+    createClient(input: $input) {
+      _id
+      name
+      email
+      phone
+      clientCompanyName
+      address
+      businessId
+      userId
+    }
+  }
+`;
+
+
+export const UPDATE_CLIENT = gql`
+  mutation UpdateClient($input: UpdateClientInput!) {
+    updateClient(input: $input) {
+      _id
+      name
+      email
+      phone
+      clientCompanyName
+      address
+      businessId
+      userId
+    }
+  }
+`;
