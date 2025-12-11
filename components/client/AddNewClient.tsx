@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 
 
-import { ClientType } from "@/lib/graphql/generated-types";
+import { BusinessType, ClientType } from "@/lib/graphql/generated-types";
 import { Spin, Button } from "antd";
 import { CREATE_CLIENT, UPDATE_CLIENT } from "@/lib/graphql/mutations/invoice.mutations";
-import { FIND_ONE_CLIENT } from "@/lib/graphql/queries/invoice.queries";
+import { FIND_ONE_CLIENT, GET_MY_BUSINESSES_ID } from "@/lib/graphql/queries/invoice.queries";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { useUserStore } from "@/lib/store/userStore";
+import { BusinessQueryResponse } from "@/lib/interfaces/responseTypes";
 
 // ------------ VALIDATION SCHEMA ------------
 const ClientSchema = Yup.object().shape({
@@ -21,7 +21,6 @@ const ClientSchema = Yup.object().shape({
     email: Yup.string().email("Invalid email").required("Email is required"),
     phone: Yup.string().required("Phone number is required"),
     businessId: Yup.string().required("Business ID is required"),
-    userId: Yup.string().required("User ID is required"),
 });
 
 type ClientFormValues = {
@@ -40,18 +39,21 @@ const AddNewClient = () => {
     const router = useRouter();
     const params = useSearchParams();
     const userId = useUserStore((state) => state.userId);
-    console.log("User ID from store:", userId);
 
-    const clientId = params.get("id"); // for edit mode
+    const clientId = params.get("id");
 
-    // ----------- FETCH CLIENT IN EDIT MODE -----------
     const { data, loading } = useQuery<{ findOneClient: ClientType }>(
         FIND_ONE_CLIENT,
         {
             variables: { id: clientId },
-            skip: !clientId, // Skip when adding new
+            skip: !clientId,
         }
     );
+
+    const { data: businessList, loading: bizLoading } =
+        useQuery<BusinessQueryResponse>(GET_MY_BUSINESSES_ID);
+
+        console.log("Business List:", businessList);
 
     const [createClient] = useMutation(CREATE_CLIENT);
     const [updateClient] = useMutation(UPDATE_CLIENT);
@@ -82,7 +84,7 @@ const AddNewClient = () => {
             email: "",
             phone: "",
             businessId: "",
-            userId: "",
+            userId: userId || "",
         };
 
 
@@ -160,17 +162,33 @@ const AddNewClient = () => {
 
                         {/* Business ID */}
                         <div>
-                            <label>Business ID</label>
-                            <Field name="businessId" className="input" />
-                            <ErrorMessage name="businessId" component="div" className="text-red-500" />
+                            <label>Business</label>
+
+                            {bizLoading ? (
+                                <p>Loading businesses...</p>
+                            ) : (
+                                <Field
+                                    as="select"
+                                    name="businessId"
+                                    className="input"
+                                >
+                                    <option value="">Select a business</option>
+
+                                    {businessList?.myBusinesses.map((b: BusinessType) => (
+                                        <option key={b._id} value={b._id}>
+                                            {b.companyName}
+                                        </option>
+                                    ))}
+                                </Field>
+                            )}
+
+                            <ErrorMessage
+                                name="businessId"
+                                component="div"
+                                className="text-red-500"
+                            />
                         </div>
 
-                        {/* User ID */}
-                        <div>
-                            <label>User ID</label>
-                            <Field name="userId" className="input" />
-                            <ErrorMessage name="userId" component="div" className="text-red-500" />
-                        </div>
 
                         <Button
                             type="primary"

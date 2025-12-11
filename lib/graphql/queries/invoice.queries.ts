@@ -57,3 +57,12 @@ export const FIND_ONE_CLIENT = gql`
     }
   }
 `;
+
+export const GET_MY_BUSINESSES_ID = gql`
+  query GetMyBusinesses {
+    myBusinesses {
+      _id
+      companyName
+    }
+  }
+`;
