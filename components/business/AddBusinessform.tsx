@@ -4,13 +4,13 @@ import React, { useState } from "react";
 import { Formik, Form } from "formik";
 import * as Yup from "yup";
 import { Input, Button, Upload, message } from "antd";
-import { uploadLogo } from "@/utils/uploadLogo";
 import Image from "next/image";
 import { FiTrash, FiUpload } from "react-icons/fi";
 import { useMutation } from "@apollo/client/react";
 import { CREATE_BUSINESS_MUTATION, UPDATE_BUSINESS_MUTATION } from "@/lib/graphql/mutations/invoice.mutations";
 import { useToast } from "@/app/providers/ToastProvider";
 import { useRouter } from "next/navigation";
+import { uploadLogo } from "@/utils/uploadLogo";
 
 interface Business {
     _id?: string;
