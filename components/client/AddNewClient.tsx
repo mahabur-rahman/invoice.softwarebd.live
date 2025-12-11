@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { Formik, Form, Field, ErrorMessage } from "formik";
+import { useRouter } from "next/navigation";
+import { Formik, Form, } from "formik";
 import * as Yup from "yup";
 
 
@@ -42,7 +42,6 @@ type ClientFormValues = {
 
 const AddNewClient: React.FC<AddNewClientProps> = ({ client }) => {
     const router = useRouter();
-    const params = useSearchParams();
     const userId = useUserStore((state) => state.userId);
 
     const { data: businessList, loading: bizLoading } =
