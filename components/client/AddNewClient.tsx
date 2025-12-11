@@ -11,6 +11,7 @@ import { Spin, Button } from "antd";
 import { CREATE_CLIENT, UPDATE_CLIENT } from "@/lib/graphql/mutations/invoice.mutations";
 import { FIND_ONE_CLIENT } from "@/lib/graphql/queries/invoice.queries";
 import { useQuery, useMutation } from "@apollo/client/react";
+import { useUserStore } from "@/lib/store/userStore";
 
 // ------------ VALIDATION SCHEMA ------------
 const ClientSchema = Yup.object().shape({
@@ -38,6 +39,8 @@ type ClientFormValues = {
 const AddNewClient = () => {
     const router = useRouter();
     const params = useSearchParams();
+    const userId = useUserStore((state) => state.userId);
+    console.log("User ID from store:", userId);
 
     const clientId = params.get("id"); // for edit mode
 

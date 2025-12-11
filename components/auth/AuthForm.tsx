@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import { LOGIN_MUTATION, REGISTER_MUTATION } from "@/lib/graphql/mutations";
 import { useRouter } from "next/navigation";
+import { useUserStore } from "@/lib/store/userStore";
 
 interface AuthFormProps {
   type: "login" | "register";
@@ -46,7 +47,8 @@ interface LoginVariables {
 
 
 const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
-  const router = useRouter()
+  const router = useRouter();
+  const setUserId = useUserStore((state) => state.setUserId);
   const isRegister = type === "register";
   const [formData, setFormData] = useState<RegisterInput>({
     name: "",
@@ -127,6 +129,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
       if (data?.login) {
         if (typeof window !== "undefined") {
           localStorage.setItem("user", JSON.stringify(data.login));
+          setUserId(data.login.userId);
         }
         setFormSuccess("Logged in successfully.");
         setFormData((prev) => ({ ...prev, password: "", email: "" }));
