@@ -42,7 +42,7 @@ const InvoiceForm = ({ onUpdate }: InvoiceFormProps) => {
   const initialValues: InvoiceFormValues = {
     client: "",
     business: "",
-    currency: "USD",
+    currency: "BDT",
     issueDate: "",
     dueDate: "",
     items: [{ description: "", qty: 1, price: 0 }],
@@ -122,21 +122,38 @@ const InvoiceForm = ({ onUpdate }: InvoiceFormProps) => {
 
           {/* Dates & Currency */}
           <div className="grid grid-cols-3 gap-4">
-            <Field
-              name="currency"
-              placeholder="USD"
-              className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none uppercase"
-            />
-            <Field
-              type="date"
-              name="issueDate"
-              className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-            <Field
-              type="date"
-              name="dueDate"
-              className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            />
+            <div>
+              <label className="font-medium text-gray-700 text-sm block">
+                Issue Date
+              </label>
+              <Field
+                type="date"
+                name="issueDate"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="font-medium text-gray-700 text-sm block">
+                Due Client
+              </label>
+              <Field
+                type="date"
+                name="dueDate"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="font-medium text-gray-700 text-sm">
+                Currency
+              </label>
+              <Field
+                as="select"
+                name="currency"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="BDT">BDT</option>
+              </Field>
+            </div>
           </div>
 
           {/* Items */}
