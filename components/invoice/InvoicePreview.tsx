@@ -90,7 +90,7 @@ const InvoicePreview = ({ data }: InvoicePreviewProps) => {
                 <td className="p-2">{item.description}</td>
                 <td className="text-center p-2">{item.qty}</td>
                 <td className="text-center p-2">
-                  {data.currency} {item.price.toFixed(2)}
+                  {data.currency} {Number(item.price || 0).toFixed(2)}
                 </td>
                 <td className="text-right p-2 font-medium">
                   {data.currency} {(item.qty * item.price).toFixed(2)}
