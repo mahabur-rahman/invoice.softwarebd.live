@@ -3,6 +3,7 @@
 import { useState } from "react";
 import InvoiceForm from "@/components/invoice/InvoiceForm";
 import InvoicePreview from "@/components/invoice/InvoicePreview";
+import AddInvoiceColumnModal from "@/components/invoice/AddInvoiceColumnModal";
 
 interface InvoiceItem {
   description: string;
@@ -24,22 +25,41 @@ export interface InvoiceFormValues {
   total: number;
 }
 
+export type InvoiceColumnInput = {
+  id?: string;
+  fieldKey: string;
+  label: string;
+  type: string;
+  order: number;
+  behavior: "ADD" | "SUBTRACT" | "NONE";
+};
+
+
 const Page = () => {
   const [invoiceData, setInvoiceData] = useState<InvoiceFormValues | null>(
     null
   );
+  const [columns, setColumns] = useState<InvoiceColumnInput[]>([]);
+  console.log(columns)
+  const [addcolumnModalOpen, setAddColumnModalOpen] = useState(false);
 
   console.log('invoice data is ', invoiceData)
 
   return (
     <div className="min-h-screen  flex flex-col gap-8">
       <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg p-6">
-        <InvoiceForm onUpdate={setInvoiceData} />
+        <InvoiceForm onUpdate={setInvoiceData} setAddColumnModalOpen={setAddColumnModalOpen}/>
       </div>
 
       <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg p-6">
         <InvoicePreview data={invoiceData} />
       </div>
+      <AddInvoiceColumnModal
+        open={addcolumnModalOpen}
+        onClose={() => setAddColumnModalOpen(false)}
+        columns={columns}
+        setColumns={setColumns}
+      />
     </div>
   );
 };

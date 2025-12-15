@@ -28,8 +28,10 @@ export interface InvoiceFormValues {
   total: number;
 }
 
+
 interface InvoiceFormProps {
   onUpdate: (data: InvoiceFormValues) => void;
+  setAddColumnModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const validationSchema = Yup.object({
@@ -38,7 +40,8 @@ const validationSchema = Yup.object({
   currency: Yup.string().required("Currency is required"),
 });
 
-const InvoiceForm = ({ onUpdate }: InvoiceFormProps) => {
+const InvoiceForm = ({ onUpdate, setAddColumnModalOpen }: InvoiceFormProps) => {
+
   const initialValues: InvoiceFormValues = {
     client: "",
     business: "",
@@ -160,7 +163,16 @@ const InvoiceForm = ({ onUpdate }: InvoiceFormProps) => {
           <FieldArray name="items">
             {({ push, remove }) => (
               <div className="space-y-2">
-                <h3 className="font-semibold text-gray-800">Items</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-800">Items</h3>
+                  <button
+                    type="button"
+                    className="cursor-pointer flex items-center gap-2 bg-blue-100 text-blue-600 px-3 py-2 rounded-md text-sm hover:bg-blue-200 transition"
+                    onClick={() => setAddColumnModalOpen(true)}
+                  >
+                    <FiPlus /> Add Column
+                  </button>
+                </div>
                 {values.items.map((item, i) => (
                   <div
                     key={i}
