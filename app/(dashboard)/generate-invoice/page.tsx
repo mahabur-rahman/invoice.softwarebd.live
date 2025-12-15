@@ -4,6 +4,8 @@ import { useState } from "react";
 import InvoiceForm from "@/components/invoice/InvoiceForm";
 import InvoicePreview from "@/components/invoice/InvoicePreview";
 import AddInvoiceColumnModal from "@/components/invoice/AddInvoiceColumnModal";
+import { CREATE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
+import { useMutation } from "@apollo/client/react";
 
 /* ================= TYPES ================= */
 
@@ -40,6 +42,9 @@ const Page = () => {
   const [invoiceData, setInvoiceData] =
     useState<InvoiceFormValues | null>(null);
 
+  // mutations
+  const [createInvoice, { loading }] = useMutation(CREATE_INVOICE);
+
   const [columns, setColumns] = useState<InvoiceColumnInput[]>([
     {
       fieldKey: "description",
@@ -50,7 +55,7 @@ const Page = () => {
       locked: true,
     },
     {
-      fieldKey: "qty",
+      fieldKey: "quantity",
       label: "Qty",
       type: "number",
       behavior: "NONE",
@@ -69,8 +74,52 @@ const Page = () => {
 
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
 
-  console.log('invoiceData', invoiceData)
-  // console.log('columns', columns)
+
+
+  const handleSubmit = async () => {
+
+    console.log('invoice data is ', invoiceData)
+    try {
+      console.log("submitted");
+
+      const { data } = await createInvoice({
+        variables: {
+          input: {
+            businessId: invoiceData?.business,
+            clientId: invoiceData?.client,
+            clientName: "Test Name", // make sure you have this
+            invoiceNumber: "1234",                  // generated invoice number
+            currency: "BDT",
+            issueDate: invoiceData?.issueDate,
+            dueDate: invoiceData?.dueDate,
+            notes: invoiceData?.notes,
+            status: "DRAFT",
+
+            columns: columns.map(({ locked, ...col }) => col),
+
+            items: invoiceData?.items.map((item) => ({
+              values: item,
+            })),
+
+            totals: {
+              additions: {
+                shipping: 0,
+                tax: 0
+              },
+              grandTotal: invoiceData?.total,
+              subTotal: invoiceData?.subtotal,
+              subtractions: {
+                discount: invoiceData?.discount
+              }
+            },
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Create invoice failed:", error);
+    }
+  };
+
 
   return (
     <div className="min-h-screen flex flex-col gap-8">
@@ -80,6 +129,7 @@ const Page = () => {
           setColumns={setColumns}
           onUpdate={setInvoiceData}
           setAddColumnModalOpen={setAddColumnModalOpen}
+          handleSubmit={handleSubmit}
         />
       </div>
 

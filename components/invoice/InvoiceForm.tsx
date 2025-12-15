@@ -20,6 +20,7 @@ interface InvoiceFormProps {
   setAddColumnModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   columns: InvoiceColumnInput[];
   setColumns: React.Dispatch<React.SetStateAction<InvoiceColumnInput[]>>;
+  handleSubmit: () => void;
 }
 
 /* ================= VALIDATION ================= */
@@ -37,6 +38,7 @@ const InvoiceForm = ({
   setAddColumnModalOpen,
   columns,
   setColumns,
+  handleSubmit
 }: InvoiceFormProps) => {
   /* ---------- helpers ---------- */
 
@@ -90,7 +92,7 @@ const InvoiceForm = ({
       initialValues={initialValues}
       validationSchema={validationSchema}
       validate={handleLiveUpdate}
-      onSubmit={() => { }}
+      onSubmit={() => { handleSubmit() }}
     >
       {({ values, setFieldValue }) => (
         <Form className="space-y-8">
@@ -250,8 +252,8 @@ const InvoiceForm = ({
                                 : "text"
                             }
                             className={`p-2 border rounded-md ${column.type === "number"
-                                ? "text-center"
-                                : "text-left"
+                              ? "text-center"
+                              : "text-left"
                               }`}
                           />
                         </div>
@@ -292,6 +294,13 @@ const InvoiceForm = ({
               className="w-full mt-1 p-2 border rounded-lg"
             />
           </div>
+
+          <button
+            type="submit"
+            className="flex cursor-pointer items-center gap-2 bg-blue-100 text-blue-600 px-3 py-2 rounded-md text-sm"
+          >
+            Create Invoice
+          </button>
         </Form>
       )}
     </Formik>
