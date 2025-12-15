@@ -5,11 +5,9 @@ import InvoiceForm from "@/components/invoice/InvoiceForm";
 import InvoicePreview from "@/components/invoice/InvoicePreview";
 import AddInvoiceColumnModal from "@/components/invoice/AddInvoiceColumnModal";
 
-interface InvoiceItem {
-  description: string;
-  qty: number;
-  price: number;
-}
+/* ================= TYPES ================= */
+
+export type InvoiceItem = Record<string, string | number>;
 
 export interface InvoiceFormValues {
   client: string;
@@ -29,16 +27,17 @@ export type InvoiceColumnInput = {
   id?: string;
   fieldKey: string;
   label: string;
-  type: string;
+  type: "text" | "number";
   order: number;
   behavior: "ADD" | "SUBTRACT" | "NONE";
+  locked?: boolean;
 };
 
+/* ================= PAGE ================= */
 
 const Page = () => {
-  const [invoiceData, setInvoiceData] = useState<InvoiceFormValues | null>(
-    null
-  );
+  const [invoiceData, setInvoiceData] =
+    useState<InvoiceFormValues | null>(null);
 
   const [columns, setColumns] = useState<InvoiceColumnInput[]>([
     {
@@ -47,6 +46,7 @@ const Page = () => {
       type: "text",
       behavior: "NONE",
       order: 1,
+      locked: true,
     },
     {
       fieldKey: "qty",
@@ -54,6 +54,7 @@ const Page = () => {
       type: "number",
       behavior: "NONE",
       order: 2,
+      locked: true,
     },
     {
       fieldKey: "price",
@@ -61,25 +62,32 @@ const Page = () => {
       type: "number",
       behavior: "NONE",
       order: 3,
+      locked: true,
     },
   ]);
 
+  const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
 
-  const [addcolumnModalOpen, setAddColumnModalOpen] = useState(false);
-
-  console.log('invoice data ', invoiceData)
+  console.log('invoiceData', invoiceData)
+  console.log('columns', columns)
 
   return (
-    <div className="min-h-screen  flex flex-col gap-8">
+    <div className="min-h-screen flex flex-col gap-8">
       <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg p-6">
-        <InvoiceForm columns={columns} onUpdate={setInvoiceData} setAddColumnModalOpen={setAddColumnModalOpen} />
+        <InvoiceForm
+          columns={columns}
+          setColumns={setColumns}
+          onUpdate={setInvoiceData}
+          setAddColumnModalOpen={setAddColumnModalOpen}
+        />
       </div>
 
       <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg p-6">
         <InvoicePreview data={invoiceData} />
       </div>
+
       <AddInvoiceColumnModal
-        open={addcolumnModalOpen}
+        open={addColumnModalOpen}
         onClose={() => setAddColumnModalOpen(false)}
         columns={columns}
         setColumns={setColumns}

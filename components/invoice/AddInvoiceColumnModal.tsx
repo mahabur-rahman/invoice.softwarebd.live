@@ -13,7 +13,6 @@ type Props = {
 export default function AddInvoiceColumnModal({
     open,
     onClose,
-    columns,
     setColumns,
 }: Props) {
     const [form] = Form.useForm();
