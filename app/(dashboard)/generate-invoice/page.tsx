@@ -21,6 +21,7 @@ export interface InvoiceFormValues {
   paid: number;
   subtotal: number;
   total: number;
+  columns: InvoiceColumnInput[]
 }
 
 export type InvoiceColumnInput = {
@@ -69,7 +70,7 @@ const Page = () => {
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
 
   console.log('invoiceData', invoiceData)
-  console.log('columns', columns)
+  // console.log('columns', columns)
 
   return (
     <div className="min-h-screen flex flex-col gap-8">

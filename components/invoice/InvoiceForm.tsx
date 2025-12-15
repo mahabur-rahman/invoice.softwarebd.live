@@ -58,6 +58,7 @@ const InvoiceForm = ({
     paid: 0,
     subtotal: 0,
     total: 0,
+    columns: columns
   };
 
   const handleLiveUpdate = (values: InvoiceFormValues) => {
@@ -89,7 +90,7 @@ const InvoiceForm = ({
       initialValues={initialValues}
       validationSchema={validationSchema}
       validate={handleLiveUpdate}
-      onSubmit={() => {}}
+      onSubmit={() => { }}
     >
       {({ values, setFieldValue }) => (
         <Form className="space-y-8">
@@ -204,9 +205,8 @@ const InvoiceForm = ({
                       return (
                         <div
                           key={column.fieldKey}
-                          className={`flex flex-col gap-1 ${
-                            isDescription ? "col-span-6" : "col-span-2"
-                          }`}
+                          className={`flex flex-col gap-1 ${isDescription ? "col-span-6" : "col-span-2"
+                            }`}
                         >
                           <div className="flex justify-between">
                             <label className="text-sm font-medium">
@@ -249,11 +249,10 @@ const InvoiceForm = ({
                                 ? "number"
                                 : "text"
                             }
-                            className={`p-2 border rounded-md ${
-                              column.type === "number"
+                            className={`p-2 border rounded-md ${column.type === "number"
                                 ? "text-center"
                                 : "text-left"
-                            }`}
+                              }`}
                           />
                         </div>
                       );
