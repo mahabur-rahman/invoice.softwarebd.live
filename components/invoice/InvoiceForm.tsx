@@ -4,8 +4,9 @@ import { Formik, Form, Field, FieldArray } from "formik";
 import * as Yup from "yup";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 import { useQuery } from "@apollo/client/react";
-import { GetMyBusinessesQuery } from "@/lib/graphql/generated-types";
+import { ClientType, GetMyBusinessesQuery } from "@/lib/graphql/generated-types";
 import { GET_MY_BUSINESSES } from "@/lib/graphql/queries";
+import { GET_ALL_CLIENTS } from "@/lib/graphql/queries/invoice.queries";
 
 interface InvoiceItem {
   description: string;
@@ -62,6 +63,9 @@ const InvoiceForm = ({ onUpdate }: InvoiceFormProps) => {
   const { data: businessData } =
     useQuery<GetMyBusinessesQuery>(GET_MY_BUSINESSES);
 
+  const { data: clientData } =
+    useQuery<{ findAllClients: ClientType[] }>(GET_ALL_CLIENTS);
+
   return (
     <Formik<InvoiceFormValues>
       initialValues={initialValues}
@@ -96,13 +100,21 @@ const InvoiceForm = ({ onUpdate }: InvoiceFormProps) => {
             </div>
             <div>
               <label className="font-medium text-gray-700 text-sm">
-                Client Name
+                Select Client
               </label>
               <Field
+                as="select"
                 name="client"
-                placeholder="John Doe"
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              />
+              >
+                <option value="">Select a client</option>
+
+                {clientData?.findAllClients.map((client) => (
+                  <option key={client._id} value={client._id}>
+                    {client.name}
+                  </option>
+                ))}
+              </Field>
             </div>
 
 
