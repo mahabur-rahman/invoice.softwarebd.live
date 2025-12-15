@@ -7,6 +7,7 @@ import { useQuery } from "@apollo/client/react";
 import { ClientType, GetMyBusinessesQuery } from "@/lib/graphql/generated-types";
 import { GET_MY_BUSINESSES } from "@/lib/graphql/queries";
 import { GET_ALL_CLIENTS } from "@/lib/graphql/queries/invoice.queries";
+import { InvoiceColumnInput } from "@/app/(dashboard)/generate-invoice/page";
 
 interface InvoiceItem {
   description: string;
@@ -32,6 +33,7 @@ export interface InvoiceFormValues {
 interface InvoiceFormProps {
   onUpdate: (data: InvoiceFormValues) => void;
   setAddColumnModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  columns: InvoiceColumnInput[]
 }
 
 const validationSchema = Yup.object({
@@ -40,7 +42,7 @@ const validationSchema = Yup.object({
   currency: Yup.string().required("Currency is required"),
 });
 
-const InvoiceForm = ({ onUpdate, setAddColumnModalOpen }: InvoiceFormProps) => {
+const InvoiceForm = ({ onUpdate, setAddColumnModalOpen, columns }: InvoiceFormProps) => {
 
   const initialValues: InvoiceFormValues = {
     client: "",
@@ -178,23 +180,24 @@ const InvoiceForm = ({ onUpdate, setAddColumnModalOpen }: InvoiceFormProps) => {
                     key={i}
                     className="grid grid-cols-12 gap-3 bg-gray-50 border border-gray-200 rounded-lg p-3"
                   >
-                    <Field
-                      name={`items.${i}.description`}
-                      placeholder="Description"
-                      className="col-span-6 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
-                    <Field
-                      name={`items.${i}.qty`}
-                      type="number"
-                      placeholder="Qty"
-                      className="col-span-2 p-2 border border-gray-300 rounded-md text-center focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
-                    <Field
-                      name={`items.${i}.price`}
-                      type="number"
-                      placeholder="Price"
-                      className="col-span-3 p-2 border border-gray-300 rounded-md text-center focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
+                    {columns.map((column) => {
+                      const isDescription = column.fieldKey === "description";
+
+                      return (
+                        <Field
+                          key={column.fieldKey}
+                          name={`items.${i}.${column.fieldKey}`}
+                          type={column.type === "number" ? "number" : "text"}
+                          placeholder={column.label}
+                          className={`
+            p-2 border border-gray-300 rounded-md outline-none
+            focus:ring-2 focus:ring-blue-500
+            ${isDescription ? "col-span-6 text-left" : "col-span-2 text-center"}
+          `}
+                        />
+                      );
+                    })}
+
                     <button
                       type="button"
                       onClick={() => remove(i)}
@@ -204,6 +207,7 @@ const InvoiceForm = ({ onUpdate, setAddColumnModalOpen }: InvoiceFormProps) => {
                     </button>
                   </div>
                 ))}
+
                 <button
                   type="button"
                   onClick={() =>

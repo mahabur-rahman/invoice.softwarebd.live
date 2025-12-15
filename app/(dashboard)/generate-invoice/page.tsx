@@ -67,12 +67,12 @@ const Page = () => {
 
   const [addcolumnModalOpen, setAddColumnModalOpen] = useState(false);
 
-  console.log('columns ', columns)
+  console.log('invoice data ', invoiceData)
 
   return (
     <div className="min-h-screen  flex flex-col gap-8">
       <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg p-6">
-        <InvoiceForm onUpdate={setInvoiceData} setAddColumnModalOpen={setAddColumnModalOpen} />
+        <InvoiceForm columns={columns} onUpdate={setInvoiceData} setAddColumnModalOpen={setAddColumnModalOpen} />
       </div>
 
       <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg p-6">
