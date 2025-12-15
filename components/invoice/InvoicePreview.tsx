@@ -10,7 +10,7 @@ interface InvoiceItem {
 
 interface InvoiceData {
   client: string;
-  clientCompany: string;
+  business: string;
   currency: string;
   issueDate: string;
   dueDate: string;
@@ -71,7 +71,7 @@ const InvoicePreview = ({ data }: InvoicePreviewProps) => {
         <div className="mb-4">
           <h3 className="font-semibold text-gray-700">Bill To:</h3>
           <p className="text-gray-800">{data.client}</p>
-          <p className="text-gray-600 text-sm">{data.clientCompany}</p>
+          <p className="text-gray-600 text-sm">{data.business}</p>
         </div>
 
         {/* Items Table */}

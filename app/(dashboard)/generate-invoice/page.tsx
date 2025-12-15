@@ -12,7 +12,7 @@ interface InvoiceItem {
 
 export interface InvoiceFormValues {
   client: string;
-  clientCompany: string;
+  business: string;
   currency: string;
   issueDate: string;
   dueDate: string;
@@ -28,6 +28,8 @@ const Page = () => {
   const [invoiceData, setInvoiceData] = useState<InvoiceFormValues | null>(
     null
   );
+
+  console.log('invoice data is ', invoiceData)
 
   return (
     <div className="min-h-screen  flex flex-col gap-8">

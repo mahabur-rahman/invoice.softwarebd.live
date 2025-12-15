@@ -3,6 +3,9 @@
 import { Formik, Form, Field, FieldArray } from "formik";
 import * as Yup from "yup";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
+import { useQuery } from "@apollo/client/react";
+import { GetMyBusinessesQuery } from "@/lib/graphql/generated-types";
+import { GET_MY_BUSINESSES } from "@/lib/graphql/queries";
 
 interface InvoiceItem {
   description: string;
@@ -12,7 +15,7 @@ interface InvoiceItem {
 
 export interface InvoiceFormValues {
   client: string;
-  clientCompany: string;
+  business: string;
   currency: string;
   issueDate: string;
   dueDate: string;
@@ -37,7 +40,7 @@ const validationSchema = Yup.object({
 const InvoiceForm = ({ onUpdate }: InvoiceFormProps) => {
   const initialValues: InvoiceFormValues = {
     client: "",
-    clientCompany: "",
+    business: "",
     currency: "USD",
     issueDate: "",
     dueDate: "",
@@ -49,20 +52,22 @@ const InvoiceForm = ({ onUpdate }: InvoiceFormProps) => {
     total: 0,
   };
 
-  // ✅ This helper keeps your preview updated without any hooks inside Formik
   const handleLiveUpdate = (values: InvoiceFormValues) => {
     const subtotal = values.items.reduce((sum, i) => sum + i.qty * i.price, 0);
     const total = subtotal - values.discount - values.paid;
     onUpdate({ ...values, subtotal, total });
-    return {}; // must return an object to satisfy Formik’s validate
+    return {};
   };
+
+  const { data: businessData } =
+    useQuery<GetMyBusinessesQuery>(GET_MY_BUSINESSES);
 
   return (
     <Formik<InvoiceFormValues>
       initialValues={initialValues}
       validationSchema={validationSchema}
-      onSubmit={() => {}}
-      validate={handleLiveUpdate} // ✅ Live updates happen here safely
+      onSubmit={() => { }}
+      validate={handleLiveUpdate}
     >
       {({ values }) => (
         <Form className="space-y-6">
@@ -70,6 +75,25 @@ const InvoiceForm = ({ onUpdate }: InvoiceFormProps) => {
 
           {/* Client Info */}
           <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="font-medium text-gray-700 text-sm">
+                Select Business
+              </label>
+
+              <Field
+                as="select"
+                name="business"
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="">Select a business</option>
+
+                {businessData?.myBusinesses.map((business) => (
+                  <option key={business._id} value={business._id}>
+                    {business.companyName}
+                  </option>
+                ))}
+              </Field>
+            </div>
             <div>
               <label className="font-medium text-gray-700 text-sm">
                 Client Name
@@ -80,16 +104,8 @@ const InvoiceForm = ({ onUpdate }: InvoiceFormProps) => {
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
-            <div>
-              <label className="font-medium text-gray-700 text-sm">
-                Client Company
-              </label>
-              <Field
-                name="clientCompany"
-                placeholder="Doe Industries"
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
+
+
           </div>
 
           {/* Dates & Currency */}
