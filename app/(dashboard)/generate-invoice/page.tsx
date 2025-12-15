@@ -83,7 +83,7 @@ const Page = () => {
       </div>
 
       <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg p-6">
-        <InvoicePreview data={invoiceData} />
+        {/* <InvoicePreview data={invoiceData} /> */}
       </div>
 
       <AddInvoiceColumnModal
