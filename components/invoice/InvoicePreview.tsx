@@ -4,31 +4,9 @@ import { useRef } from "react";
 import { useQuery } from "@apollo/client/react";
 import { useReactToPrint, UseReactToPrintOptions } from "react-to-print";
 import { InvoiceColumnInput } from "@/app/(dashboard)/generate-invoice/page";
-import { gql } from "@apollo/client";
-
-/* ================= MOCK QUERIES ================= */
-
-const GET_BUSINESS_BY_ID = gql`
-  query GetBusinessById($id: String!) {
-    business(id: $id) {
-      id
-      companyName
-      address
-      email
-    }
-  }
-`;
-
-const GET_CLIENT_BY_ID = gql`
-  query GetClientById($id: String!) {
-    client(id: $id) {
-      id
-      name
-      email
-      address
-    }
-  }
-`;
+import { FIND_ONE_CLIENT, SINGLE_BUSINESS_QUERY } from "@/lib/graphql/queries/invoice.queries";
+import { BusinessType, ClientType } from "@/lib/graphql/generated-types";
+import { SingleBusinessQueryResponse, SingleClientQueryResponse } from "@/lib/interfaces/responseTypes";
 
 /* ================= TYPES ================= */
 
@@ -66,12 +44,12 @@ const InvoicePreview = ({ data, columns }: InvoicePreviewProps) => {
     removeAfterPrint: true,
   } as UseReactToPrintOptions);
 
-  const { data: businessData } = useQuery(GET_BUSINESS_BY_ID, {
+  const { data: businessData } = useQuery<SingleBusinessQueryResponse>(SINGLE_BUSINESS_QUERY, {
     skip: !data?.business,
     variables: { id: data?.business ?? "" },
   });
 
-  const { data: clientData } = useQuery(GET_CLIENT_BY_ID, {
+  const { data: clientData } = useQuery<SingleClientQueryResponse>(FIND_ONE_CLIENT, {
     skip: !data?.client,
     variables: { id: data?.client ?? "" },
   });
@@ -83,9 +61,6 @@ const InvoicePreview = ({ data, columns }: InvoicePreviewProps) => {
       </div>
     );
   }
-
-  const business = businessData?.business;
-  const client = clientData?.client;
 
   /* ================= RENDER ================= */
 
@@ -100,12 +75,12 @@ const InvoicePreview = ({ data, columns }: InvoicePreviewProps) => {
         <div className="flex justify-between border-b pb-4 mb-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-800">
-              {business?.companyName || "Dummy"}
+              {businessData?.singleBusiness?.companyName || "Company Name"}
             </h2>
             <p className="text-sm text-gray-600">
-              {business?.address || "Dummy"}
+              {businessData?.singleBusiness?.location || "Dummy"}
               <br />
-              {business?.email || "Dummy"}
+              {businessData?.singleBusiness.contactEmail || "Dummy"}
             </p>
           </div>
 
@@ -119,9 +94,9 @@ const InvoicePreview = ({ data, columns }: InvoicePreviewProps) => {
 
         <div className="mb-4">
           <h3 className="font-semibold text-gray-700">Bill To:</h3>
-          <p>{client?.name || "Dummy"}</p>
+          <p>{clientData?.findOneClient?.name || "Dummy"}</p>
           <p className="text-sm text-gray-600">
-            {client?.address || "Dummy"}
+            {clientData?.findOneClient?.address || "Dummy"}
           </p>
         </div>
 
