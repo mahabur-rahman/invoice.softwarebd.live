@@ -5,7 +5,6 @@ import { useQuery } from "@apollo/client/react";
 import { useReactToPrint, UseReactToPrintOptions } from "react-to-print";
 import { InvoiceColumnInput } from "@/app/(dashboard)/generate-invoice/page";
 import { FIND_ONE_CLIENT, SINGLE_BUSINESS_QUERY } from "@/lib/graphql/queries/invoice.queries";
-import { BusinessType, ClientType } from "@/lib/graphql/generated-types";
 import { SingleBusinessQueryResponse, SingleClientQueryResponse } from "@/lib/interfaces/responseTypes";
 
 /* ================= TYPES ================= */
@@ -136,7 +135,7 @@ const InvoicePreview = ({ data, columns }: InvoicePreviewProps) => {
                     }`}
                   >
                     {col.type === "number"
-                      ? `${data.currency} ${Number(
+                      ? `${Number(
                           item[col.fieldKey] || 0
                         ).toFixed(2)}`
                       : String(item[col.fieldKey] ?? "")}

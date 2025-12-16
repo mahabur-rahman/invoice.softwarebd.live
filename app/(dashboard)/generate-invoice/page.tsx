@@ -103,6 +103,7 @@ const Page = () => {
       total: invoiceData.total,
 
       items: invoiceData.items.map((item) => ({
+        ...item,
         description: String(item.description ?? ""),
         quantity: Number(item.quantity ?? 0),
         price: Number(item.price ?? 0),
