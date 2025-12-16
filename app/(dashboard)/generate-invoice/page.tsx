@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import InvoiceForm from "@/components/invoice/InvoiceForm";
 import AddInvoiceColumnModal from "@/components/invoice/AddInvoiceColumnModal";
+import InvoicePreview from "@/components/invoice/InvoicePreview";
 import { CREATE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
 import { useMutation } from "@apollo/client/react";
 import { v4 as uuid } from "uuid";
@@ -41,7 +42,7 @@ const Page = () => {
   const [invoiceData, setInvoiceData] =
     useState<InvoiceFormValues | null>(null);
 
-  const [createInvoice, { loading }] = useMutation(CREATE_INVOICE);
+  const [createInvoice] = useMutation(CREATE_INVOICE);
 
   const [columns, setColumns] = useState<InvoiceColumnInput[]>([
     {
@@ -84,12 +85,35 @@ const Page = () => {
 
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
 
+  /* ================= PREVIEW DATA (KEY FIX) ================= */
+
+  const previewData = useMemo(() => {
+    if (!invoiceData) return null;
+
+    return {
+      client: invoiceData.client,
+      business: invoiceData.business,
+      currency: invoiceData.currency,
+      issueDate: invoiceData.issueDate,
+      dueDate: invoiceData.dueDate,
+      notes: invoiceData.notes,
+      subtotal: invoiceData.subtotal,
+      discount: invoiceData.discount,
+      paid: invoiceData.paid,
+      total: invoiceData.total,
+
+      items: invoiceData.items.map((item) => ({
+        description: String(item.description ?? ""),
+        quantity: Number(item.quantity ?? 0),
+        price: Number(item.price ?? 0),
+        total: Number(item.total ?? 0),
+      })),
+    };
+  }, [invoiceData]);
+
   /* ================= SUBMIT ================= */
 
   const handleSubmit = async () => {
-
-    console.log('invoice data ', invoiceData)
-
     if (!invoiceData) return;
 
     const itemsForApi = invoiceData.items.map((item, index) => {
@@ -139,6 +163,8 @@ const Page = () => {
     });
   };
 
+  /* ================= RENDER ================= */
+
   return (
     <div className="min-h-screen flex flex-col gap-8 bg-gray-50 p-6">
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
@@ -157,6 +183,8 @@ const Page = () => {
         columns={columns}
         setColumns={setColumns}
       />
+
+      <InvoicePreview data={previewData} columns={columns}/>
     </div>
   );
 };
