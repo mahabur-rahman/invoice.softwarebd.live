@@ -83,6 +83,7 @@ const Page = () => {
       <InvoicePreview
         data={previewData}
         columns={data?.singleInvoice.columns ?? []}
+        showPrintButton
       />
     </div>
   );

@@ -30,11 +30,12 @@ interface InvoiceData {
 interface InvoicePreviewProps {
   data: InvoiceData | null;
   columns: InvoiceColumnInput[];
+  showPrintButton?: boolean;
 }
 
 /* ================= COMPONENT ================= */
 
-const InvoicePreview = ({ data, columns }: InvoicePreviewProps) => {
+const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps) => {
   const componentRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
@@ -107,11 +108,10 @@ const InvoicePreview = ({ data, columns }: InvoicePreviewProps) => {
               {columns.map((col) => (
                 <th
                   key={col.fieldKey}
-                  className={`p-2 ${
-                    col.type === "number"
-                      ? "text-right"
-                      : "text-left"
-                  }`}
+                  className={`p-2 ${col.type === "number"
+                    ? "text-right"
+                    : "text-left"
+                    }`}
                 >
                   {col.label}
                 </th>
@@ -128,16 +128,15 @@ const InvoicePreview = ({ data, columns }: InvoicePreviewProps) => {
                 {columns.map((col) => (
                   <td
                     key={col.fieldKey}
-                    className={`p-2 ${
-                      col.type === "number"
-                        ? "text-right"
-                        : "text-left"
-                    }`}
+                    className={`p-2 ${col.type === "number"
+                      ? "text-right"
+                      : "text-left"
+                      }`}
                   >
                     {col.type === "number"
                       ? `${Number(
-                          item[col.fieldKey] || 0
-                        ).toFixed(2)}`
+                        item[col.fieldKey] || 0
+                      ).toFixed(2)}`
                       : String(item[col.fieldKey] ?? "")}
                   </td>
                 ))}
@@ -178,14 +177,18 @@ const InvoicePreview = ({ data, columns }: InvoicePreviewProps) => {
 
       {/* ================= PRINT ================= */}
 
-      <div className="flex justify-end mt-4">
-        <button
-          onClick={handlePrint}
-          className="bg-gray-800 text-white px-4 py-2 rounded-md"
-        >
-          Print Invoice
-        </button>
-      </div>
+      {
+        showPrintButton &&
+
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={handlePrint}
+            className="bg-gray-800 text-white px-4 py-2 rounded-md"
+          >
+            Print Invoice
+          </button>
+        </div>
+      }
     </div>
   );
 };
