@@ -6,6 +6,7 @@ import { useReactToPrint, UseReactToPrintOptions } from "react-to-print";
 import { InvoiceColumnInput } from "@/app/(dashboard)/(invoice)/generate-invoice/page";
 import { FIND_ONE_CLIENT, SINGLE_BUSINESS_QUERY } from "@/lib/graphql/queries/invoice.queries";
 import { SingleBusinessQueryResponse, SingleClientQueryResponse } from "@/lib/interfaces/responseTypes";
+import Image from "next/image";
 
 /* ================= TYPES ================= */
 
@@ -82,6 +83,16 @@ const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps)
               <br />
               {businessData?.singleBusiness.contactEmail || "Dummy"}
             </p>
+          </div>
+
+          <div>
+            <Image
+              alt="logo"
+              src={businessData?.singleBusiness?.logoUrl || ""}
+              className="h-16 w-auto"
+              width={400}
+              height={400}
+            />
           </div>
 
           <div className="text-right text-sm">
