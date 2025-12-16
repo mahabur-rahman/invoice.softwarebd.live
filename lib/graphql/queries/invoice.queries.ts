@@ -59,10 +59,94 @@ export const FIND_ONE_CLIENT = gql`
 `;
 
 export const GET_MY_BUSINESSES_ID = gql`
-  query GetMyBusinesses {
+  query GetMyBusinessesId {
     myBusinesses {
       _id
       companyName
+    }
+  }
+`;
+
+
+export const GET_MY_INVOICES = gql`
+  query MyInvoices {
+    myInvoices {
+      _id
+      invoiceNumber
+      businessInfo{
+        companyName
+        contactEmail
+      }
+      clientInfo{
+        name
+      }
+      currency
+      status
+      issueDate
+      dueDate
+      totals {
+        subTotal
+        grandTotal
+      }
+      createdAt
+    }
+  }
+`;
+
+
+
+export const SINGLE_INVOICE_QUERY = gql`
+  query SingleInvoice($id: ID!) {
+    singleInvoice(id: $id) {
+      _id
+      businessId
+      businessInfo {
+        companyName
+        location
+        contactEmail
+      }
+      clientId
+      clientInfo {
+        name
+        address
+      }
+      invoiceNumber
+      currency
+      issueDate
+      dueDate
+      notes
+      status
+      columns {
+        id
+        fieldKey
+        label
+        type
+        order
+        behavior
+      }
+      items {
+        id
+        order
+        itemTotal
+        values{
+        description
+        price
+        quantity
+        }
+      }
+      totals {
+        subTotal
+        grandTotal
+        additions{
+          shipping
+          tax
+        }
+        subtractions{
+          discount
+        }
+      }
+      createdAt
+      updatedAt
     }
   }
 `;

@@ -12,6 +12,7 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
+  JSON: { input: any; output: any; }
   Timestamp: { input: any; output: any; }
 };
 
@@ -67,6 +68,11 @@ export type ClientType = {
   userId: Maybe<Scalars['String']['output']>;
 };
 
+export type ColumnBehavior =
+  | 'ADD'
+  | 'NONE'
+  | 'SUBTRACT';
+
 export type CreateBusinessInput = {
   companyName: InputMaybe<Scalars['String']['input']>;
   contactEmail: InputMaybe<Scalars['String']['input']>;
@@ -88,21 +94,25 @@ export type CreateClientInput = {
 };
 
 export type CreateInvoiceInput = {
-  businessId: Scalars['ID']['input'];
-  clientId: Scalars['ID']['input'];
+  businessId: Scalars['String']['input'];
+  clientId: Scalars['String']['input'];
+  clientName: InputMaybe<Scalars['String']['input']>;
+  columns: InputMaybe<Array<InvoiceColumnInput>>;
   currency: Currency;
-  discount: Scalars['Float']['input'];
   dueDate: Scalars['String']['input'];
+  invoiceNumber: Scalars['String']['input'];
   issueDate: Scalars['String']['input'];
-  items: Array<InvoiceItemInput>;
-  note: InputMaybe<Scalars['String']['input']>;
-  subTotal: Scalars['Float']['input'];
-  totalPaid: Scalars['Float']['input'];
+  items: InputMaybe<Array<InvoiceItemInput>>;
+  notes: InputMaybe<Scalars['String']['input']>;
+  status: InputMaybe<InvoiceStatus>;
+  totals: InputMaybe<InvoiceTotalsInput>;
 };
 
-/** Currency type for invoice */
 export type Currency =
   | 'BDT'
+  | 'EUR'
+  | 'GBP'
+  | 'INR'
   | 'USD';
 
 export type DeleteResponse = {
@@ -111,46 +121,99 @@ export type DeleteResponse = {
   success: Scalars['Boolean']['output'];
 };
 
-export type InvoiceItem = {
-  __typename?: 'InvoiceItem';
-  description: Scalars['String']['output'];
-  price: Scalars['Float']['output'];
-  qty: Scalars['Float']['output'];
-  total: Scalars['Float']['output'];
+export type InvoiceColumnInput = {
+  behavior: ColumnBehavior;
+  fieldKey: Scalars['String']['input'];
+  id: Scalars['String']['input'];
+  label: Scalars['String']['input'];
+  order: Scalars['Int']['input'];
+  type: Scalars['String']['input'];
+};
+
+export type InvoiceColumnType = {
+  __typename?: 'InvoiceColumnType';
+  behavior: ColumnBehavior;
+  fieldKey: Scalars['String']['output'];
+  id: Scalars['String']['output'];
+  label: Scalars['String']['output'];
+  order: Scalars['Int']['output'];
+  type: Scalars['String']['output'];
 };
 
 export type InvoiceItemInput = {
-  description: Scalars['String']['input'];
-  price: Scalars['Float']['input'];
-  qty: Scalars['Float']['input'];
-  total: Scalars['Float']['input'];
+  id: Scalars['String']['input'];
+  itemTotal: Scalars['Float']['input'];
+  order: Scalars['Int']['input'];
+  values: InvoiceItemValuesInput;
 };
 
 export type InvoiceItemType = {
   __typename?: 'InvoiceItemType';
+  id: Scalars['String']['output'];
+  itemTotal: Scalars['Float']['output'];
+  order: Scalars['Int']['output'];
+  values: InvoiceItemValuesType;
+};
+
+export type InvoiceItemValuesInput = {
+  description: Scalars['String']['input'];
+  extra: InputMaybe<Scalars['JSON']['input']>;
+  price: Scalars['Float']['input'];
+  quantity: Scalars['Float']['input'];
+};
+
+export type InvoiceItemValuesType = {
+  __typename?: 'InvoiceItemValuesType';
   description: Scalars['String']['output'];
+  extra: Maybe<Scalars['JSON']['output']>;
   price: Scalars['Float']['output'];
-  qty: Scalars['Float']['output'];
-  total: Scalars['Float']['output'];
+  quantity: Scalars['Float']['output'];
+};
+
+export type InvoiceStatus =
+  | 'CANCELLED'
+  | 'DRAFT'
+  | 'OVERDUE'
+  | 'PAID'
+  | 'PARTIALLY_PAID'
+  | 'SENT';
+
+export type InvoiceTotalsInput = {
+  additions: InputMaybe<TotalsAdditionsInput>;
+  grandTotal: Scalars['Float']['input'];
+  subTotal: Scalars['Float']['input'];
+  subtractions: InputMaybe<TotalsSubtractionsInput>;
+};
+
+export type InvoiceTotalsType = {
+  __typename?: 'InvoiceTotalsType';
+  additions: Maybe<TotalsAdditions>;
+  grandTotal: Scalars['Float']['output'];
+  subTotal: Scalars['Float']['output'];
+  subtractions: Maybe<TotalsSubtractions>;
 };
 
 export type InvoiceType = {
   __typename?: 'InvoiceType';
   _id: Scalars['ID']['output'];
-  amountDue: Scalars['Float']['output'];
-  businessId: Scalars['ID']['output'];
-  clientId: Scalars['ID']['output'];
-  createdAt: Scalars['Timestamp']['output'];
-  createdBy: Scalars['ID']['output'];
+  businessId: Scalars['String']['output'];
+  businessInfo: Maybe<BusinessType>;
+  clientId: Scalars['String']['output'];
+  clientInfo: Maybe<ClientType>;
+  clientName: Scalars['String']['output'];
+  columns: Maybe<Array<InvoiceColumnType>>;
+  createdAt: Scalars['String']['output'];
+  createdBy: Scalars['String']['output'];
+  createdByInfo: Maybe<UserType>;
   currency: Currency;
-  discount: Scalars['Float']['output'];
-  dueDate: Scalars['Timestamp']['output'];
-  issueDate: Scalars['Timestamp']['output'];
-  items: Array<InvoiceItemType>;
-  note: Maybe<Scalars['String']['output']>;
-  subTotal: Scalars['Float']['output'];
-  totalPaid: Scalars['Float']['output'];
-  updatedAt: Scalars['Timestamp']['output'];
+  dueDate: Scalars['String']['output'];
+  invoiceNumber: Scalars['String']['output'];
+  issueDate: Scalars['String']['output'];
+  items: Maybe<Array<InvoiceItemType>>;
+  notes: Maybe<Scalars['String']['output']>;
+  status: InvoiceStatus;
+  totals: Maybe<InvoiceTotalsType>;
+  updatedAt: Scalars['String']['output'];
 };
 
 export type LoginInput = {
@@ -193,7 +256,7 @@ export type MutationCreateClientArgs = {
 
 
 export type MutationCreateInvoiceArgs = {
-  createInvoiceInput: CreateInvoiceInput;
+  input: CreateInvoiceInput;
 };
 
 
@@ -208,7 +271,7 @@ export type MutationDeleteClientArgs = {
 
 
 export type MutationDeleteInvoiceArgs = {
-  invoiceId: Scalars['ID']['input'];
+  id: Scalars['ID']['input'];
 };
 
 
@@ -244,7 +307,7 @@ export type MutationUpdateClientArgs = {
 
 
 export type MutationUpdateInvoiceArgs = {
-  updateInvoiceInput: UpdateInvoiceInput;
+  input: UpdateInvoiceInput;
 };
 
 
@@ -258,9 +321,8 @@ export type Query = {
   findAllBusinesses: Array<BusinessType>;
   findAllClients: Array<ClientType>;
   findAllClientsAccessByAdmin: Array<ClientType>;
-  findAllInvoices: Array<InvoiceType>;
+  findAllInvoicesByAdmin: Array<InvoiceType>;
   findOneClient: ClientType;
-  findOneInvoice: InvoiceType;
   /** Health check endpoint */
   health: Scalars['String']['output'];
   /** A simple hello world query */
@@ -269,6 +331,7 @@ export type Query = {
   myBusinesses: Array<BusinessType>;
   myInvoices: Array<InvoiceType>;
   singleBusiness: BusinessType;
+  singleInvoice: InvoiceType;
 };
 
 
@@ -277,12 +340,12 @@ export type QueryFindOneClientArgs = {
 };
 
 
-export type QueryFindOneInvoiceArgs = {
-  invoiceId: Scalars['ID']['input'];
+export type QuerySingleBusinessArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
-export type QuerySingleBusinessArgs = {
+export type QuerySingleInvoiceArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -295,7 +358,28 @@ export type RegisterInput = {
   email: Scalars['String']['input'];
   name: InputMaybe<Scalars['String']['input']>;
   password: Scalars['String']['input'];
+  phone: InputMaybe<Scalars['String']['input']>;
   role: InputMaybe<Scalars['String']['input']>;
+};
+
+export type TotalsAdditions = {
+  __typename?: 'TotalsAdditions';
+  shipping: Maybe<Scalars['Float']['output']>;
+  tax: Maybe<Scalars['Float']['output']>;
+};
+
+export type TotalsAdditionsInput = {
+  shipping: InputMaybe<Scalars['Float']['input']>;
+  tax: InputMaybe<Scalars['Float']['input']>;
+};
+
+export type TotalsSubtractions = {
+  __typename?: 'TotalsSubtractions';
+  discount: Maybe<Scalars['Float']['output']>;
+};
+
+export type TotalsSubtractionsInput = {
+  discount: InputMaybe<Scalars['Float']['input']>;
 };
 
 export type UpdateBusinessInput = {
@@ -321,17 +405,20 @@ export type UpdateClientInput = {
 };
 
 export type UpdateInvoiceInput = {
-  businessId: InputMaybe<Scalars['ID']['input']>;
-  clientId: InputMaybe<Scalars['ID']['input']>;
+  businessId: InputMaybe<Scalars['String']['input']>;
+  clientId: InputMaybe<Scalars['String']['input']>;
+  clientName: InputMaybe<Scalars['String']['input']>;
+  columns: InputMaybe<Array<InvoiceColumnInput>>;
   currency: InputMaybe<Currency>;
-  discount: InputMaybe<Scalars['Float']['input']>;
   dueDate: InputMaybe<Scalars['String']['input']>;
+  /** The unique identifier of the invoice to update */
   id: Scalars['ID']['input'];
+  invoiceNumber: InputMaybe<Scalars['String']['input']>;
   issueDate: InputMaybe<Scalars['String']['input']>;
   items: InputMaybe<Array<InvoiceItemInput>>;
-  note: InputMaybe<Scalars['String']['input']>;
-  subTotal: InputMaybe<Scalars['Float']['input']>;
-  totalPaid: InputMaybe<Scalars['Float']['input']>;
+  notes: InputMaybe<Scalars['String']['input']>;
+  status: InputMaybe<InvoiceStatus>;
+  totals: InputMaybe<InvoiceTotalsInput>;
 };
 
 export type UpdateUserInput = {
@@ -347,6 +434,7 @@ export type User = {
   createdAt: Scalars['Timestamp']['output'];
   email: Scalars['String']['output'];
   name: Maybe<Scalars['String']['output']>;
+  phone: Maybe<Scalars['String']['output']>;
   role: Scalars['String']['output'];
   updatedAt: Scalars['Timestamp']['output'];
 };
@@ -355,6 +443,16 @@ export type User = {
 export type UserRole =
   | 'ADMIN'
   | 'USER';
+
+export type UserType = {
+  __typename?: 'UserType';
+  _id: Scalars['ID']['output'];
+  createdAt: Scalars['Timestamp']['output'];
+  email: Scalars['String']['output'];
+  name: Maybe<Scalars['String']['output']>;
+  role: Scalars['String']['output'];
+  updatedAt: Scalars['Timestamp']['output'];
+};
 
 export type RegisterMutationVariables = Exact<{
   registerInput: RegisterInput;
@@ -370,7 +468,86 @@ export type LoginMutationVariables = Exact<{
 
 export type LoginMutation = { __typename?: 'Mutation', login: { __typename?: 'AuthResponse', accessToken: string, refreshToken: string, userId: string } };
 
+export type DeleteBusinessMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteBusinessMutation = { __typename?: 'Mutation', deleteBusiness: { __typename?: 'DeleteResponse', message: string, success: boolean } };
+
+export type CreateBusinessMutationVariables = Exact<{
+  createBusinessInput: CreateBusinessInput;
+}>;
+
+
+export type CreateBusinessMutation = { __typename?: 'Mutation', createBusiness: { __typename?: 'BusinessType', _id: string } };
+
+export type UpdateBusinessMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  updateBusinessInput: UpdateBusinessInput;
+}>;
+
+
+export type UpdateBusinessMutation = { __typename?: 'Mutation', updateBusiness: { __typename?: 'BusinessType', _id: string, companyName: string | null, contactEmail: string | null, location: string | null, logoUrl: string | null, ownerId: string, phoneNumber: string | null, websiteUrl: string | null, createdAt: any, updatedAt: any } };
+
+export type DeleteClientMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteClientMutation = { __typename?: 'Mutation', deleteClient: { __typename?: 'DeleteResponse', message: string, success: boolean } };
+
+export type CreateClientMutationVariables = Exact<{
+  input: CreateClientInput;
+}>;
+
+
+export type CreateClientMutation = { __typename?: 'Mutation', createClient: { __typename?: 'ClientType', _id: string, name: string, email: string | null, phone: string | null, clientCompanyName: string | null, address: string | null, businessId: string, userId: string | null } };
+
+export type UpdateClientMutationVariables = Exact<{
+  input: UpdateClientInput;
+}>;
+
+
+export type UpdateClientMutation = { __typename?: 'Mutation', updateClient: { __typename?: 'ClientType', _id: string, name: string, email: string | null, phone: string | null, clientCompanyName: string | null, address: string | null, businessId: string, userId: string | null } };
+
+export type CreateInvoiceMutationVariables = Exact<{
+  input: CreateInvoiceInput;
+}>;
+
+
+export type CreateInvoiceMutation = { __typename?: 'Mutation', createInvoice: { __typename?: 'InvoiceType', _id: string } };
+
 export type GetMyBusinessesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type GetMyBusinessesQuery = { __typename?: 'Query', myBusinesses: Array<{ __typename?: 'BusinessType', _id: string, companyName: string | null, contactEmail: string | null, createdAt: any, location: string | null, logoUrl: string | null, ownerId: string, phoneNumber: string | null, updatedAt: any, websiteUrl: string | null, owner: { __typename?: 'User', _id: string, createdAt: any, email: string, name: string | null, role: string, updatedAt: any } | null }> };
+
+export type SingleBusinessQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SingleBusinessQuery = { __typename?: 'Query', singleBusiness: { __typename?: 'BusinessType', _id: string, companyName: string | null, contactEmail: string | null, createdAt: any, location: string | null, logoUrl: string | null, ownerId: string, phoneNumber: string | null, updatedAt: any, websiteUrl: string | null } };
+
+export type FindAllClientsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type FindAllClientsQuery = { __typename?: 'Query', findAllClients: Array<{ __typename?: 'ClientType', _id: string, address: string | null, businessId: string, clientCompanyName: string | null, createdAt: any, email: string | null, name: string, phone: string | null, updatedAt: any, userId: string | null, business: { __typename?: 'Business', _id: string, companyName: string | null } | null, user: { __typename?: 'User', _id: string, name: string | null } | null }> };
+
+export type FindOneClientQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type FindOneClientQuery = { __typename?: 'Query', findOneClient: { __typename?: 'ClientType', _id: string, name: string, address: string | null, clientCompanyName: string | null, email: string | null, phone: string | null, businessId: string, userId: string | null } };
+
+export type GetMyBusinessesIdQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetMyBusinessesIdQuery = { __typename?: 'Query', myBusinesses: Array<{ __typename?: 'BusinessType', _id: string, companyName: string | null }> };
+
+export type MyInvoicesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyInvoicesQuery = { __typename?: 'Query', myInvoices: Array<{ __typename?: 'InvoiceType', _id: string, invoiceNumber: string, currency: Currency, status: InvoiceStatus, issueDate: string, dueDate: string, createdAt: string, businessInfo: { __typename?: 'BusinessType', companyName: string | null, contactEmail: string | null } | null, clientInfo: { __typename?: 'ClientType', name: string } | null, totals: { __typename?: 'InvoiceTotalsType', subTotal: number, grandTotal: number } | null }> };

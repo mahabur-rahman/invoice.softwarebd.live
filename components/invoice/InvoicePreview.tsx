@@ -1,16 +1,22 @@
 "use client";
+
 import { useRef } from "react";
+import { useQuery } from "@apollo/client/react";
 import { useReactToPrint, UseReactToPrintOptions } from "react-to-print";
+import { InvoiceColumnInput } from "@/app/(dashboard)/(invoice)/generate-invoice/page";
+import { FIND_ONE_CLIENT, SINGLE_BUSINESS_QUERY } from "@/lib/graphql/queries/invoice.queries";
+import { SingleBusinessQueryResponse, SingleClientQueryResponse } from "@/lib/interfaces/responseTypes";
+import Image from "next/image";
+
+/* ================= TYPES ================= */
 
 interface InvoiceItem {
-  description: string;
-  qty: number;
-  price: number;
+  [key: string]: string | number;
 }
 
 interface InvoiceData {
   client: string;
-  clientCompany: string;
+  business: string;
   currency: string;
   issueDate: string;
   dueDate: string;
@@ -24,114 +30,176 @@ interface InvoiceData {
 
 interface InvoicePreviewProps {
   data: InvoiceData | null;
+  columns: InvoiceColumnInput[];
+  showPrintButton?: boolean;
 }
 
-const InvoicePreview = ({ data }: InvoicePreviewProps) => {
+/* ================= COMPONENT ================= */
+
+const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps) => {
   const componentRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Correctly typed react-to-print config
   const handlePrint = useReactToPrint({
     contentRef: componentRef,
     documentTitle: "Invoice",
     removeAfterPrint: true,
   } as UseReactToPrintOptions);
 
-  if (!data)
+  const { data: businessData } = useQuery<SingleBusinessQueryResponse>(SINGLE_BUSINESS_QUERY, {
+    skip: !data?.business,
+    variables: { id: data?.business ?? "" },
+  });
+
+  const { data: clientData } = useQuery<SingleClientQueryResponse>(FIND_ONE_CLIENT, {
+    skip: !data?.client,
+    variables: { id: data?.client ?? "" },
+  });
+
+  if (!data) {
     return (
       <div className="flex items-center justify-center h-64 text-gray-500">
         No invoice data yet.
       </div>
     );
+  }
+
+  /* ================= RENDER ================= */
 
   return (
     <div className="relative">
       <div
         ref={componentRef}
-        className="p-6 border border-gray-200 rounded-xl bg-white shadow-sm print:p-8 print:shadow-none print:border-0"
+        className="p-6 border border-gray-200 rounded-xl bg-white shadow-sm print:p-8 print:border-0"
       >
-        {/* Static Company Info */}
-        <div className="flex items-start justify-between border-b pb-4 mb-4">
+        {/* ================= COMPANY ================= */}
+
+        <div className="flex justify-between border-b pb-4 mb-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-800">
-              Apex Solutions Ltd.
+              {businessData?.singleBusiness?.companyName || "Company Name"}
             </h2>
             <p className="text-sm text-gray-600">
-              123 Business Avenue, New York, USA
+              {businessData?.singleBusiness?.location || "Dummy"}
               <br />
-              contact@apexsolutions.com
+              {businessData?.singleBusiness.contactEmail || "Dummy"}
             </p>
           </div>
-          <div className="text-right text-sm text-gray-700">
+
+          <div>
+            <Image
+              alt="logo"
+              src={businessData?.singleBusiness?.logoUrl || ""}
+              className="h-16 w-auto"
+              width={400}
+              height={400}
+            />
+          </div>
+
+          <div className="text-right text-sm">
             <p>Issue: {data.issueDate || "—"}</p>
             <p>Due: {data.dueDate || "—"}</p>
           </div>
         </div>
 
-        {/* Client Info */}
+        {/* ================= CLIENT ================= */}
+
         <div className="mb-4">
           <h3 className="font-semibold text-gray-700">Bill To:</h3>
-          <p className="text-gray-800">{data.client}</p>
-          <p className="text-gray-600 text-sm">{data.clientCompany}</p>
+          <p>{clientData?.findOneClient?.name || "Dummy"}</p>
+          <p className="text-sm text-gray-600">
+            {clientData?.findOneClient?.address || "Dummy"}
+          </p>
         </div>
 
-        {/* Items Table */}
+        {/* ================= ITEMS TABLE ================= */}
+
         <table className="w-full text-sm border border-gray-200 mb-4">
-          <thead className="bg-blue-600 text-white">
+          <thead className="bg-gray-800 text-white">
             <tr>
-              <th className="text-left p-2">Description</th>
-              <th className="text-center p-2">Qty</th>
-              <th className="text-center p-2">Price</th>
-              <th className="text-right p-2">Total</th>
+              {columns.map((col) => (
+                <th
+                  key={col.fieldKey}
+                  className={`p-2 ${col.type === "number"
+                    ? "text-right"
+                    : "text-left"
+                    }`}
+                >
+                  {col.label}
+                </th>
+              ))}
             </tr>
           </thead>
+
           <tbody>
-            {data.items.map((item: InvoiceItem, idx: number) => (
-              <tr key={idx} className="border-t border-gray-200">
-                <td className="p-2">{item.description}</td>
-                <td className="text-center p-2">{item.qty}</td>
-                <td className="text-center p-2">
-                  {data.currency} {item.price.toFixed(2)}
-                </td>
-                <td className="text-right p-2 font-medium">
-                  {data.currency} {(item.qty * item.price).toFixed(2)}
-                </td>
+            {data.items.map((item, idx) => (
+              <tr
+                key={idx}
+                className="border-t border-gray-200"
+              >
+                {columns.map((col) => (
+                  <td
+                    key={col.fieldKey}
+                    className={`p-2 ${col.type === "number"
+                      ? "text-right"
+                      : "text-left"
+                      }`}
+                  >
+                    {col.type === "number"
+                      ? `${Number(
+                        item[col.fieldKey] || 0
+                      ).toFixed(2)}`
+                      : String(item[col.fieldKey] ?? "")}
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
         </table>
 
-        {/* Totals */}
-        <div className="text-right space-y-1 text-sm text-gray-700">
+        {/* ================= TOTALS ================= */}
+
+        <div className="text-right space-y-1 text-sm">
           <p>
-            Subtotal: {data.currency} {data.subtotal.toFixed(2)}
+            Subtotal: {data.currency}{" "}
+            {data.subtotal.toFixed(2)}
           </p>
           <p>
-            Discount: {data.currency} {data.discount.toFixed(2)}
+            Discount: {data.currency}{" "}
+            {data.discount.toFixed(2)}
           </p>
           <p>
-            Paid: {data.currency} {data.paid.toFixed(2)}
+            Paid: {data.currency}{" "}
+            {data.paid.toFixed(2)}
           </p>
-          <h3 className="text-lg font-semibold text-blue-700 mt-2">
-            Amount Due: {data.currency} {data.total.toFixed(2)}
+
+          <h3 className="text-lg font-semibold mt-2">
+            Amount Due: {data.currency}{" "}
+            {data.total.toFixed(2)}
           </h3>
         </div>
 
-        {/* Notes */}
+        {/* ================= NOTES ================= */}
+
         <div className="mt-4 border-t pt-4 text-sm text-gray-600">
-          <p className="font-semibold text-gray-700">Notes:</p>
+          <p className="font-semibold">Notes:</p>
           <p>{data.notes}</p>
         </div>
       </div>
 
-      {/* ✅ Moved Print Button to Bottom-Right */}
-      <div className="flex justify-end mt-4">
-        <button
-          onClick={handlePrint}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm shadow-md"
-        >
-          Print Invoice
-        </button>
-      </div>
+      {/* ================= PRINT ================= */}
+
+      {
+        showPrintButton &&
+
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={handlePrint}
+            className="bg-gray-800 text-white px-4 py-2 rounded-md"
+          >
+            Print Invoice
+          </button>
+        </div>
+      }
     </div>
   );
 };
