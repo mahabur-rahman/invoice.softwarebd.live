@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import InvoiceForm from "@/components/invoice/InvoiceForm";
-import InvoicePreview from "@/components/invoice/InvoicePreview";
 import AddInvoiceColumnModal from "@/components/invoice/AddInvoiceColumnModal";
 import { CREATE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
 import { useMutation } from "@apollo/client/react";
+import { v4 as uuid } from "uuid";
 
 /* ================= TYPES ================= */
 
@@ -23,7 +23,6 @@ export interface InvoiceFormValues {
   paid: number;
   subtotal: number;
   total: number;
-  columns: InvoiceColumnInput[]
 }
 
 export type InvoiceColumnInput = {
@@ -42,11 +41,11 @@ const Page = () => {
   const [invoiceData, setInvoiceData] =
     useState<InvoiceFormValues | null>(null);
 
-  // mutations
   const [createInvoice, { loading }] = useMutation(CREATE_INVOICE);
 
   const [columns, setColumns] = useState<InvoiceColumnInput[]>([
     {
+      id: "description",
       fieldKey: "description",
       label: "Description",
       type: "text",
@@ -55,6 +54,7 @@ const Page = () => {
       locked: true,
     },
     {
+      id: "quantity",
       fieldKey: "quantity",
       label: "Qty",
       type: "number",
@@ -63,6 +63,7 @@ const Page = () => {
       locked: true,
     },
     {
+      id: "price",
       fieldKey: "price",
       label: "Price",
       type: "number",
@@ -70,60 +71,77 @@ const Page = () => {
       order: 3,
       locked: true,
     },
+    {
+      id: "total",
+      fieldKey: "total",
+      label: "Total",
+      type: "number",
+      behavior: "NONE",
+      order: 4,
+      locked: true,
+    },
   ]);
 
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
 
-
+  /* ================= SUBMIT ================= */
 
   const handleSubmit = async () => {
 
-    console.log('invoice data is ', invoiceData)
-    try {
-      console.log("submitted");
+    console.log('invoice data ', invoiceData)
 
-      const { data } = await createInvoice({
-        variables: {
-          input: {
-            businessId: invoiceData?.business,
-            clientId: invoiceData?.client,
-            clientName: "Test Name", // make sure you have this
-            invoiceNumber: "1234",                  // generated invoice number
-            currency: "BDT",
-            issueDate: invoiceData?.issueDate,
-            dueDate: invoiceData?.dueDate,
-            notes: invoiceData?.notes,
-            status: "DRAFT",
+    if (!invoiceData) return;
 
-            columns: columns.map(({ locked, ...col }) => col),
+    const itemsForApi = invoiceData.items.map((item, index) => {
+      const { description, quantity, price, total, ...extra } = item;
 
-            items: invoiceData?.items.map((item) => ({
-              values: item,
-            })),
+      return {
+        id: uuid(),
+        order: index + 1,
+        itemTotal: Number(total),
+        values: {
+          description: String(description),
+          quantity: Number(quantity),
+          price: Number(price),
+          extra,
+        },
+      };
+    });
 
-            totals: {
-              additions: {
-                shipping: 0,
-                tax: 0
-              },
-              grandTotal: invoiceData?.total,
-              subTotal: invoiceData?.subtotal,
-              subtractions: {
-                discount: invoiceData?.discount
-              }
-            },
+    await createInvoice({
+      variables: {
+        input: {
+          businessId: invoiceData.business,
+          clientId: invoiceData.client,
+          clientName: "Test Name",
+          invoiceNumber: `INV-${Date.now()}`,
+          currency: invoiceData.currency,
+          issueDate: invoiceData.issueDate,
+          dueDate: invoiceData.dueDate,
+          notes: invoiceData.notes,
+          status: "DRAFT",
+
+          columns: columns.map(({ locked, ...c }) => ({
+            ...c,
+            id: c.id ?? uuid(),
+          })),
+
+          items: itemsForApi,
+
+          totals: {
+            subTotal: invoiceData.subtotal,
+            grandTotal: invoiceData.total,
+            additions: { tax: 0, shipping: 0 },
+            subtractions: { discount: invoiceData.discount },
           },
         },
-      });
-    } catch (error) {
-      console.error("Create invoice failed:", error);
-    }
+      },
+    });
   };
 
-
   return (
-    <div className="min-h-screen flex flex-col gap-8">
-      <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg p-6">
+    <div className="min-h-screen flex flex-col gap-8 bg-gray-50 p-6">
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
         <InvoiceForm
           columns={columns}
           setColumns={setColumns}
@@ -131,10 +149,6 @@ const Page = () => {
           setAddColumnModalOpen={setAddColumnModalOpen}
           handleSubmit={handleSubmit}
         />
-      </div>
-
-      <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg p-6">
-        {/* <InvoicePreview data={invoiceData} /> */}
       </div>
 
       <AddInvoiceColumnModal
