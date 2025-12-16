@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { useQuery } from "@apollo/client/react";
 import { useReactToPrint, UseReactToPrintOptions } from "react-to-print";
-import { InvoiceColumnInput } from "@/app/(dashboard)/generate-invoice/page";
+import { InvoiceColumnInput } from "@/app/(dashboard)/(invoice)/generate-invoice/page";
 import { FIND_ONE_CLIENT, SINGLE_BUSINESS_QUERY } from "@/lib/graphql/queries/invoice.queries";
 import { SingleBusinessQueryResponse, SingleClientQueryResponse } from "@/lib/interfaces/responseTypes";
 

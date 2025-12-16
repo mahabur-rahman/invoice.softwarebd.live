@@ -10,7 +10,7 @@ import {
   InvoiceColumnInput,
   InvoiceFormValues,
   InvoiceItem,
-} from "@/app/(dashboard)/generate-invoice/page";
+} from "@/app/(dashboard)/(invoice)/generate-invoice/page";
 import { ClientType, GetMyBusinessesQuery } from "@/lib/graphql/generated-types";
 
 /* ================= PROPS ================= */

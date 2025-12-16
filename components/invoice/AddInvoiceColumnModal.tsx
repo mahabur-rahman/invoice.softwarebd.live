@@ -1,4 +1,4 @@
-import { InvoiceColumnInput } from "@/app/(dashboard)/generate-invoice/page";
+import { InvoiceColumnInput } from "@/app/(dashboard)/(invoice)/generate-invoice/page";
 import { Modal, Form, Input, Select } from "antd";
 
 const { Option } = Select;
