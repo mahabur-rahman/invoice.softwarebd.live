@@ -33,6 +33,7 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { FaTimes } from "react-icons/fa";
 
 /* ================= PROPS ================= */
 
@@ -435,9 +436,9 @@ const InvoiceForm = ({
                                     })
                                   );
                                 }}
-                                className="text-red-500 text-xs"
+                                className="text-white text-xs cursor-pointer bg-red-500 h-4 w-4 rounded-full flex items-center justify-center"
                               >
-                                ✕
+                                <FaTimes />
                               </button>
                             )}
                           </div>
