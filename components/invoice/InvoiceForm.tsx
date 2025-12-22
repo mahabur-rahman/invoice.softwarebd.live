@@ -103,7 +103,7 @@ const SortablePill = ({
         ref={setActivatorNodeRef}
         {...attributes}
         {...listeners}
-        className="font-medium text-gray-800 cursor-grab active:cursor-grabbing"
+        className="font-medium text-gray-800 cursor-move active:cursor-move"
       >
         {column.label}
       </span>
@@ -392,7 +392,7 @@ const InvoiceForm = ({
                   <button
                     type="button"
                     onClick={() => setAddColumnModalOpen(true)}
-                    className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-md text-sm border border-gray-300"
+                    className="cursor-pointer flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-md text-sm border border-gray-300"
                   >
                     <FiPlus /> Add Column
                   </button>
