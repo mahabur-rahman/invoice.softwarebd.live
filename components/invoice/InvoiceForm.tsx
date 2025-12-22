@@ -401,17 +401,15 @@ const InvoiceForm = ({
                 {values.items.map((_, i) => (
                   <div
                     key={i}
-                    className="grid grid-cols-12 gap-3 bg-white border border-gray-200 rounded-lg p-3"
+                    className="grid grid-flow-col auto-cols-fr gap-3 bg-white border border-gray-200 rounded-lg p-3"
                   >
                     {columns.map((column) => {
-                      const isDescription = column.fieldKey === "description";
                       const isTotal = column.fieldKey === "total";
 
                       return (
                         <div
                           key={column.fieldKey}
-                          className={`flex flex-col gap-1 ${isDescription ? "col-span-6" : "col-span-2"
-                            }`}
+                          className={"flex flex-col gap-1"}
                         >
                           <div className="flex justify-between">
                             <label className="text-sm font-medium text-gray-700">
