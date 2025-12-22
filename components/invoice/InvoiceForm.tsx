@@ -12,6 +12,7 @@ import {
   InvoiceItem,
 } from "@/app/(dashboard)/(invoice)/generate-invoice/page";
 import { ClientType, GetMyBusinessesQuery } from "@/lib/graphql/generated-types";
+import { Spin } from "antd";
 
 /* ================= PROPS ================= */
 
@@ -21,6 +22,7 @@ interface InvoiceFormProps {
   columns: InvoiceColumnInput[];
   setColumns: React.Dispatch<React.SetStateAction<InvoiceColumnInput[]>>;
   handleSubmit: () => void;
+  loading: boolean;
 }
 
 /* ================= VALIDATION ================= */
@@ -39,6 +41,7 @@ const InvoiceForm = ({
   columns,
   setColumns,
   handleSubmit,
+  loading
 }: InvoiceFormProps) => {
   /* ================= HELPERS ================= */
 
@@ -344,9 +347,14 @@ const InvoiceForm = ({
 
           <button
             type="submit"
-            className="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-900 transition"
+            className="bg-gray-800 cursor-pointer text-white px-4 py-2 rounded-md hover:bg-gray-900 transition"
+            disabled={loading}
           >
-            Create Invoice
+            {loading ? <span className="flex items-center gap-4">
+              <Spin size="small" />
+              Please Wait
+            </span>
+              : 'Create Invoice'}
           </button>
         </Form>
       )}

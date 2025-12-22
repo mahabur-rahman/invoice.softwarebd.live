@@ -7,6 +7,7 @@ import InvoicePreview from "@/components/invoice/InvoicePreview";
 import { CREATE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
 import { useMutation } from "@apollo/client/react";
 import { v4 as uuid } from "uuid";
+import { useRouter } from "next/navigation";
 
 /* ================= TYPES ================= */
 
@@ -39,10 +40,11 @@ export type InvoiceColumnInput = {
 /* ================= PAGE ================= */
 
 const Page = () => {
+  const router = useRouter();
   const [invoiceData, setInvoiceData] =
     useState<InvoiceFormValues | null>(null);
 
-  const [createInvoice] = useMutation(CREATE_INVOICE);
+  const [createInvoice, { loading }] = useMutation(CREATE_INVOICE);
 
   const [columns, setColumns] = useState<InvoiceColumnInput[]>([
     {
@@ -133,35 +135,42 @@ const Page = () => {
       };
     });
 
-    await createInvoice({
-      variables: {
-        input: {
-          businessId: invoiceData.business,
-          clientId: invoiceData.client,
-          clientName: "Test Name",
-          invoiceNumber: `INV-${Date.now()}`,
-          currency: invoiceData.currency,
-          issueDate: invoiceData.issueDate,
-          dueDate: invoiceData.dueDate,
-          notes: invoiceData.notes,
-          status: "DRAFT",
+    try {
+      await createInvoice({
+        variables: {
+          input: {
+            businessId: invoiceData.business,
+            clientId: invoiceData.client,
+            clientName: "Test Name",
+            invoiceNumber: `INV-${Date.now()}`,
+            currency: invoiceData.currency,
+            issueDate: invoiceData.issueDate,
+            dueDate: invoiceData.dueDate,
+            notes: invoiceData.notes,
+            status: "DRAFT",
 
-          columns: columns.map(({ locked, ...c }) => ({
-            ...c,
-            id: c.id ?? uuid(),
-          })),
+            columns: columns.map(({ locked, ...c }) => ({
+              ...c,
+              id: c.id ?? uuid(),
+            })),
 
-          items: itemsForApi,
+            items: itemsForApi,
 
-          totals: {
-            subTotal: invoiceData.subtotal,
-            grandTotal: invoiceData.total,
-            additions: { tax: 0, shipping: 0 },
-            subtractions: { discount: invoiceData.discount },
+            totals: {
+              subTotal: invoiceData.subtotal,
+              grandTotal: invoiceData.total,
+              additions: { tax: 0, shipping: 0 },
+              subtractions: { discount: invoiceData.discount },
+            },
           },
         },
-      },
-    });
+      });
+      setInvoiceData(null);
+      router.push('/invoices')
+    } catch (err) {
+      console.log(err)
+    }
+
   };
 
   /* ================= RENDER ================= */
@@ -175,6 +184,7 @@ const Page = () => {
           onUpdate={setInvoiceData}
           setAddColumnModalOpen={setAddColumnModalOpen}
           handleSubmit={handleSubmit}
+          loading={loading}
         />
       </div>
 
@@ -185,7 +195,7 @@ const Page = () => {
         setColumns={setColumns}
       />
 
-      <InvoicePreview data={previewData} columns={columns}/>
+      <InvoicePreview data={previewData} columns={columns} />
     </div>
   );
 };
