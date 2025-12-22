@@ -39,10 +39,14 @@ const client = new ApolloClient({
   link: authLink.concat(httpLink),
   cache: new InMemoryCache(),
   defaultOptions: {
-    watchQuery: { fetchPolicy: "cache-and-network" },
-    query: { fetchPolicy: "network-only" },
-    mutate: { errorPolicy: "all" },
-  },
+    watchQuery: {
+      fetchPolicy: "cache-first",
+      nextFetchPolicy: "cache-first",
+    },
+    query: {
+      fetchPolicy: "cache-first",
+    },
+  }
 });
 
 export default client;
