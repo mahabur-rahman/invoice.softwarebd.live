@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { Formik, Form, Field, FieldArray } from "formik";
 import * as Yup from "yup";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
@@ -13,6 +14,25 @@ import {
 } from "@/app/(dashboard)/(invoice)/generate-invoice/page";
 import { ClientType, GetMyBusinessesQuery } from "@/lib/graphql/generated-types";
 import { Spin } from "antd";
+
+// ✅ dnd-kit
+import {
+  DndContext,
+  closestCenter,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  arrayMove,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 /* ================= PROPS ================= */
 
@@ -33,6 +53,67 @@ const validationSchema = Yup.object({
   currency: Yup.string().required("Currency is required"),
 });
 
+/* ================= DND HELPERS ================= */
+
+const getColDndId = (column: InvoiceColumnInput) =>
+  // ✅ Always stable even if some column accidentally has no id
+  (column.id ?? column.fieldKey) as string;
+
+/* ================= SORTABLE PILL ================= */
+
+const SortablePill = ({
+  column,
+  active,
+}: {
+  column: InvoiceColumnInput;
+  active?: boolean;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: getColDndId(column),
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={[
+        "touch-none select-none",
+        "inline-flex items-center",
+        "rounded-full border border-gray-200 px-4 py-2",
+        "bg-white shadow-sm text-sm whitespace-nowrap",
+        active ? "ring-2 ring-gray-300" : "",
+      ].join(" ")}
+    >
+      {/* ✅ LABEL IS DRAG HANDLE */}
+      <span
+        ref={setActivatorNodeRef}
+        {...attributes}
+        {...listeners}
+        className="font-medium text-gray-800 cursor-grab active:cursor-grabbing"
+      >
+        {column.label}
+      </span>
+    </div>
+  );
+};
+
+
+
+
 /* ================= COMPONENT ================= */
 
 const InvoiceForm = ({
@@ -41,7 +122,7 @@ const InvoiceForm = ({
   columns,
   setColumns,
   handleSubmit,
-  loading
+  loading,
 }: InvoiceFormProps) => {
   /* ================= HELPERS ================= */
 
@@ -73,18 +154,14 @@ const InvoiceForm = ({
     let subtotal = 0;
 
     values.items.forEach((item) => {
-      // 1️⃣ Base calculation: Qty × Price
       const qty = Number(item.quantity || 0);
       const price = Number(item.price || 0);
 
       let itemTotal = qty * price;
 
-      // 2️⃣ Apply custom columns on top of base
       columns.forEach((column) => {
-        // only numeric custom columns
         if (column.type !== "number") return;
 
-        // skip base + total columns
         if (
           column.fieldKey === "quantity" ||
           column.fieldKey === "price" ||
@@ -95,22 +172,14 @@ const InvoiceForm = ({
 
         const value = Number(item[column.fieldKey] || 0);
 
-        if (column.behavior === "ADD") {
-          itemTotal += value;
-        }
-
-        if (column.behavior === "SUBTRACT") {
-          itemTotal -= value;
-        }
+        if (column.behavior === "ADD") itemTotal += value;
+        if (column.behavior === "SUBTRACT") itemTotal -= value;
       });
 
-      // 3️⃣ UI-only total
       item.total = itemTotal;
-
       subtotal += itemTotal;
     });
 
-    // 4️⃣ Invoice-level total
     const total =
       subtotal - Number(values.discount || 0) - Number(values.paid || 0);
 
@@ -123,12 +192,51 @@ const InvoiceForm = ({
     return {};
   };
 
+  /* ================= DND CONFIG ================= */
 
+  const [activeId, setActiveId] = React.useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 6, // ✅ prevents accidental drags when clicking
+      },
+    })
+  );
+
+  const onDragStart = (event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
+  };
+
+  const onDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over) return;
+    if (active.id === over.id) return;
+
+    const activeStr = String(active.id);
+    const overStr = String(over.id);
+
+    setColumns((cols) => {
+      const oldIndex = cols.findIndex((c) => getColDndId(c) === activeStr);
+      const newIndex = cols.findIndex((c) => getColDndId(c) === overStr);
+      const reordered = arrayMove(cols, oldIndex, newIndex);
+      return reordered.map((c, i) => ({ ...c, order: i + 1 }));
+    });
+  };
+
+  const activeColumn = React.useMemo(() => {
+    if (!activeId) return null;
+    return columns.find((c) => getColDndId(c) === activeId) ?? null;
+  }, [activeId, columns]);
 
   /* ================= QUERIES ================= */
 
-  const { data: businessData } = useQuery<GetMyBusinessesQuery>(GET_MY_BUSINESSES);
-  const { data: clientData } = useQuery<{ findAllClients: ClientType[] }>(GET_ALL_CLIENTS);
+  const { data: businessData } =
+    useQuery<GetMyBusinessesQuery>(GET_MY_BUSINESSES);
+  const { data: clientData } =
+    useQuery<{ findAllClients: ClientType[] }>(GET_ALL_CLIENTS);
 
   /* ================= RENDER ================= */
 
@@ -142,9 +250,7 @@ const InvoiceForm = ({
     >
       {({ values, setFieldValue }) => (
         <Form className="space-y-8">
-          <h2 className="text-2xl font-bold text-gray-800">
-            Create Invoice
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-800">Create Invoice</h2>
 
           {/* ================= BUSINESS / CLIENT ================= */}
 
@@ -225,6 +331,57 @@ const InvoiceForm = ({
             </div>
           </div>
 
+          {/* ================= DRAGGABLE COLUMNS ================= */}
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-gray-800">Columns</h3>
+              <p className="text-xs text-gray-500">
+                Drag to reorder
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
+              >
+                <SortableContext
+                  items={columns
+                    .filter((c) => !c.locked)
+                    .map((c) => getColDndId(c))}
+                  strategy={rectSortingStrategy}
+                >
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {columns.map((column) => (
+                      <SortablePill
+                        key={getColDndId(column)}
+                        column={column}
+                        active={activeId === getColDndId(column)}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+
+                {/* ✅ nicer drag ghost */}
+                <DragOverlay>
+                  {activeColumn ? (
+                    <div className="pointer-events-none">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 shadow-lg">
+                        <span className="font-medium text-gray-800">
+                          {activeColumn.label}
+                        </span>
+                        <span className="text-gray-500">≡</span>
+                      </div>
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+            </div>
+          </div>
+
           {/* ================= ITEMS ================= */}
 
           <FieldArray name="items">
@@ -247,8 +404,7 @@ const InvoiceForm = ({
                     className="grid grid-cols-12 gap-3 bg-white border border-gray-200 rounded-lg p-3"
                   >
                     {columns.map((column) => {
-                      const isDescription =
-                        column.fieldKey === "description";
+                      const isDescription = column.fieldKey === "description";
                       const isTotal = column.fieldKey === "total";
 
                       return (
@@ -268,18 +424,15 @@ const InvoiceForm = ({
                                 onClick={() => {
                                   setColumns((prev) =>
                                     prev.filter(
-                                      (c) =>
-                                        c.fieldKey !== column.fieldKey
+                                      (c) => c.fieldKey !== column.fieldKey
                                     )
                                   );
 
                                   setFieldValue(
                                     "items",
                                     values.items.map((item) => {
-                                      const {
-                                        [column.fieldKey]: _,
-                                        ...rest
-                                      } = item;
+                                      const { [column.fieldKey]: _, ...rest } =
+                                        item;
                                       return rest;
                                     })
                                   );
@@ -294,11 +447,7 @@ const InvoiceForm = ({
                           <Field
                             name={`items.${i}.${column.fieldKey}`}
                             readOnly={isTotal}
-                            type={
-                              column.type === "number"
-                                ? "number"
-                                : "text"
-                            }
+                            type={column.type === "number" ? "number" : "text"}
                             className={`p-2 border rounded-md ${isTotal
                               ? "bg-gray-100 text-center font-semibold"
                               : "bg-white"
@@ -312,6 +461,13 @@ const InvoiceForm = ({
                       type="button"
                       onClick={() => remove(i)}
                       className="col-span-1 flex items-center justify-center text-red-500"
+                      // optional safety: keep at least 1 row
+                      disabled={values.items.length === 1}
+                      title={
+                        values.items.length === 1
+                          ? "At least 1 item is required"
+                          : "Remove item"
+                      }
                     >
                       <FiTrash2 />
                     </button>
@@ -347,14 +503,17 @@ const InvoiceForm = ({
 
           <button
             type="submit"
-            className="bg-gray-800 cursor-pointer text-white px-4 py-2 rounded-md hover:bg-gray-900 transition"
+            className="bg-gray-800 cursor-pointer text-white px-4 py-2 rounded-md hover:bg-gray-900 transition disabled:opacity-60"
             disabled={loading}
           >
-            {loading ? <span className="flex items-center gap-4">
-              <Spin size="small" />
-              Please Wait
-            </span>
-              : 'Create Invoice'}
+            {loading ? (
+              <span className="flex items-center gap-4">
+                <Spin size="small" />
+                Please Wait
+              </span>
+            ) : (
+              "Create Invoice"
+            )}
           </button>
         </Form>
       )}
