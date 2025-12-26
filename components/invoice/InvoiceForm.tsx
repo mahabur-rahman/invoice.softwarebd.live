@@ -57,23 +57,24 @@ const validationSchema = Yup.object({
 /* ================= DND HELPERS ================= */
 
 const getColDndId = (column: InvoiceColumnInput) =>
-  // ✅ Always stable even if some column accidentally has no id
   (column.id ?? column.fieldKey) as string;
 
-/* ================= SORTABLE PILL ================= */
+/* ================= SORTABLE CELL (FIRST ROW ONLY) ================= */
 
-const SortablePill = ({
+const SortableCell = ({
   column,
-  active,
+  label,
+  children,
 }: {
   column: InvoiceColumnInput;
-  active?: boolean;
+  label: React.ReactNode;
+  children: React.ReactNode;
 }) => {
   const {
-    attributes,
-    listeners,
     setNodeRef,
     setActivatorNodeRef,
+    attributes,
+    listeners,
     transform,
     transition,
     isDragging,
@@ -81,39 +82,32 @@ const SortablePill = ({
     id: getColDndId(column),
   });
 
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
-  };
-
   return (
     <div
       ref={setNodeRef}
-      style={style}
-      className={[
-        "touch-none select-none",
-        "inline-flex items-center",
-        "rounded-full border border-gray-200 px-4 py-2",
-        "bg-white shadow-sm text-sm whitespace-nowrap",
-        active ? "ring-2 ring-gray-300" : "",
-      ].join(" ")}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+      }}
+      className="flex flex-col gap-1"
     >
-      {/* ✅ LABEL IS DRAG HANDLE */}
-      <span
+      {/* ✅ DRAG HANDLE (LABEL ONLY) */}
+      <div
         ref={setActivatorNodeRef}
         {...attributes}
         {...listeners}
-        className="font-medium text-gray-800 cursor-move active:cursor-move"
+        className="cursor-move text-sm font-medium text-gray-700 flex items-center gap-1"
       >
-        {column.label}
-      </span>
+        <span className="text-gray-400">≡</span>
+        {label}
+      </div>
+
+      {/* inputs stay clean */}
+      {children}
     </div>
   );
 };
-
-
-
 
 /* ================= COMPONENT ================= */
 
@@ -199,9 +193,7 @@ const InvoiceForm = ({
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 6, // ✅ prevents accidental drags when clicking
-      },
+      activationConstraint: { distance: 6 },
     })
   );
 
@@ -332,45 +324,210 @@ const InvoiceForm = ({
             </div>
           </div>
 
-          {/* ================= DRAGGABLE COLUMNS ================= */}
+          {/* ================= ITEMS ================= */}
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-800">Columns</h3>
-              <p className="text-xs text-gray-500">
-                Drag to reorder
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+          <FieldArray name="items">
+            {({ push, remove }) => (
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragStart={onDragStart}
                 onDragEnd={onDragEnd}
               >
-                <SortableContext
-                  items={columns
-                    .filter((c) => !c.locked)
-                    .map((c) => getColDndId(c))}
-                  strategy={rectSortingStrategy}
-                >
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    {columns.map((column) => (
-                      <SortablePill
-                        key={getColDndId(column)}
-                        column={column}
-                        active={activeId === getColDndId(column)}
-                      />
-                    ))}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold text-gray-800">Items</h3>
+                    <button
+                      type="button"
+                      onClick={() => setAddColumnModalOpen(true)}
+                      className="cursor-pointer flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-md text-sm border border-gray-300"
+                    >
+                      <FiPlus /> Add Column
+                    </button>
                   </div>
-                </SortableContext>
 
-                {/* ✅ nicer drag ghost */}
+                  {values.items.map((_, i) => {
+                    const isFirstRow = i === 0;
+
+                    return (
+                      <div
+                        key={i}
+                        className="bg-white border border-gray-200 rounded-lg p-3"
+                      >
+                        <div className="flex gap-3 w-full items-start">
+                          {/* ✅ ONLY FIRST ROW IS SORTABLE, AND ONLY THE COLUMNS AREA IS IN SortableContext */}
+                          {isFirstRow ? (
+                            <SortableContext
+                              items={columns
+                                .filter((c) => !c.locked)
+                                .map((c) => getColDndId(c))}
+                              strategy={rectSortingStrategy}
+                            >
+                              <div className="flex gap-3 w-full flex-1">
+                                {columns.map((column) => {
+                                  const isTotal = column.fieldKey === "total";
+
+                                  const fieldEl = (
+                                    <Field
+                                      name={`items.${i}.${column.fieldKey}`}
+                                      readOnly={isTotal}
+                                      type={
+                                        column.type === "number"
+                                          ? "number"
+                                          : "text"
+                                      }
+                                      className={`p-2 border rounded-md ${
+                                        isTotal
+                                          ? "bg-gray-100 text-center font-semibold"
+                                          : "bg-white"
+                                      } border-gray-300`}
+                                    />
+                                  );
+
+                                  return (
+                                    <SortableCell
+                                      key={column.fieldKey}
+                                      column={column}
+                                      label={
+                                        <div className="flex justify-between w-full">
+                                          <span>{column.label}</span>
+
+                                          {!column.locked && (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+
+                                                setColumns((prev) =>
+                                                  prev.filter(
+                                                    (c) =>
+                                                      c.fieldKey !==
+                                                      column.fieldKey
+                                                  )
+                                                );
+
+                                                setFieldValue(
+                                                  "items",
+                                                  values.items.map((item) => {
+                                                    const {
+                                                      [column.fieldKey]: __,
+                                                      ...rest
+                                                    } = item;
+                                                    return rest;
+                                                  })
+                                                );
+                                              }}
+                                              className="text-white text-xs cursor-pointer bg-red-500 h-4 w-4 rounded-full flex items-center justify-center"
+                                            >
+                                              <FaTimes />
+                                            </button>
+                                          )}
+                                        </div>
+                                      }
+                                    >
+                                      {fieldEl}
+                                    </SortableCell>
+                                  );
+                                })}
+                              </div>
+                            </SortableContext>
+                          ) : (
+                            <div className="flex gap-3 w-full flex-1">
+                              {columns.map((column) => {
+                                const isTotal = column.fieldKey === "total";
+
+                                return (
+                                  <div
+                                    key={column.fieldKey}
+                                    className="flex flex-col gap-1"
+                                  >
+                                    <div className="flex justify-between">
+                                      <label className="text-sm font-medium text-gray-700">
+                                        {column.label}
+                                      </label>
+
+                                      {!column.locked && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setColumns((prev) =>
+                                              prev.filter(
+                                                (c) =>
+                                                  c.fieldKey !== column.fieldKey
+                                              )
+                                            );
+
+                                            setFieldValue(
+                                              "items",
+                                              values.items.map((item) => {
+                                                const {
+                                                  [column.fieldKey]: __,
+                                                  ...rest
+                                                } = item;
+                                                return rest;
+                                              })
+                                            );
+                                          }}
+                                          className="text-white text-xs cursor-pointer bg-red-500 h-4 w-4 rounded-full flex items-center justify-center"
+                                        >
+                                          <FaTimes />
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    <Field
+                                      name={`items.${i}.${column.fieldKey}`}
+                                      readOnly={isTotal}
+                                      type={
+                                        column.type === "number"
+                                          ? "number"
+                                          : "text"
+                                      }
+                                      className={`p-2 border rounded-md ${
+                                        isTotal
+                                          ? "bg-gray-100 text-center font-semibold"
+                                          : "bg-white"
+                                      } border-gray-300`}
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* ✅ NOT INSIDE SortableContext */}
+                          <button
+                            type="button"
+                            onClick={() => remove(i)}
+                            className="flex items-center justify-center text-red-500"
+                            disabled={values.items.length === 1}
+                            title={
+                              values.items.length === 1
+                                ? "At least 1 item is required"
+                                : "Remove item"
+                            }
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    onClick={() => push(createEmptyItem())}
+                    className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-md text-sm border border-gray-300"
+                  >
+                    <FiPlus /> Add Item
+                  </button>
+                </div>
+
                 <DragOverlay>
                   {activeColumn ? (
                     <div className="pointer-events-none">
-                      <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 shadow-lg">
+                      <div className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 shadow-lg">
                         <span className="font-medium text-gray-800">
                           {activeColumn.label}
                         </span>
@@ -380,107 +537,6 @@ const InvoiceForm = ({
                   ) : null}
                 </DragOverlay>
               </DndContext>
-            </div>
-          </div>
-
-          {/* ================= ITEMS ================= */}
-
-          <FieldArray name="items">
-            {({ push, remove }) => (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-semibold text-gray-800">Items</h3>
-                  <button
-                    type="button"
-                    onClick={() => setAddColumnModalOpen(true)}
-                    className="cursor-pointer flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-md text-sm border border-gray-300"
-                  >
-                    <FiPlus /> Add Column
-                  </button>
-                </div>
-
-                {values.items.map((_, i) => (
-                  <div
-                    key={i}
-                    className="grid grid-flow-col auto-cols-fr gap-3 bg-white border border-gray-200 rounded-lg p-3"
-                  >
-                    {columns.map((column) => {
-                      const isTotal = column.fieldKey === "total";
-
-                      return (
-                        <div
-                          key={column.fieldKey}
-                          className={"flex flex-col gap-1"}
-                        >
-                          <div className="flex justify-between">
-                            <label className="text-sm font-medium text-gray-700">
-                              {column.label}
-                            </label>
-
-                            {!column.locked && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setColumns((prev) =>
-                                    prev.filter(
-                                      (c) => c.fieldKey !== column.fieldKey
-                                    )
-                                  );
-
-                                  setFieldValue(
-                                    "items",
-                                    values.items.map((item) => {
-                                      const { [column.fieldKey]: _, ...rest } =
-                                        item;
-                                      return rest;
-                                    })
-                                  );
-                                }}
-                                className="text-white text-xs cursor-pointer bg-red-500 h-4 w-4 rounded-full flex items-center justify-center"
-                              >
-                                <FaTimes />
-                              </button>
-                            )}
-                          </div>
-
-                          <Field
-                            name={`items.${i}.${column.fieldKey}`}
-                            readOnly={isTotal}
-                            type={column.type === "number" ? "number" : "text"}
-                            className={`p-2 border rounded-md ${isTotal
-                              ? "bg-gray-100 text-center font-semibold"
-                              : "bg-white"
-                              } border-gray-300`}
-                          />
-                        </div>
-                      );
-                    })}
-
-                    <button
-                      type="button"
-                      onClick={() => remove(i)}
-                      className="col-span-1 flex items-center justify-center text-red-500"
-                      // optional safety: keep at least 1 row
-                      disabled={values.items.length === 1}
-                      title={
-                        values.items.length === 1
-                          ? "At least 1 item is required"
-                          : "Remove item"
-                      }
-                    >
-                      <FiTrash2 />
-                    </button>
-                  </div>
-                ))}
-
-                <button
-                  type="button"
-                  onClick={() => push(createEmptyItem())}
-                  className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-md text-sm border border-gray-300"
-                >
-                  <FiPlus /> Add Item
-                </button>
-              </div>
             )}
           </FieldArray>
 
