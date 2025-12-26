@@ -1,7 +1,14 @@
 "use client";
 
 import React from "react";
-import { Formik, Form, Field, FieldArray } from "formik";
+import {
+  Formik,
+  Form,
+  Field,
+  FieldArray,
+  useFormikContext,
+  ErrorMessage,
+} from "formik";
 import * as Yup from "yup";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 import { useQuery } from "@apollo/client/react";
@@ -31,9 +38,11 @@ import {
   useSortable,
   arrayMove,
   rectSortingStrategy,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { FaTimes } from "react-icons/fa";
+import { v4 as uuid } from "uuid";
 
 /* ================= PROPS ================= */
 
@@ -52,12 +61,30 @@ const validationSchema = Yup.object({
   client: Yup.string().required("Client is required"),
   business: Yup.string().required("Business is required"),
   currency: Yup.string().required("Currency is required"),
+  issueDate: Yup.string().required("Issue date is required"),
+  dueDate: Yup.string().required("Due date is required"),
+  items: Yup.array()
+    .of(
+      Yup.object({
+        description: Yup.string().required("Description is required"),
+        quantity: Yup.number()
+          .typeError("Quantity is required")
+          .required("Quantity is required"),
+        price: Yup.number()
+          .typeError("Price is required")
+          .required("Price is required"),
+      })
+    )
+    .min(1, "At least 1 item is required"),
 });
 
 /* ================= DND HELPERS ================= */
 
 const getColDndId = (column: InvoiceColumnInput) =>
   (column.id ?? column.fieldKey) as string;
+
+const getRowDndId = (item: InvoiceItem) =>
+  `row-${item._rowId ?? ""}`;
 
 /* ================= SORTABLE CELL (FIRST ROW ONLY) ================= */
 
@@ -110,6 +137,87 @@ const SortableCell = ({
   );
 };
 
+const SortableRow = ({
+  id,
+  children,
+}: {
+  id: string;
+  children: React.ReactNode;
+}) => {
+  const {
+    setNodeRef,
+    setActivatorNodeRef,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.9 : 1,
+      }}
+      className="relative"
+    >
+      <button
+        type="button"
+        ref={setActivatorNodeRef}
+        {...attributes}
+        {...listeners}
+        className="absolute -left-5 top-4 text-gray-400 hover:text-gray-600 cursor-move"
+        aria-label="Reorder row"
+      >
+        ≡
+      </button>
+      {children}
+    </div>
+  );
+};
+
+const ItemsColumnSync = ({ columns }: { columns: InvoiceColumnInput[] }) => {
+  const { values, setFieldValue } = useFormikContext<InvoiceFormValues>();
+  const prevColumnsRef = React.useRef<InvoiceColumnInput[]>(columns);
+
+  React.useEffect(() => {
+    const prev = prevColumnsRef.current;
+    const prevKeys = new Set(prev.map((c) => c.fieldKey));
+    const newColumns = columns.filter((c) => !prevKeys.has(c.fieldKey));
+
+    if (newColumns.length) {
+      const updatedItems = values.items.map((item) => {
+        const next = { ...item };
+        newColumns.forEach((col) => {
+          if (!(col.fieldKey in next)) {
+            next[col.fieldKey] = col.type === "number" ? 0 : "";
+          }
+        });
+        return next;
+      });
+
+      setFieldValue("items", updatedItems);
+    }
+
+    prevColumnsRef.current = columns;
+  }, [columns, setFieldValue, values.items]);
+
+  return null;
+};
+
+const FieldError = ({ name }: { name: string }) => (
+  <ErrorMessage
+    name={name}
+    component="div"
+    className="text-red-600 text-sm mt-1"
+  />
+);
+
 /* ================= COMPONENT ================= */
 
 const InvoiceForm = ({
@@ -122,11 +230,13 @@ const InvoiceForm = ({
 }: InvoiceFormProps) => {
   /* ================= HELPERS ================= */
 
-  const createEmptyItem = (): InvoiceItem =>
+  const initialRowId = React.useId();
+
+  const createEmptyItem = (rowId?: string): InvoiceItem =>
     columns.reduce((acc, col) => {
       acc[col.fieldKey] = col.type === "number" ? 0 : "";
       return acc;
-    }, {} as InvoiceItem);
+    }, { _rowId: rowId ?? uuid() } as InvoiceItem);
 
   /* ================= INITIAL VALUES ================= */
 
@@ -136,7 +246,7 @@ const InvoiceForm = ({
     currency: "BDT",
     issueDate: "",
     dueDate: "",
-    items: [createEmptyItem()],
+    items: [createEmptyItem(initialRowId)],
     notes: "Thank you for your business.",
     discount: 0,
     paid: 0,
@@ -199,10 +309,16 @@ const InvoiceForm = ({
   );
 
   const onDragStart = (event: DragStartEvent) => {
-    setActiveId(String(event.active.id));
+    const id = String(event.active.id);
+    const isColumnDrag = columns.some((c) => getColDndId(c) === id);
+    setActiveId(isColumnDrag ? id : null);
   };
 
-  const onDragEnd = (event: DragEndEvent) => {
+  const onDragEnd = (
+    event: DragEndEvent,
+    items: InvoiceItem[],
+    setFieldValue: (field: string, value: unknown) => void
+  ) => {
     const { active, over } = event;
     setActiveId(null);
 
@@ -212,12 +328,30 @@ const InvoiceForm = ({
     const activeStr = String(active.id);
     const overStr = String(over.id);
 
-    setColumns((cols) => {
-      const oldIndex = cols.findIndex((c) => getColDndId(c) === activeStr);
-      const newIndex = cols.findIndex((c) => getColDndId(c) === overStr);
-      const reordered = arrayMove(cols, oldIndex, newIndex);
-      return reordered.map((c, i) => ({ ...c, order: i + 1 }));
-    });
+    const isColumnDrag =
+      columns.some((c) => getColDndId(c) === activeStr) &&
+      columns.some((c) => getColDndId(c) === overStr);
+
+    if (isColumnDrag) {
+      setColumns((cols) => {
+        const oldIndex = cols.findIndex((c) => getColDndId(c) === activeStr);
+        const newIndex = cols.findIndex((c) => getColDndId(c) === overStr);
+        const reordered = arrayMove(cols, oldIndex, newIndex);
+        return reordered.map((c, i) => ({ ...c, order: i + 1 }));
+      });
+      return;
+    }
+
+    const isRowDrag =
+      activeStr.startsWith("row-") && overStr.startsWith("row-");
+
+    if (isRowDrag) {
+      const oldIndex = items.findIndex((item) => getRowDndId(item) === activeStr);
+      const newIndex = items.findIndex((item) => getRowDndId(item) === overStr);
+      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+      const reorderedItems = arrayMove(items, oldIndex, newIndex);
+      setFieldValue("items", reorderedItems);
+    }
   };
 
   const activeColumn = React.useMemo(() => {
@@ -240,10 +374,11 @@ const InvoiceForm = ({
       validationSchema={validationSchema}
       validate={handleLiveUpdate}
       onSubmit={handleSubmit}
-      enableReinitialize
+      enableReinitialize={false}
     >
       {({ values, setFieldValue }) => (
         <Form className="space-y-8">
+          <ItemsColumnSync columns={columns} />
           <h2 className="text-2xl font-bold text-gray-800">Create Invoice</h2>
 
           {/* ================= BUSINESS / CLIENT ================= */}
@@ -265,6 +400,7 @@ const InvoiceForm = ({
                   </option>
                 ))}
               </Field>
+              <FieldError name="business" />
             </div>
 
             <div>
@@ -283,6 +419,7 @@ const InvoiceForm = ({
                   </option>
                 ))}
               </Field>
+              <FieldError name="client" />
             </div>
           </div>
 
@@ -298,6 +435,7 @@ const InvoiceForm = ({
                 name="issueDate"
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
               />
+              <FieldError name="issueDate" />
             </div>
 
             <div>
@@ -309,6 +447,7 @@ const InvoiceForm = ({
                 name="dueDate"
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
               />
+              <FieldError name="dueDate" />
             </div>
 
             <div>
@@ -322,6 +461,7 @@ const InvoiceForm = ({
               >
                 <option value="BDT">BDT</option>
               </Field>
+              <FieldError name="currency" />
             </div>
           </div>
 
@@ -333,7 +473,9 @@ const InvoiceForm = ({
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
+                onDragEnd={(event) =>
+                  onDragEnd(event, values.items, setFieldValue)
+                }
               >
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
@@ -347,59 +489,120 @@ const InvoiceForm = ({
                     </button>
                   </div>
 
-                  {values.items.map((_, i) => {
-                    const isFirstRow = i === 0;
+                  <SortableContext
+                    items={values.items.map((item) => getRowDndId(item))}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {values.items.map((item, i) => {
+                      const isFirstRow = i === 0;
+                      const rowId = getRowDndId(item);
 
-                    return (
-                      <div
-                        key={i}
-                        className="bg-white border border-gray-200 rounded-lg p-3"
-                      >
-                        <div className="flex gap-3 w-full items-start relative">
-                          {/* ✅ ONLY FIRST ROW IS SORTABLE, AND ONLY THE COLUMNS AREA IS IN SortableContext */}
-                          {isFirstRow ? (
-                            <SortableContext
-                              items={columns
-                                .filter((c) => !c.locked)
-                                .map((c) => getColDndId(c))}
-                              strategy={rectSortingStrategy}
-                            >
-                              <div className="flex gap-3 w-full flex-1">
-                                {columns.map((column) => {
-                                  const isTotal = column.fieldKey === "total";
+                      return (
+                        <SortableRow key={rowId} id={rowId}>
+                          <div className="bg-white border border-gray-200 rounded-lg p-3">
+                            <div className="flex gap-3 w-full items-start relative">
+                              {/* ✅ ONLY FIRST ROW IS SORTABLE, AND ONLY THE COLUMNS AREA IS IN SortableContext */}
+                              {isFirstRow ? (
+                                <SortableContext
+                                  items={columns
+                                    .filter((c) => !c.locked)
+                                    .map((c) => getColDndId(c))}
+                                  strategy={rectSortingStrategy}
+                                >
+                                  <div className="flex gap-3 w-full flex-1">
+                                    {columns.map((column) => {
+                                      const isTotal = column.fieldKey === "total";
 
-                                  const fieldEl = (
-                                    <Field
-                                      name={`items.${i}.${column.fieldKey}`}
-                                      readOnly={isTotal}
-                                      type={column.type === "number" ? "number" : "text"}
-                                      className={`p-2 border rounded-md w-full min-w-0 ${isTotal
-                                        ? "bg-gray-100 text-center font-semibold"
-                                        : "bg-white"
-                                        } border-gray-300`}
-                                    />
-                                  );
+                                      const fieldEl = (
+                                        <Field
+                                          name={`items.${i}.${column.fieldKey}`}
+                                          readOnly={isTotal}
+                                          type={
+                                            column.type === "number" ? "number" : "text"
+                                          }
+                                          className={`p-2 border rounded-md w-full min-w-0 ${
+                                            isTotal
+                                              ? "bg-gray-100 text-center font-semibold"
+                                              : "bg-white"
+                                          } border-gray-300`}
+                                        />
+                                      );
 
-                                  return (
-                                    <SortableCell
-                                      key={column.fieldKey}
-                                      column={column}
-                                      label={
-                                        <div className="flex justify-between w-full">
-                                          <span>{column.label}</span>
+                                      return (
+                                        <SortableCell
+                                          key={column.fieldKey}
+                                          column={column}
+                                          label={
+                                            <div className="flex justify-between w-full">
+                                              <span>{column.label}</span>
+
+                                              {!column.locked && (
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+
+                                                    setColumns((prev) =>
+                                                      prev.filter(
+                                                        (c) =>
+                                                          c.fieldKey !== column.fieldKey
+                                                      )
+                                                    );
+
+                                                    setFieldValue(
+                                                      "items",
+                                                      values.items.map((item) => {
+                                                        const {
+                                                          [column.fieldKey]: __,
+                                                          ...rest
+                                                        } = item;
+                                                        return rest;
+                                                      })
+                                                    );
+                                                  }}
+                                                  className="text-white text-xs cursor-pointer bg-red-500 h-4 w-4 rounded-full flex items-center justify-center"
+                                                >
+                                                  <FaTimes />
+                                                </button>
+                                              )}
+                                            </div>
+                                          }
+                                        >
+                                          {fieldEl}
+                                          {column.fieldKey !== "total" && (
+                                            <FieldError
+                                              name={`items.${i}.${column.fieldKey}`}
+                                            />
+                                          )}
+                                        </SortableCell>
+                                      );
+                                    })}
+                                  </div>
+                                </SortableContext>
+                              ) : (
+                                <div className="flex gap-3 w-full flex-1">
+                                  {columns.map((column) => {
+                                    const isTotal = column.fieldKey === "total";
+
+                                    return (
+                                      <div
+                                        key={column.fieldKey}
+                                        className="flex flex-col gap-1 min-w-0 flex-1"
+                                      >
+                                        <div className="flex justify-between">
+                                          <label className="text-sm font-medium text-gray-700">
+                                            {column.label}
+                                          </label>
 
                                           {!column.locked && (
                                             <button
                                               type="button"
-                                              onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-
+                                              onClick={() => {
                                                 setColumns((prev) =>
                                                   prev.filter(
                                                     (c) =>
-                                                      c.fieldKey !==
-                                                      column.fieldKey
+                                                      c.fieldKey !== column.fieldKey
                                                   )
                                                 );
 
@@ -420,96 +623,52 @@ const InvoiceForm = ({
                                             </button>
                                           )}
                                         </div>
-                                      }
-                                    >
-                                      {fieldEl}
-                                    </SortableCell>
-                                  );
-                                })}
-                              </div>
-                            </SortableContext>
-                          ) : (
-                            <div className="flex gap-3 w-full flex-1">
-                              {columns.map((column) => {
-                                const isTotal = column.fieldKey === "total";
 
-                                return (
-                                  <div
-                                    key={column.fieldKey}
-                                    className="flex flex-col gap-1 min-w-0 flex-1"
-                                  >
-                                    <div className="flex justify-between">
-                                      <label className="text-sm font-medium text-gray-700">
-                                        {column.label}
-                                      </label>
+                                        <Field
+                                          name={`items.${i}.${column.fieldKey}`}
+                                          readOnly={isTotal}
+                                          type={
+                                            column.type === "number" ? "number" : "text"
+                                          }
+                                          className={`p-2 border rounded-md ${
+                                            isTotal
+                                              ? "bg-gray-100 text-center font-semibold"
+                                              : "bg-white"
+                                          } border-gray-300`}
+                                        />
+                                        {!isTotal && (
+                                          <FieldError
+                                            name={`items.${i}.${column.fieldKey}`}
+                                          />
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
 
-                                      {!column.locked && (
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setColumns((prev) =>
-                                              prev.filter(
-                                                (c) =>
-                                                  c.fieldKey !== column.fieldKey
-                                              )
-                                            );
-
-                                            setFieldValue(
-                                              "items",
-                                              values.items.map((item) => {
-                                                const {
-                                                  [column.fieldKey]: __,
-                                                  ...rest
-                                                } = item;
-                                                return rest;
-                                              })
-                                            );
-                                          }}
-                                          className="text-white text-xs cursor-pointer bg-red-500 h-4 w-4 rounded-full flex items-center justify-center"
-                                        >
-                                          <FaTimes />
-                                        </button>
-                                      )}
-                                    </div>
-
-                                    <Field
-                                      name={`items.${i}.${column.fieldKey}`}
-                                      readOnly={isTotal}
-                                      type={
-                                        column.type === "number"
-                                          ? "number"
-                                          : "text"
-                                      }
-                                      className={`p-2 border rounded-md ${isTotal
-                                        ? "bg-gray-100 text-center font-semibold"
-                                        : "bg-white"
-                                        } border-gray-300`}
-                                    />
-                                  </div>
-                                );
-                              })}
+                              {/* ✅ NOT INSIDE SortableContext */}
+                              {values.items.length !== 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => remove(i)}
+                                  className="bg-red-600 p-1 cursor-pointer rounded-full text-white absolute -right-5 -bottom-5 flex items-center justify-center"
+                                  disabled={values.items.length === 1}
+                                  title={
+                                    values.items.length === 1
+                                      ? "At least 1 item is required"
+                                      : "Remove item"
+                                  }
+                                >
+                                  <FiTrash2 className="text-sm" />
+                                </button>
+                              )}
                             </div>
-                          )}
-
-                          {/* ✅ NOT INSIDE SortableContext */}
-                          {values.items.length !== 1 && <button
-                            type="button"
-                            onClick={() => remove(i)}
-                            className="bg-red-600 p-1 cursor-pointer rounded-full text-white absolute -right-5 -bottom-5 flex items-center justify-center"
-                            disabled={values.items.length === 1}
-                            title={
-                              values.items.length === 1
-                                ? "At least 1 item is required"
-                                : "Remove item"
-                            }
-                          >
-                            <FiTrash2 className="text-sm" />
-                          </button>
-                          }
-                        </div>
-                      </div>
-                    );
-                  })}
+                          </div>
+                        </SortableRow>
+                      );
+                    })}
+                  </SortableContext>
 
                   <button
                     type="button"

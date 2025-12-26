@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 
 /* ================= TYPES ================= */
 
-export type InvoiceItem = Record<string, string | number>;
+export type InvoiceItem = Record<string, string | number> & { _rowId?: string };
 
 export interface InvoiceFormValues {
   client: string;
@@ -119,8 +119,11 @@ const Page = () => {
   const handleSubmit = async () => {
     if (!invoiceData) return;
 
+    console.log('submitting data: ', invoiceData)
+    // return;
+
     const itemsForApi = invoiceData.items.map((item, index) => {
-      const { description, quantity, price, total, ...extra } = item;
+      const { description, quantity, price, total, _rowId, ...extra } = item;
 
       return {
         id: uuid(),
