@@ -90,8 +90,9 @@ const SortableCell = ({
         transition,
         opacity: isDragging ? 0.4 : 1,
       }}
-      className="flex flex-col gap-1"
+      className="flex flex-col gap-1 min-w-0 flex-1"
     >
+
       {/* ✅ DRAG HANDLE (LABEL ONLY) */}
       <div
         ref={setActivatorNodeRef}
@@ -354,7 +355,7 @@ const InvoiceForm = ({
                         key={i}
                         className="bg-white border border-gray-200 rounded-lg p-3"
                       >
-                        <div className="flex gap-3 w-full items-start">
+                        <div className="flex gap-3 w-full items-start relative">
                           {/* ✅ ONLY FIRST ROW IS SORTABLE, AND ONLY THE COLUMNS AREA IS IN SortableContext */}
                           {isFirstRow ? (
                             <SortableContext
@@ -371,16 +372,11 @@ const InvoiceForm = ({
                                     <Field
                                       name={`items.${i}.${column.fieldKey}`}
                                       readOnly={isTotal}
-                                      type={
-                                        column.type === "number"
-                                          ? "number"
-                                          : "text"
-                                      }
-                                      className={`p-2 border rounded-md ${
-                                        isTotal
-                                          ? "bg-gray-100 text-center font-semibold"
-                                          : "bg-white"
-                                      } border-gray-300`}
+                                      type={column.type === "number" ? "number" : "text"}
+                                      className={`p-2 border rounded-md w-full min-w-0 ${isTotal
+                                        ? "bg-gray-100 text-center font-semibold"
+                                        : "bg-white"
+                                        } border-gray-300`}
                                     />
                                   );
 
@@ -440,7 +436,7 @@ const InvoiceForm = ({
                                 return (
                                   <div
                                     key={column.fieldKey}
-                                    className="flex flex-col gap-1"
+                                    className="flex flex-col gap-1 min-w-0 flex-1"
                                   >
                                     <div className="flex justify-between">
                                       <label className="text-sm font-medium text-gray-700">
@@ -484,11 +480,10 @@ const InvoiceForm = ({
                                           ? "number"
                                           : "text"
                                       }
-                                      className={`p-2 border rounded-md ${
-                                        isTotal
-                                          ? "bg-gray-100 text-center font-semibold"
-                                          : "bg-white"
-                                      } border-gray-300`}
+                                      className={`p-2 border rounded-md ${isTotal
+                                        ? "bg-gray-100 text-center font-semibold"
+                                        : "bg-white"
+                                        } border-gray-300`}
                                     />
                                   </div>
                                 );
@@ -497,10 +492,10 @@ const InvoiceForm = ({
                           )}
 
                           {/* ✅ NOT INSIDE SortableContext */}
-                          <button
+                          {values.items.length !== 1 && <button
                             type="button"
                             onClick={() => remove(i)}
-                            className="flex items-center justify-center text-red-500"
+                            className="bg-red-600 p-1 cursor-pointer rounded-full text-white absolute -right-5 -bottom-5 flex items-center justify-center"
                             disabled={values.items.length === 1}
                             title={
                               values.items.length === 1
@@ -508,8 +503,9 @@ const InvoiceForm = ({
                                 : "Remove item"
                             }
                           >
-                            <FiTrash2 />
+                            <FiTrash2 className="text-sm" />
                           </button>
+                          }
                         </div>
                       </div>
                     );
