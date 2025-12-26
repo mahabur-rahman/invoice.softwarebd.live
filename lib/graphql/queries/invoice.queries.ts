@@ -128,10 +128,11 @@ export const SINGLE_INVOICE_QUERY = gql`
         id
         order
         itemTotal
-        values{
-        description
-        price
-        quantity
+        values {
+          description
+          price
+          quantity
+          extra
         }
       }
       totals {
