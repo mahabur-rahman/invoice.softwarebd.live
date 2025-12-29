@@ -79,20 +79,22 @@ const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps)
               {businessData?.singleBusiness?.companyName || "Company Name"}
             </h2>
             <p className="text-sm text-gray-600">
-              {businessData?.singleBusiness?.location || "Dummy"}
+              {businessData?.singleBusiness?.location || ""}
               <br />
-              {businessData?.singleBusiness.contactEmail || "Dummy"}
+              {businessData?.singleBusiness.contactEmail || ""}
             </p>
           </div>
 
           <div>
-            <Image
-              alt="logo"
-              src={businessData?.singleBusiness?.logoUrl || ""}
-              className="h-16 w-auto"
-              width={400}
-              height={400}
-            />
+            {businessData?.singleBusiness?.logoUrl &&
+              <Image
+                alt="logo"
+                src={businessData?.singleBusiness?.logoUrl || ""}
+                className="h-16 w-auto"
+                width={400}
+                height={400}
+              />
+            }
           </div>
 
           <div className="text-right text-sm">
@@ -105,9 +107,9 @@ const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps)
 
         <div className="mb-4">
           <h3 className="font-semibold text-gray-700">Bill To:</h3>
-          <p>{clientData?.findOneClient?.name || "Dummy"}</p>
+          <p>{clientData?.findOneClient?.name || ""}</p>
           <p className="text-sm text-gray-600">
-            {clientData?.findOneClient?.address || "Dummy"}
+            {clientData?.findOneClient?.address || ""}
           </p>
         </div>
 
