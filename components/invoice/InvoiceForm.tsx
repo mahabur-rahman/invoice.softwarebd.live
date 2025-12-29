@@ -53,6 +53,7 @@ interface InvoiceFormProps {
   setColumns: React.Dispatch<React.SetStateAction<InvoiceColumnInput[]>>;
   handleSubmit: () => void;
   loading: boolean;
+  initialValues?: InvoiceFormValues | null;
 }
 
 /* ================= VALIDATION ================= */
@@ -227,6 +228,7 @@ const InvoiceForm = ({
   setColumns,
   handleSubmit,
   loading,
+  initialValues,
 }: InvoiceFormProps) => {
   /* ================= HELPERS ================= */
 
@@ -240,7 +242,7 @@ const InvoiceForm = ({
 
   /* ================= INITIAL VALUES ================= */
 
-  const initialValues: InvoiceFormValues = {
+  const fallbackInitialValues: InvoiceFormValues = {
     client: "",
     business: "",
     currency: "BDT",
@@ -253,6 +255,8 @@ const InvoiceForm = ({
     subtotal: 0,
     total: 0,
   };
+
+  const formInitialValues = initialValues ?? fallbackInitialValues;
 
   /* ================= LIVE CALCULATION ================= */
 
@@ -370,11 +374,11 @@ const InvoiceForm = ({
 
   return (
     <Formik
-      initialValues={initialValues}
+      initialValues={formInitialValues}
       validationSchema={validationSchema}
       validate={handleLiveUpdate}
       onSubmit={handleSubmit}
-      enableReinitialize={false}
+      enableReinitialize={Boolean(initialValues)}
     >
       {({ values, setFieldValue }) => (
         <Form className="space-y-8">

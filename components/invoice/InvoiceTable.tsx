@@ -1,7 +1,7 @@
 "use client";
 
 import { Table, Spin, Tag } from "antd";
-import { FiEye, FiTrash } from "react-icons/fi";
+import { FiEye, FiTrash, FiEdit2 } from "react-icons/fi";
 import { useQuery } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 
@@ -114,6 +114,12 @@ const InvoiceTable = () => {
                         className="cursor-pointer text-blue-600 hover:text-blue-800"
                         onClick={() =>
                             router.push(`/invoices/view/${record._id}`)
+                        }
+                    />
+                    <FiEdit2
+                        className="cursor-pointer text-amber-600 hover:text-amber-800"
+                        onClick={() =>
+                            router.push(`/invoices/edit/${record._id}`)
                         }
                     />
                     <FiTrash

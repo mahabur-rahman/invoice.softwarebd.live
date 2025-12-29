@@ -78,3 +78,11 @@ export const CREATE_INVOICE = gql`
     }
   }
 `;
+
+export const UPDATE_INVOICE = gql`
+  mutation UpdateInvoice($input: UpdateInvoiceInput!) {
+    updateInvoice(input: $input) {
+      _id
+    }
+  }
+`;

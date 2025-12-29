@@ -11,7 +11,10 @@ import { useRouter } from "next/navigation";
 
 /* ================= TYPES ================= */
 
-export type InvoiceItem = Record<string, string | number> & { _rowId?: string };
+export type InvoiceItem = Record<string, string | number> & {
+  _rowId?: string;
+  _apiId?: string;
+};
 
 export interface InvoiceFormValues {
   client: string;
@@ -123,7 +126,8 @@ const Page = () => {
     // return;
 
     const itemsForApi = invoiceData.items.map((item, index) => {
-      const { description, quantity, price, total, _rowId, ...extra } = item;
+      const { description, quantity, price, total, _rowId, _apiId, ...extra } =
+        item;
 
       return {
         id: uuid(),

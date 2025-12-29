@@ -106,6 +106,7 @@ export const SINGLE_INVOICE_QUERY = gql`
         contactEmail
       }
       clientId
+      clientName
       clientInfo {
         name
         address
