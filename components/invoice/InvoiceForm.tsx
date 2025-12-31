@@ -43,6 +43,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { FaTimes } from "react-icons/fa";
 import { v4 as uuid } from "uuid";
+import { LiveCalculation } from "./LiveCalculation";
 
 /* ================= PROPS ================= */
 
@@ -81,11 +82,9 @@ const validationSchema = Yup.object({
 
 /* ================= DND HELPERS ================= */
 
-const getColDndId = (column: InvoiceColumnInput) =>
-  (column.id ?? column.fieldKey) as string;
+const getColDndId = (column: InvoiceColumnInput) => (column.id ?? column.fieldKey) as string;
 
-const getRowDndId = (item: InvoiceItem) =>
-  `row-${item._rowId ?? ""}`;
+const getRowDndId = (item: InvoiceItem) => `row-${item._rowId ?? ""}`;
 
 /* ================= SORTABLE CELL (FIRST ROW ONLY) ================= */
 
@@ -258,49 +257,6 @@ const InvoiceForm = ({
 
   const formInitialValues = initialValues ?? fallbackInitialValues;
 
-  /* ================= LIVE CALCULATION ================= */
-
-  const handleLiveUpdate = (values: InvoiceFormValues) => {
-    let subtotal = 0;
-
-    values.items.forEach((item) => {
-      const qty = Number(item.quantity || 0);
-      const price = Number(item.price || 0);
-
-      let itemTotal = qty * price;
-
-      columns.forEach((column) => {
-        if (column.type !== "number") return;
-
-        if (
-          column.fieldKey === "quantity" ||
-          column.fieldKey === "price" ||
-          column.fieldKey === "total"
-        ) {
-          return;
-        }
-
-        const value = Number(item[column.fieldKey] || 0);
-
-        if (column.behavior === "ADD") itemTotal += value;
-        if (column.behavior === "SUBTRACT") itemTotal -= value;
-      });
-
-      item.total = itemTotal;
-      subtotal += itemTotal;
-    });
-
-    const total =
-      subtotal - Number(values.discount || 0) - Number(values.paid || 0);
-
-    onUpdate({
-      ...values,
-      subtotal,
-      total,
-    });
-
-    return {};
-  };
 
   /* ================= DND CONFIG ================= */
 
@@ -376,13 +332,13 @@ const InvoiceForm = ({
     <Formik
       initialValues={formInitialValues}
       validationSchema={validationSchema}
-      validate={handleLiveUpdate}
       onSubmit={handleSubmit}
       enableReinitialize={Boolean(initialValues)}
     >
       {({ values, setFieldValue }) => (
         <Form className="space-y-8">
           <ItemsColumnSync columns={columns} />
+          <LiveCalculation columns={columns} onUpdate={onUpdate} />
           <h2 className="text-2xl font-bold text-gray-800">Create Invoice</h2>
 
           {/* ================= BUSINESS / CLIENT ================= */}
@@ -524,11 +480,10 @@ const InvoiceForm = ({
                                           type={
                                             column.type === "number" ? "number" : "text"
                                           }
-                                          className={`p-2 border rounded-md w-full min-w-0 ${
-                                            isTotal
-                                              ? "bg-gray-100 text-center font-semibold"
-                                              : "bg-white"
-                                          } border-gray-300`}
+                                          className={`p-2 border rounded-md w-full min-w-0 ${isTotal
+                                            ? "bg-gray-100 text-center font-semibold"
+                                            : "bg-white"
+                                            } border-gray-300`}
                                         />
                                       );
 
@@ -634,11 +589,10 @@ const InvoiceForm = ({
                                           type={
                                             column.type === "number" ? "number" : "text"
                                           }
-                                          className={`p-2 border rounded-md ${
-                                            isTotal
-                                              ? "bg-gray-100 text-center font-semibold"
-                                              : "bg-white"
-                                          } border-gray-300`}
+                                          className={`p-2 border rounded-md ${isTotal
+                                            ? "bg-gray-100 text-center font-semibold"
+                                            : "bg-white"
+                                            } border-gray-300`}
                                         />
                                         {!isTotal && (
                                           <FieldError
@@ -698,6 +652,51 @@ const InvoiceForm = ({
               </DndContext>
             )}
           </FieldArray>
+
+          {/* ================= SUMMARY ================= */}
+
+          <div className="flex justify-end mt-6">
+            <div className="w-full max-w-sm space-y-3 bg-white border border-gray-200 rounded-lg p-4">
+              {/* Subtotal */}
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Subtotal</span>
+                <span className="font-semibold">
+                  {values.currency} {values.subtotal.toFixed(2)}
+                </span>
+              </div>
+
+              {/* Discount */}
+              <div className="flex justify-between items-center gap-4">
+                <label className="text-gray-600">Discount</label>
+                <Field
+                  name="discount"
+                  type="number"
+                  className="w-32 p-2 border border-gray-300 rounded-md text-right"
+                />
+              </div>
+
+              {/* Paid */}
+              <div className="flex justify-between items-center gap-4">
+                <label className="text-gray-600">Paid</label>
+                <Field
+                  name="paid"
+                  type="number"
+                  className="w-32 p-2 border border-gray-300 rounded-md text-right"
+                />
+              </div>
+
+              <hr />
+
+              {/* Total */}
+              <div className="flex justify-between items-center text-lg font-bold">
+                <span>Total</span>
+                <span>
+                  {values.currency} {values.total.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
+
 
           {/* ================= NOTES ================= */}
 
