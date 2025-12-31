@@ -86,3 +86,12 @@ export const UPDATE_INVOICE = gql`
     }
   }
 `;
+
+export const DELETE_INVOICE = gql`
+      mutation DeleteInvoice($id: ID!) {
+    deleteInvoice(id: $id) {
+      message
+      success
+    }
+  }
+`;
