@@ -9,6 +9,7 @@ import { DELETE_BUSINESS } from "@/lib/graphql/mutations";
 import { useQuery, useMutation } from "@apollo/client/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import ConfirmModal from "@/utils/ConfirmModal";
 
 type BusinessRow = GetMyBusinessesQuery["myBusinesses"][0];
 
@@ -120,30 +121,12 @@ const BusinessTable = () => {
 
   return (
     <>
-      <Modal
+      <ConfirmModal
         open={modalVisible}
+        title="Delete Business?"
         onCancel={() => setModalVisible(false)}
-        footer={null}
-        centered
-      >
-        <div className="text-center p-4">
-          <h2 className="text-xl font-semibold mb-2">
-            Delete Business?
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Are you sure you want to delete this business?
-            <br /> This action cannot be undone.
-          </p>
-
-          <div className="flex justify-center gap-4">
-            <Button onClick={() => setModalVisible(false)}>Cancel</Button>
-            <Button danger type="primary" onClick={confirmDelete}>
-              Delete
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
+        onConfirm={confirmDelete}
+      />
       {/* Table Wrapper */}
       <div className="p-4 bg-white rounded-lg shadow">
         <div className="flex justify-between items-center mb-4">

@@ -7,10 +7,14 @@ import InvoicePreview from "@/components/invoice/InvoicePreview";
 import { CREATE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
 import { useMutation } from "@apollo/client/react";
 import { v4 as uuid } from "uuid";
+import { useRouter } from "next/navigation";
 
 /* ================= TYPES ================= */
 
-export type InvoiceItem = Record<string, string | number>;
+export type InvoiceItem = Record<string, string | number> & {
+  _rowId?: string;
+  _apiId?: string;
+};
 
 export interface InvoiceFormValues {
   client: string;
@@ -39,10 +43,11 @@ export type InvoiceColumnInput = {
 /* ================= PAGE ================= */
 
 const Page = () => {
+  const router = useRouter();
   const [invoiceData, setInvoiceData] =
     useState<InvoiceFormValues | null>(null);
 
-  const [createInvoice] = useMutation(CREATE_INVOICE);
+  const [createInvoice, { loading }] = useMutation(CREATE_INVOICE);
 
   const [columns, setColumns] = useState<InvoiceColumnInput[]>([
     {
@@ -117,8 +122,12 @@ const Page = () => {
   const handleSubmit = async () => {
     if (!invoiceData) return;
 
+    console.log('submitting data: ', invoiceData)
+    // return;
+
     const itemsForApi = invoiceData.items.map((item, index) => {
-      const { description, quantity, price, total, ...extra } = item;
+      const { description, quantity, price, total, _rowId, _apiId, ...extra } =
+        item;
 
       return {
         id: uuid(),
@@ -133,41 +142,48 @@ const Page = () => {
       };
     });
 
-    await createInvoice({
-      variables: {
-        input: {
-          businessId: invoiceData.business,
-          clientId: invoiceData.client,
-          clientName: "Test Name",
-          invoiceNumber: `INV-${Date.now()}`,
-          currency: invoiceData.currency,
-          issueDate: invoiceData.issueDate,
-          dueDate: invoiceData.dueDate,
-          notes: invoiceData.notes,
-          status: "DRAFT",
+    try {
+      await createInvoice({
+        variables: {
+          input: {
+            businessId: invoiceData.business,
+            clientId: invoiceData.client,
+            clientName: "Test Name",
+            invoiceNumber: `INV-${Date.now()}`,
+            currency: invoiceData.currency,
+            issueDate: invoiceData.issueDate,
+            dueDate: invoiceData.dueDate,
+            notes: invoiceData.notes,
+            status: "DRAFT",
 
-          columns: columns.map(({ locked, ...c }) => ({
-            ...c,
-            id: c.id ?? uuid(),
-          })),
+            columns: columns.map(({ locked, ...c }) => ({
+              ...c,
+              id: c.id ?? uuid(),
+            })),
 
-          items: itemsForApi,
+            items: itemsForApi,
 
-          totals: {
-            subTotal: invoiceData.subtotal,
-            grandTotal: invoiceData.total,
-            additions: { tax: 0, shipping: 0 },
-            subtractions: { discount: invoiceData.discount },
+            totals: {
+              subTotal: invoiceData.subtotal,
+              grandTotal: invoiceData.total,
+              additions: { tax: 0, shipping: 0 },
+              subtractions: { discount: invoiceData.discount },
+            },
           },
         },
-      },
-    });
+      });
+      setInvoiceData(null);
+      router.push('/invoices')
+    } catch (err) {
+      console.log(err)
+    }
+
   };
 
   /* ================= RENDER ================= */
 
   return (
-    <div className="min-h-screen flex flex-col gap-8 bg-gray-50 p-6">
+    <div className="min-h-screen flex flex-col gap-8 bg-gray-50">
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
         <InvoiceForm
           columns={columns}
@@ -175,6 +191,7 @@ const Page = () => {
           onUpdate={setInvoiceData}
           setAddColumnModalOpen={setAddColumnModalOpen}
           handleSubmit={handleSubmit}
+          loading={loading}
         />
       </div>
 
@@ -185,7 +202,7 @@ const Page = () => {
         setColumns={setColumns}
       />
 
-      <InvoicePreview data={previewData} columns={columns}/>
+      <InvoicePreview data={previewData} columns={columns} />
     </div>
   );
 };

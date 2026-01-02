@@ -78,3 +78,20 @@ export const CREATE_INVOICE = gql`
     }
   }
 `;
+
+export const UPDATE_INVOICE = gql`
+  mutation UpdateInvoice($input: UpdateInvoiceInput!) {
+    updateInvoice(input: $input) {
+      _id
+    }
+  }
+`;
+
+export const DELETE_INVOICE = gql`
+      mutation DeleteInvoice($id: ID!) {
+    deleteInvoice(id: $id) {
+      message
+      success
+    }
+  }
+`;

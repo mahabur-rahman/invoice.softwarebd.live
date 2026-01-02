@@ -1,13 +1,16 @@
 "use client";
 
 import { Table, Spin, Tag } from "antd";
-import { FiEye, FiTrash } from "react-icons/fi";
-import { useQuery } from "@apollo/client/react";
+import { FiEye, FiTrash, FiEdit2 } from "react-icons/fi";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 
 // import { DELETE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
 import { InvoiceType } from "@/lib/graphql/generated-types";
 import { GET_MY_INVOICES } from "@/lib/graphql/queries/invoice.queries";
+import { DELETE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
+import { useState } from "react";
+import ConfirmModal from "@/utils/ConfirmModal";
 
 /* ================= TYPES ================= */
 
@@ -17,6 +20,8 @@ type InvoiceRow = InvoiceType;
 
 const InvoiceTable = () => {
     const router = useRouter();
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [modalVisible, setModalVisible] = useState(false);
 
     /* ================= QUERY ================= */
 
@@ -26,14 +31,26 @@ const InvoiceTable = () => {
 
     /* ================= MUTATION ================= */
 
-    //   const [deleteInvoice] = useMutation(DELETE_INVOICE, {
-    //     refetchQueries: [{ query: GET_MY_INVOICES }],
-    //   });
+    const [deleteInvoice, { loading: deleteLoading }] = useMutation(DELETE_INVOICE, {
+        refetchQueries: [{ query: GET_MY_INVOICES }],
+    });
 
     /* ================= HANDLERS ================= */
 
     const handleDelete = async (id: string) => {
-        // await deleteInvoice({ variables: { id } });
+        setSelectedId(id);
+        setModalVisible(true);
+    };
+    const confirmDelete = async () => {
+        try {
+            await deleteInvoice({ variables: { id: selectedId } });
+            setSelectedId(null);
+            setModalVisible(false);
+        } catch (err) {
+            setSelectedId(null);
+            setModalVisible(false);
+            console.error(err)
+        }
     };
 
     /* ================= STATES ================= */
@@ -116,6 +133,12 @@ const InvoiceTable = () => {
                             router.push(`/invoices/view/${record._id}`)
                         }
                     />
+                    <FiEdit2
+                        className="cursor-pointer text-amber-600 hover:text-amber-800"
+                        onClick={() =>
+                            router.push(`/invoices/edit/${record._id}`)
+                        }
+                    />
                     <FiTrash
                         className="cursor-pointer text-red-500 hover:text-red-700"
                         onClick={() => handleDelete(record._id)}
@@ -129,6 +152,13 @@ const InvoiceTable = () => {
 
     return (
         <div className="p-4 bg-white rounded-lg shadow">
+            <ConfirmModal
+                open={modalVisible}
+                title="Delete Invoice?"
+                onCancel={() => setModalVisible(false)}
+                onConfirm={confirmDelete}
+                loading={deleteLoading}
+            />
             <h2 className="text-xl font-semibold mb-4">
                 Invoices
             </h2>

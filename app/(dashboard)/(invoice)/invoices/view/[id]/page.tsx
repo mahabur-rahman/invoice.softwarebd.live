@@ -14,13 +14,22 @@ interface SingleInvoiceQueryResponse {
     _id: string;
     businessId: string;
     clientId: string;
+    clientName?: string;
     currency: string;
     issueDate: string;
     dueDate: string;
     notes?: string;
     columns: InvoiceColumnInput[];
     items: {
-      values: Record<string, string | number>;
+      id: string;
+      order: number;
+      itemTotal?: number;
+      values: {
+        description?: string;
+        price?: number;
+        quantity?: number;
+        extra?: Record<string, string | number>;
+      };
     }[];
     totals: {
       subTotal: number;
@@ -63,10 +72,28 @@ const Page = () => {
       paid: 0,
       total: invoice.totals.grandTotal,
 
-      items: invoice.items.map((item) => ({
-        ...item.values,
-        total: Number(item?.values),
-      })),
+      items: invoice.items.map((item) => {
+        const { description, price, quantity, extra = {} } = item.values || {};
+        return {
+          description: description ?? "",
+          price: Number(price ?? 0),
+          quantity: Number(quantity ?? 0),
+          total: Number(item.itemTotal ?? 0),
+          ...Object.entries(extra ?? {}).reduce<Record<string, string | number>>(
+            (acc, [key, val]) => {
+              if (typeof val === "number" || typeof val === "string") {
+                acc[key] = val;
+              } else if (val == null) {
+                acc[key] = "";
+              } else {
+                acc[key] = String(val);
+              }
+              return acc;
+            },
+            {}
+          ),
+        };
+      }),
     };
   }, [data]);
 
