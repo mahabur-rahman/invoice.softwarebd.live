@@ -48,6 +48,13 @@ interface SingleInvoiceQueryResponse {
   };
 }
 
+const toDateInputValue = (value?: string) => {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const [datePart] = value.split("T");
+  return datePart ?? "";
+};
+
 const EditInvoicePage = () => {
   const router = useRouter();
   const params = useParams();
@@ -108,8 +115,8 @@ const EditInvoicePage = () => {
       client: invoice.clientId,
       business: invoice.businessId,
       currency: invoice.currency,
-      issueDate: invoice.issueDate,
-      dueDate: invoice.dueDate,
+      issueDate: toDateInputValue(invoice.issueDate),
+      dueDate: toDateInputValue(invoice.dueDate),
       items,
       notes: invoice.notes ?? "",
       discount: invoice.totals?.subtractions?.discount ?? 0,
@@ -201,6 +208,7 @@ const EditInvoicePage = () => {
           handleSubmit={handleSubmit}
           loading={saving}
           initialValues={invoiceData}
+          editing={true}
         />
       </div>
 

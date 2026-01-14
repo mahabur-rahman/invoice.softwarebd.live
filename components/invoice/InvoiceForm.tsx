@@ -55,6 +55,7 @@ interface InvoiceFormProps {
   handleSubmit: () => void;
   loading: boolean;
   initialValues?: InvoiceFormValues | null;
+  editing:boolean;
 }
 
 /* ================= VALIDATION ================= */
@@ -228,6 +229,7 @@ const InvoiceForm = ({
   handleSubmit,
   loading,
   initialValues,
+  editing
 }: InvoiceFormProps) => {
   /* ================= HELPERS ================= */
 
@@ -339,7 +341,7 @@ const InvoiceForm = ({
         <Form className="space-y-8">
           <ItemsColumnSync columns={columns} />
           <LiveCalculation columns={columns} onUpdate={onUpdate} />
-          <h2 className="text-2xl font-bold text-gray-800">Create Invoice</h2>
+          <h2 className="text-2xl font-bold text-gray-800">{editing ? 'Update': 'Create'} Invoice</h2>
 
           {/* ================= BUSINESS / CLIENT ================= */}
 
@@ -725,7 +727,7 @@ const InvoiceForm = ({
                 Please Wait
               </span>
             ) : (
-              "Create Invoice"
+              editing ? 'Update Invoice': 'Create Invoice'
             )}
           </button>
         </Form>

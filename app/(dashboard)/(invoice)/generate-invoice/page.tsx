@@ -192,6 +192,7 @@ const Page = () => {
           setAddColumnModalOpen={setAddColumnModalOpen}
           handleSubmit={handleSubmit}
           loading={loading}
+          editing={false}
         />
       </div>
 
