@@ -159,7 +159,7 @@ const EditInvoicePage = () => {
           dueDate: invoiceData.dueDate,
           notes: invoiceData.notes,
           status: data?.singleInvoice.status ?? "DRAFT",
-          columns: columns.map(({ locked, ...c }) => ({
+          columns: columns.map(({ locked, __typename, ...c }) => ({
             ...c,
             id: c.id ?? uuid(),
           })),
