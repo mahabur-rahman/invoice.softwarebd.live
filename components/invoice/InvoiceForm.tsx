@@ -10,7 +10,7 @@ import {
   ErrorMessage,
 } from "formik";
 import * as Yup from "yup";
-import { FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiEdit2, FiPlus, FiTrash2 } from "react-icons/fi";
 import { useQuery } from "@apollo/client/react";
 import { GET_MY_BUSINESSES } from "@/lib/graphql/queries";
 import { GET_ALL_CLIENTS } from "@/lib/graphql/queries/invoice.queries";
@@ -44,6 +44,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { FaTimes } from "react-icons/fa";
 import { v4 as uuid } from "uuid";
 import { LiveCalculation } from "./LiveCalculation";
+import { Input, Modal } from "antd";
 
 /* ================= PROPS ================= */
 
@@ -263,6 +264,9 @@ const InvoiceForm = ({
   /* ================= DND CONFIG ================= */
 
   const [activeId, setActiveId] = React.useState<string | null>(null);
+  const [labelModalOpen, setLabelModalOpen] = React.useState(false);
+  const [labelDraft, setLabelDraft] = React.useState("");
+  const [labelTargetKey, setLabelTargetKey] = React.useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -321,6 +325,27 @@ const InvoiceForm = ({
     return columns.find((c) => getColDndId(c) === activeId) ?? null;
   }, [activeId, columns]);
 
+  const openLabelModal = (column: InvoiceColumnInput) => {
+    setLabelTargetKey(column.fieldKey);
+    setLabelDraft(column.label);
+    setLabelModalOpen(true);
+  };
+
+  const saveLabel = () => {
+    if (!labelTargetKey) return;
+    const nextLabel = labelDraft.trim();
+    if (!nextLabel) {
+      setLabelModalOpen(false);
+      return;
+    }
+    setColumns((prev) =>
+      prev.map((col) =>
+        col.fieldKey === labelTargetKey ? { ...col, label: nextLabel } : col
+      )
+    );
+    setLabelModalOpen(false);
+  };
+
   /* ================= QUERIES ================= */
 
   const { data: businessData } =
@@ -331,14 +356,15 @@ const InvoiceForm = ({
   /* ================= RENDER ================= */
 
   return (
-    <Formik
-      initialValues={formInitialValues}
-      validationSchema={validationSchema}
-      onSubmit={handleSubmit}
-      enableReinitialize={Boolean(initialValues)}
-    >
-      {({ values, setFieldValue }) => (
-        <Form className="space-y-8">
+    <>
+      <Formik
+        initialValues={formInitialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+        enableReinitialize={Boolean(initialValues)}
+      >
+        {({ values, setFieldValue }) => (
+          <Form className="space-y-8">
           <ItemsColumnSync columns={columns} />
           <LiveCalculation columns={columns} onUpdate={onUpdate} />
           <h2 className="text-2xl font-bold text-gray-800">{editing ? 'Update': 'Create'} Invoice</h2>
@@ -497,36 +523,53 @@ const InvoiceForm = ({
                                             <div className="flex justify-between w-full">
                                               <span>{column.label}</span>
 
-                                              {!column.locked && (
-                                                <button
-                                                  type="button"
-                                                  onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
+                                              <div className="flex items-center gap-2">
+                                                {column.locked && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                      e.preventDefault();
+                                                      e.stopPropagation();
+                                                      openLabelModal(column);
+                                                    }}
+                                                    className="text-gray-500 hover:text-gray-700"
+                                                    aria-label={`Edit ${column.label} label`}
+                                                  >
+                                                    <FiEdit2 className="text-xs" />
+                                                  </button>
+                                                )}
 
-                                                    setColumns((prev) =>
-                                                      prev.filter(
-                                                        (c) =>
-                                                          c.fieldKey !== column.fieldKey
-                                                      )
-                                                    );
+                                                {!column.locked && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                      e.preventDefault();
+                                                      e.stopPropagation();
 
-                                                    setFieldValue(
-                                                      "items",
-                                                      values.items.map((item) => {
-                                                        const {
-                                                          [column.fieldKey]: __,
-                                                          ...rest
-                                                        } = item;
-                                                        return rest;
-                                                      })
-                                                    );
-                                                  }}
-                                                  className="text-white text-xs cursor-pointer bg-red-500 h-4 w-4 rounded-full flex items-center justify-center"
-                                                >
-                                                  <FaTimes />
-                                                </button>
-                                              )}
+                                                      setColumns((prev) =>
+                                                        prev.filter(
+                                                          (c) =>
+                                                            c.fieldKey !== column.fieldKey
+                                                        )
+                                                      );
+
+                                                      setFieldValue(
+                                                        "items",
+                                                        values.items.map((item) => {
+                                                          const {
+                                                            [column.fieldKey]: __,
+                                                            ...rest
+                                                          } = item;
+                                                          return rest;
+                                                        })
+                                                      );
+                                                    }}
+                                                    className="text-white text-xs cursor-pointer bg-red-500 h-4 w-4 rounded-full flex items-center justify-center"
+                                                  >
+                                                    <FaTimes />
+                                                  </button>
+                                                )}
+                                              </div>
                                             </div>
                                           }
                                         >
@@ -730,9 +773,23 @@ const InvoiceForm = ({
               editing ? 'Update Invoice': 'Create Invoice'
             )}
           </button>
-        </Form>
-      )}
-    </Formik>
+          </Form>
+        )}
+      </Formik>
+      <Modal
+        title="Edit Column Label"
+        open={labelModalOpen}
+        onOk={saveLabel}
+        onCancel={() => setLabelModalOpen(false)}
+        okText="Save"
+      >
+        <Input
+          value={labelDraft}
+          onChange={(event) => setLabelDraft(event.target.value)}
+          placeholder="Column label"
+        />
+      </Modal>
+    </>
   );
 };
 
