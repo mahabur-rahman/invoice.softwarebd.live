@@ -34,6 +34,18 @@ interface InvoicePreviewProps {
   showPrintButton?: boolean;
 }
 
+const formatDate = (value?: string) => {
+  if (!value) return "—";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const [datePart] = value.split("T");
+  if (datePart) return datePart;
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toISOString().substring(0, 10);
+  }
+  return value;
+};
+
 /* ================= COMPONENT ================= */
 
 const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps) => {
@@ -98,8 +110,8 @@ const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps)
           </div>
 
           <div className="text-right text-sm">
-            <p>Issue: {data.issueDate || "—"}</p>
-            <p>Due: {data.dueDate || "—"}</p>
+            <p>Issue: {formatDate(data.issueDate)}</p>
+            <p>Due: {formatDate(data.dueDate)}</p>
           </div>
         </div>
 
