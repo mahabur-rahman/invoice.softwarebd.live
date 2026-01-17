@@ -145,6 +145,7 @@ export const SINGLE_INVOICE_QUERY = gql`
         }
         subtractions{
           discount
+          paid
         }
       }
       createdAt

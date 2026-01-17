@@ -120,7 +120,7 @@ const EditInvoicePage = () => {
       items,
       notes: invoice.notes ?? "",
       discount: invoice.totals?.subtractions?.discount ?? 0,
-      paid: 0,
+      paid: invoice.totals?.subtractions?.paid ?? 0,
       subtotal: invoice.totals?.subTotal ?? 0,
       total: invoice.totals?.grandTotal ?? 0,
     });

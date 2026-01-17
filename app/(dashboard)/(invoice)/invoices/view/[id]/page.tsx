@@ -69,7 +69,7 @@ const Page = () => {
       notes: invoice.notes ?? "",
       subtotal: invoice.totals.subTotal,
       discount: invoice.totals.subtractions?.discount ?? 0,
-      paid: 0,
+      paid: invoice.totals.subtractions?.paid ?? 0,
       total: invoice.totals.grandTotal,
 
       items: invoice.items.map((item) => {

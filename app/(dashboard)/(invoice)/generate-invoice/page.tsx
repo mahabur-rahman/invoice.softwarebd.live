@@ -167,7 +167,7 @@ const Page = () => {
               subTotal: invoiceData.subtotal,
               grandTotal: invoiceData.total,
               additions: { tax: 0, shipping: 0 },
-              subtractions: { discount: invoiceData.discount },
+              subtractions: { discount: invoiceData.discount, paid: invoiceData.paid },
             },
           },
         },
