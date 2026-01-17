@@ -201,7 +201,7 @@ const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps)
 
         <div className="mt-4 border-t pt-4 text-sm text-gray-600">
           <p className="font-semibold">Notes:</p>
-          <p>{data.notes}</p>
+          <pre>{data.notes}</pre>
         </div>
       </div>
 

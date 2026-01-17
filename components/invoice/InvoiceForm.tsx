@@ -403,7 +403,7 @@ const InvoiceForm = ({
                 <button
                   type="button"
                   onClick={() => setBusinessModalOpen(true)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-gradient-to-b from-white to-gray-50 text-gray-700 shadow-sm hover:border-gray-300 hover:from-gray-50 hover:to-white cursor-pointer transition"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-linear-to-b from-white to-gray-50 text-gray-700 shadow-sm hover:border-gray-300 hover:from-gray-50 hover:to-white cursor-pointer transition"
                   aria-label="Add business"
                 >
                   <FiPlus className="text-sm" />
@@ -432,7 +432,7 @@ const InvoiceForm = ({
                 <button
                   type="button"
                   onClick={() => setClientModalOpen(true)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-gradient-to-b from-white to-gray-50 text-gray-700 shadow-sm hover:border-gray-300 hover:from-gray-50 hover:to-white cursor-pointer transition"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-linear-to-b from-white to-gray-50 text-gray-700 shadow-sm hover:border-gray-300 hover:from-gray-50 hover:to-white cursor-pointer transition"
                   aria-label="Add client"
                 >
                   <FiPlus className="text-sm" />

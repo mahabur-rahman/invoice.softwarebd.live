@@ -5,10 +5,10 @@ import { Formik, Form, } from "formik";
 import * as Yup from "yup";
 
 
-import { BusinessType, ClientType } from "@/lib/graphql/generated-types";
-import { Spin, Button, Input } from "antd";
+import { ClientType } from "@/lib/graphql/generated-types";
+import { Button, Input } from "antd";
 import { CREATE_CLIENT, UPDATE_CLIENT } from "@/lib/graphql/mutations/invoice.mutations";
-import { FIND_ONE_CLIENT, GET_ALL_CLIENTS, GET_MY_BUSINESSES_ID } from "@/lib/graphql/queries/invoice.queries";
+import { GET_ALL_CLIENTS, GET_MY_BUSINESSES_ID } from "@/lib/graphql/queries/invoice.queries";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { useUserStore } from "@/lib/store/userStore";
 import { BusinessQueryResponse } from "@/lib/interfaces/responseTypes";
@@ -121,7 +121,7 @@ const AddNewClient: React.FC<AddNewClientProps> = ({
                 validationSchema={ClientSchema}
                 onSubmit={handleSubmit}
             >
-                {({ values, handleChange, setFieldValue, errors, touched, isSubmitting }) => (
+                {({ values, handleChange, errors, touched, isSubmitting }) => (
                     <Form>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
