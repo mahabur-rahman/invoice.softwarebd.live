@@ -124,6 +124,7 @@ export const SINGLE_INVOICE_QUERY = gql`
         type
         order
         behavior
+        locked
       }
       items {
         id

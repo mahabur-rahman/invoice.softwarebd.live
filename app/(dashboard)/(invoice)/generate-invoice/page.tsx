@@ -156,7 +156,7 @@ const Page = () => {
             notes: invoiceData.notes,
             status: "DRAFT",
 
-            columns: columns.map(({ locked, ...c }) => ({
+            columns: columns.map((c) => ({
               ...c,
               id: c.id ?? uuid(),
             })),
