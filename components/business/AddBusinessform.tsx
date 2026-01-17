@@ -11,6 +11,7 @@ import { CREATE_BUSINESS_MUTATION, UPDATE_BUSINESS_MUTATION } from "@/lib/graphq
 import { useToast } from "@/app/providers/ToastProvider";
 import { useRouter } from "next/navigation";
 import { uploadLogo } from "@/utils/uploadLogo";
+import { GET_MY_BUSINESSES } from "@/lib/graphql/queries";
 
 interface Business {
     _id?: string;
@@ -72,7 +73,10 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
             websiteUrl: "",
         };
 
-    const [createBusiness, { loading }] = useMutation(CREATE_BUSINESS_MUTATION);
+    const [createBusiness, { loading }] = useMutation(CREATE_BUSINESS_MUTATION, {
+        refetchQueries: [{ query: GET_MY_BUSINESSES }],
+        awaitRefetchQueries: true,
+    });
     const [updateBusiness] = useMutation(UPDATE_BUSINESS_MUTATION);
 
 

@@ -8,7 +8,7 @@ import * as Yup from "yup";
 import { BusinessType, ClientType } from "@/lib/graphql/generated-types";
 import { Spin, Button, Input } from "antd";
 import { CREATE_CLIENT, UPDATE_CLIENT } from "@/lib/graphql/mutations/invoice.mutations";
-import { FIND_ONE_CLIENT, GET_MY_BUSINESSES_ID } from "@/lib/graphql/queries/invoice.queries";
+import { FIND_ONE_CLIENT, GET_ALL_CLIENTS, GET_MY_BUSINESSES_ID } from "@/lib/graphql/queries/invoice.queries";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { useUserStore } from "@/lib/store/userStore";
 import { BusinessQueryResponse } from "@/lib/interfaces/responseTypes";
@@ -53,7 +53,10 @@ const AddNewClient: React.FC<AddNewClientProps> = ({
     const { data: businessList, loading: bizLoading } =
         useQuery<BusinessQueryResponse>(GET_MY_BUSINESSES_ID);
 
-    const [createClient] = useMutation(CREATE_CLIENT);
+    const [createClient] = useMutation(CREATE_CLIENT, {
+        refetchQueries: [{ query: GET_ALL_CLIENTS }],
+        awaitRefetchQueries: true,
+    });
     const [updateClient] = useMutation(UPDATE_CLIENT);
 
     // Default values (add mode)

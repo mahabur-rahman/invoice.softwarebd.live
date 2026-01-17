@@ -8,6 +8,7 @@ import { CREATE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
 import { useMutation } from "@apollo/client/react";
 import { v4 as uuid } from "uuid";
 import { useRouter } from "next/navigation";
+import { GET_MY_INVOICES } from "@/lib/graphql/queries/invoice.queries";
 
 /* ================= TYPES ================= */
 
@@ -48,7 +49,10 @@ const Page = () => {
   const [invoiceData, setInvoiceData] =
     useState<InvoiceFormValues | null>(null);
 
-  const [createInvoice, { loading }] = useMutation(CREATE_INVOICE);
+  const [createInvoice, { loading }] = useMutation(CREATE_INVOICE, {
+    refetchQueries: [{ query: GET_MY_INVOICES }],
+    awaitRefetchQueries: true,
+  });
 
   const [columns, setColumns] = useState<InvoiceColumnInput[]>([
     {
