@@ -49,6 +49,8 @@ import {
   INVOICE_CURRENCY_OPTIONS,
   INVOICE_STATUS_OPTIONS,
 } from "@/lib/constants/invoice";
+import AddBusinessForm from "@/components/business/AddBusinessform";
+import AddNewClient from "@/components/client/AddNewClient";
 
 /* ================= PROPS ================= */
 
@@ -354,10 +356,13 @@ const InvoiceForm = ({
 
   /* ================= QUERIES ================= */
 
-  const { data: businessData } =
+  const { data: businessData, refetch: refetchBusinesses } =
     useQuery<GetMyBusinessesQuery>(GET_MY_BUSINESSES);
-  const { data: clientData } =
+  const { data: clientData, refetch: refetchClients } =
     useQuery<{ findAllClients: ClientType[] }>(GET_ALL_CLIENTS);
+
+  const [businessModalOpen, setBusinessModalOpen] = React.useState(false);
+  const [clientModalOpen, setClientModalOpen] = React.useState(false);
 
   /* ================= RENDER ================= */
 
@@ -382,18 +387,28 @@ const InvoiceForm = ({
               <label className="text-sm font-medium text-gray-700">
                 Select Business
               </label>
-              <Field
-                as="select"
-                name="business"
-                className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
-              >
-                <option value="">Select business</option>
-                {businessData?.myBusinesses?.map((b) => (
-                  <option key={b._id} value={b._id}>
-                    {b.companyName}
-                  </option>
-                ))}
-              </Field>
+              <div className="mt-1 flex items-center gap-2">
+                <Field
+                  as="select"
+                  name="business"
+                  className="w-full p-2 border border-gray-300 rounded-md bg-white"
+                >
+                  <option value="">Select business</option>
+                  {businessData?.myBusinesses?.map((b) => (
+                    <option key={b._id} value={b._id}>
+                      {b.companyName}
+                    </option>
+                  ))}
+                </Field>
+                <button
+                  type="button"
+                  onClick={() => setBusinessModalOpen(true)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-gradient-to-b from-white to-gray-50 text-gray-700 shadow-sm hover:border-gray-300 hover:from-gray-50 hover:to-white cursor-pointer transition"
+                  aria-label="Add business"
+                >
+                  <FiPlus className="text-sm" />
+                </button>
+              </div>
               <FieldError name="business" />
             </div>
 
@@ -401,18 +416,28 @@ const InvoiceForm = ({
               <label className="text-sm font-medium text-gray-700">
                 Select Client
               </label>
-              <Field
-                as="select"
-                name="client"
-                className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
-              >
-                <option value="">Select client</option>
-                {clientData?.findAllClients?.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))}
-              </Field>
+              <div className="mt-1 flex items-center gap-2">
+                <Field
+                  as="select"
+                  name="client"
+                  className="w-full p-2 border border-gray-300 rounded-md bg-white"
+                >
+                  <option value="">Select client</option>
+                  {clientData?.findAllClients?.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </Field>
+                <button
+                  type="button"
+                  onClick={() => setClientModalOpen(true)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-gradient-to-b from-white to-gray-50 text-gray-700 shadow-sm hover:border-gray-300 hover:from-gray-50 hover:to-white cursor-pointer transition"
+                  aria-label="Add client"
+                >
+                  <FiPlus className="text-sm" />
+                </button>
+              </div>
               <FieldError name="client" />
             </div>
           </div>
@@ -815,6 +840,42 @@ const InvoiceForm = ({
           value={labelDraft}
           onChange={(event) => setLabelDraft(event.target.value)}
           placeholder="Column label"
+        />
+      </Modal>
+
+      <Modal
+        title={null}
+        open={businessModalOpen}
+        onCancel={() => setBusinessModalOpen(false)}
+        footer={null}
+        destroyOnClose
+        closable={false}
+        width={720}
+      >
+        <AddBusinessForm
+          redirectOnSuccess={false}
+          onSuccess={() => {
+            setBusinessModalOpen(false);
+            refetchBusinesses();
+          }}
+        />
+      </Modal>
+
+      <Modal
+        title={null}
+        open={clientModalOpen}
+        onCancel={() => setClientModalOpen(false)}
+        footer={null}
+        destroyOnClose
+        closable={false}
+        width={720}
+      >
+        <AddNewClient
+          redirectOnSuccess={false}
+          onSuccess={() => {
+            setClientModalOpen(false);
+            refetchClients();
+          }}
         />
       </Modal>
     </>

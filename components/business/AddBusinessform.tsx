@@ -25,6 +25,8 @@ interface Business {
 
 interface AddBusinessFormProps {
     business?: Business;
+    onSuccess?: () => void;
+    redirectOnSuccess?: boolean;
 }
 
 const BusinessSchema = Yup.object().shape({
@@ -37,7 +39,11 @@ const BusinessSchema = Yup.object().shape({
     websiteUrl: Yup.string().url("Must be a valid URL").nullable(),
 });
 
-const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business }) => {
+const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
+    business,
+    onSuccess,
+    redirectOnSuccess = true,
+}) => {
 
     const toast = useToast();
     const router = useRouter()
@@ -92,7 +98,11 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business }) => {
             });
 
             toast?.success("Business created successfully!");
-            router.push("/my-business");
+            if (redirectOnSuccess) {
+                router.push("/my-business");
+            } else {
+                onSuccess?.();
+            }
             return;
         }
 
@@ -105,7 +115,11 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business }) => {
         });
 
         toast?.success("Business updated successfully!");
-        router.push("/my-business");
+        if (redirectOnSuccess) {
+            router.push("/my-business");
+        } else {
+            onSuccess?.();
+        }
     };
 
 

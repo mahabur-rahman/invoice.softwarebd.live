@@ -26,6 +26,8 @@ const ClientSchema = Yup.object().shape({
 
 interface AddNewClientProps {
     client?: ClientType;
+    onSuccess?: () => void;
+    redirectOnSuccess?: boolean;
 }
 
 type ClientFormValues = {
@@ -40,7 +42,11 @@ type ClientFormValues = {
 };
 
 
-const AddNewClient: React.FC<AddNewClientProps> = ({ client }) => {
+const AddNewClient: React.FC<AddNewClientProps> = ({
+    client,
+    onSuccess,
+    redirectOnSuccess = true,
+}) => {
     const router = useRouter();
     const userId = useUserStore((state) => state.userId);
 
@@ -73,7 +79,7 @@ const AddNewClient: React.FC<AddNewClientProps> = ({ client }) => {
         };
 
 
-    const handleSubmit = async (values: any) => {
+    const handleSubmit = async (values: ClientFormValues) => {
         try {
             if (client) {
                 await updateClient({
@@ -90,7 +96,11 @@ const AddNewClient: React.FC<AddNewClientProps> = ({ client }) => {
                 });
             }
 
-            router.push("/clients");
+            if (redirectOnSuccess) {
+                router.push("/clients");
+            } else {
+                onSuccess?.();
+            }
         } catch (err) {
             console.error(err);
         }
