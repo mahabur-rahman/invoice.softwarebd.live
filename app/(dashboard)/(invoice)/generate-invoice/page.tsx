@@ -20,6 +20,7 @@ export interface InvoiceFormValues {
   client: string;
   business: string;
   currency: string;
+  status: string;
   issueDate: string;
   dueDate: string;
   items: InvoiceItem[];
@@ -99,6 +100,7 @@ const Page = () => {
       client: invoiceData.client,
       business: invoiceData.business,
       currency: invoiceData.currency,
+      status: invoiceData.status,
       issueDate: invoiceData.issueDate,
       dueDate: invoiceData.dueDate,
       notes: invoiceData.notes,
@@ -154,7 +156,7 @@ const Page = () => {
             issueDate: invoiceData.issueDate,
             dueDate: invoiceData.dueDate,
             notes: invoiceData.notes,
-            status: "DRAFT",
+            status: invoiceData.status,
 
             columns: columns.map((c) => ({
               ...c,

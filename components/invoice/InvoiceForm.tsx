@@ -65,6 +65,7 @@ const validationSchema = Yup.object({
   client: Yup.string().required("Client is required"),
   business: Yup.string().required("Business is required"),
   currency: Yup.string().required("Currency is required"),
+  status: Yup.string().required("Status is required"),
   issueDate: Yup.string().required("Issue date is required"),
   dueDate: Yup.string().required("Due date is required"),
   items: Yup.array()
@@ -248,6 +249,7 @@ const InvoiceForm = ({
     client: "",
     business: "",
     currency: "BDT",
+    status: "DRAFT",
     issueDate: "",
     dueDate: "",
     items: [createEmptyItem(initialRowId)],
@@ -413,7 +415,7 @@ const InvoiceForm = ({
 
           {/* ================= DATES & CURRENCY ================= */}
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700">
                 Issue Date
@@ -450,6 +452,23 @@ const InvoiceForm = ({
                 <option value="BDT">BDT</option>
               </Field>
               <FieldError name="currency" />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">
+                Status
+              </label>
+              <Field
+                as="select"
+                name="status"
+                className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
+              >
+                <option value="DRAFT">Draft</option>
+                <option value="INVOICE">Invoice</option>
+                <option value="PROPOSAL">Proposal</option>
+                <option value="QUOTATION">Quotation</option>
+              </Field>
+              <FieldError name="status" />
             </div>
           </div>
 

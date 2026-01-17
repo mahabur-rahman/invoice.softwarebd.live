@@ -115,6 +115,7 @@ const EditInvoicePage = () => {
       client: invoice.clientId,
       business: invoice.businessId,
       currency: invoice.currency,
+      status: invoice.status ?? "DRAFT",
       issueDate: toDateInputValue(invoice.issueDate),
       dueDate: toDateInputValue(invoice.dueDate),
       items,
@@ -158,7 +159,7 @@ const EditInvoicePage = () => {
           issueDate: invoiceData.issueDate,
           dueDate: invoiceData.dueDate,
           notes: invoiceData.notes,
-          status: data?.singleInvoice.status ?? "DRAFT",
+          status: invoiceData.status,
           columns: columns.map(({ locked, __typename, ...c }) => ({
             ...c,
             id: c.id ?? uuid(),

@@ -16,6 +16,7 @@ interface SingleInvoiceQueryResponse {
     clientId: string;
     clientName?: string;
     currency: string;
+    status: string;
     issueDate: string;
     dueDate: string;
     notes?: string;
@@ -64,6 +65,7 @@ const Page = () => {
       client: invoice.clientId,
       business: invoice.businessId,
       currency: invoice.currency,
+      status: invoice.status,
       issueDate: invoice.issueDate,
       dueDate: invoice.dueDate,
       notes: invoice.notes ?? "",
