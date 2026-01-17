@@ -43,7 +43,7 @@ interface SingleInvoiceQueryResponse {
     totals: {
       subTotal: number;
       grandTotal: number;
-      subtractions?: { discount?: number };
+      subtractions?: { discount?: number, paid?: number };
     };
   };
 }
@@ -160,10 +160,14 @@ const EditInvoicePage = () => {
           dueDate: invoiceData.dueDate,
           notes: invoiceData.notes,
           status: invoiceData.status,
-          columns: columns.map(({ locked, __typename, ...c }) => ({
-            ...c,
-            id: c.id ?? uuid(),
-          })),
+          columns: columns.map((col) => {
+            const { __typename, ...c } = col as any;
+
+            return {
+              ...c,
+              id: c.id ?? uuid(),
+            };
+          }),
           items: itemsForApi,
           totals: {
             subTotal: invoiceData.subtotal,
