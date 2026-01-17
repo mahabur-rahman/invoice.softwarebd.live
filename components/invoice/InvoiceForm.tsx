@@ -45,6 +45,10 @@ import { FaTimes } from "react-icons/fa";
 import { v4 as uuid } from "uuid";
 import { LiveCalculation } from "./LiveCalculation";
 import { Input, Modal } from "antd";
+import {
+  INVOICE_CURRENCY_OPTIONS,
+  INVOICE_STATUS_OPTIONS,
+} from "@/lib/constants/invoice";
 
 /* ================= PROPS ================= */
 
@@ -449,7 +453,11 @@ const InvoiceForm = ({
                 name="currency"
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
               >
-                <option value="BDT">BDT</option>
+                {INVOICE_CURRENCY_OPTIONS.map((currency) => (
+                  <option key={currency} value={currency}>
+                    {currency}
+                  </option>
+                ))}
               </Field>
               <FieldError name="currency" />
             </div>
@@ -463,10 +471,11 @@ const InvoiceForm = ({
                 name="status"
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
               >
-                <option value="DRAFT">Draft</option>
-                <option value="INVOICE">Invoice</option>
-                <option value="PROPOSAL">Proposal</option>
-                <option value="QUOTATION">Quotation</option>
+                {INVOICE_STATUS_OPTIONS.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
               </Field>
               <FieldError name="status" />
             </div>
