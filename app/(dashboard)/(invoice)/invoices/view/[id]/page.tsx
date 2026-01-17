@@ -51,6 +51,8 @@ const Page = () => {
     {
       variables: { id: invoiceId },
       skip: !invoiceId,
+      fetchPolicy: "network-only",
+      nextFetchPolicy: "cache-first",
     }
   );
 
