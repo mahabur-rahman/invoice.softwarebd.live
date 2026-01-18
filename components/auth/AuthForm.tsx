@@ -21,7 +21,6 @@ interface RegisterInput {
   name: string;
   email: string;
   password: string;
-  role: string;
 }
 
 interface LoginInput {
@@ -53,8 +52,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
   const [formData, setFormData] = useState<RegisterInput>({
     name: "",
     email: "",
-    password: "",
-    role: "USER",
+    password: ""
   });
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
@@ -87,19 +85,19 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
             name: formData.name.trim(),
             email: formData.email.trim().toLowerCase(),
             password: formData.password,
-            role: formData.role.trim(),
           },
         };
 
         const { data } = await registerUser({
           variables: payload,
           errorPolicy: "none",
+          context: { skipAuthRedirect: true },
         });
         console.log("Register data:", data);
 
         if (data?.register) {
           setFormSuccess("Account created successfully. You can now log in.");
-          setFormData({ name: "", email: "", password: "", role: "USER" });
+          setFormData({ name: "", email: "", password: "" });
         }
       } catch (error: unknown) {
         if (error instanceof Error) {
@@ -123,7 +121,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
         },
       };
 
-      const { data } = await loginUser({ variables: payload });
+      const { data } = await loginUser({
+        variables: payload,
+        context: { skipAuthRedirect: true },
+      });
       console.log("Login data:", data);
 
       if (data?.login) {
