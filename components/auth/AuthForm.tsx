@@ -156,9 +156,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
   const isSubmitting = isRegister ? registerLoading : loginLoading;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100 px-4 py-10">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 via-white to-slate-100 px-4 py-10">
       <div
-        className={`w-full max-w-5xl rounded-3xl bg-gradient-to-t from-amber-50 via-white to-white shadow-[0_18px_50px_rgba(15,23,42,0.18)] overflow-hidden flex flex-col md:flex-row ${
+        className={`w-full max-w-5xl rounded-3xl bg-linear-to-t from-amber-50 via-white to-white shadow-[0_18px_50px_rgba(15,23,42,0.18)] overflow-hidden flex flex-col md:flex-row ${
           isRegister ? "md:flex-row-reverse" : "md:flex-row"
         }`}
       >
@@ -170,7 +170,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
             priority
             className="object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-tr from-white/70 via-white/10 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-tr from-white/70 via-white/10 to-transparent" />
         </div>
 
         <div className="w-full md:w-1/2 px-8 py-10 md:px-12 md:py-14 flex items-center justify-center">
