@@ -137,7 +137,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
         }
         setFormSuccess("Logged in successfully.");
         setFormData((prev) => ({ ...prev, password: "", email: "" }));
-        router.push("/")
+        router.push("/dashboard")
       } else {
         setFormError("Unable to log in. Please try again.");
       }

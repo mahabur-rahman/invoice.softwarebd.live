@@ -8,7 +8,7 @@ export const menuItems: MenuProps["items"] = [
   {
     key: "1",
     icon: <FaHome size={18} />,
-    label: <Link href="/">Home</Link>,
+    label: <Link href="/dashboard">Home</Link>,
   },
   {
     key: "2",
