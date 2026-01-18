@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Table, Avatar, Spin, Button, Modal } from "antd";
+import { Table, Avatar, Spin, Button } from "antd";
 import { FiEdit, FiTrash, FiPlus } from "react-icons/fi";
 import { GET_MY_BUSINESSES } from "@/lib/graphql/queries";
 import { GetMyBusinessesQuery } from "@/lib/graphql/generated-types";

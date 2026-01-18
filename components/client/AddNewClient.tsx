@@ -5,10 +5,10 @@ import { Formik, Form, } from "formik";
 import * as Yup from "yup";
 
 
-import { BusinessType, ClientType } from "@/lib/graphql/generated-types";
-import { Spin, Button, Input } from "antd";
+import { ClientType } from "@/lib/graphql/generated-types";
+import { Button, Input } from "antd";
 import { CREATE_CLIENT, UPDATE_CLIENT } from "@/lib/graphql/mutations/invoice.mutations";
-import { FIND_ONE_CLIENT, GET_MY_BUSINESSES_ID } from "@/lib/graphql/queries/invoice.queries";
+import { GET_ALL_CLIENTS, GET_MY_BUSINESSES_ID } from "@/lib/graphql/queries/invoice.queries";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { useUserStore } from "@/lib/store/userStore";
 import { BusinessQueryResponse } from "@/lib/interfaces/responseTypes";
@@ -26,6 +26,8 @@ const ClientSchema = Yup.object().shape({
 
 interface AddNewClientProps {
     client?: ClientType;
+    onSuccess?: () => void;
+    redirectOnSuccess?: boolean;
 }
 
 type ClientFormValues = {
@@ -40,14 +42,21 @@ type ClientFormValues = {
 };
 
 
-const AddNewClient: React.FC<AddNewClientProps> = ({ client }) => {
+const AddNewClient: React.FC<AddNewClientProps> = ({
+    client,
+    onSuccess,
+    redirectOnSuccess = true,
+}) => {
     const router = useRouter();
     const userId = useUserStore((state) => state.userId);
 
     const { data: businessList, loading: bizLoading } =
         useQuery<BusinessQueryResponse>(GET_MY_BUSINESSES_ID);
 
-    const [createClient] = useMutation(CREATE_CLIENT);
+    const [createClient] = useMutation(CREATE_CLIENT, {
+        refetchQueries: [{ query: GET_ALL_CLIENTS }],
+        awaitRefetchQueries: true,
+    });
     const [updateClient] = useMutation(UPDATE_CLIENT);
 
     // Default values (add mode)
@@ -73,7 +82,7 @@ const AddNewClient: React.FC<AddNewClientProps> = ({ client }) => {
         };
 
 
-    const handleSubmit = async (values: any) => {
+    const handleSubmit = async (values: ClientFormValues) => {
         try {
             if (client) {
                 await updateClient({
@@ -90,7 +99,11 @@ const AddNewClient: React.FC<AddNewClientProps> = ({ client }) => {
                 });
             }
 
-            router.push("/clients");
+            if (redirectOnSuccess) {
+                router.push("/clients");
+            } else {
+                onSuccess?.();
+            }
         } catch (err) {
             console.error(err);
         }
@@ -108,7 +121,7 @@ const AddNewClient: React.FC<AddNewClientProps> = ({ client }) => {
                 validationSchema={ClientSchema}
                 onSubmit={handleSubmit}
             >
-                {({ values, handleChange, setFieldValue, errors, touched, isSubmitting }) => (
+                {({ values, handleChange, errors, touched, isSubmitting }) => (
                     <Form>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 

@@ -8,6 +8,7 @@ import { CREATE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
 import { useMutation } from "@apollo/client/react";
 import { v4 as uuid } from "uuid";
 import { useRouter } from "next/navigation";
+import { GET_MY_INVOICES } from "@/lib/graphql/queries/invoice.queries";
 
 /* ================= TYPES ================= */
 
@@ -20,6 +21,7 @@ export interface InvoiceFormValues {
   client: string;
   business: string;
   currency: string;
+  status: string;
   issueDate: string;
   dueDate: string;
   items: InvoiceItem[];
@@ -47,7 +49,10 @@ const Page = () => {
   const [invoiceData, setInvoiceData] =
     useState<InvoiceFormValues | null>(null);
 
-  const [createInvoice, { loading }] = useMutation(CREATE_INVOICE);
+  const [createInvoice, { loading }] = useMutation(CREATE_INVOICE, {
+    refetchQueries: [{ query: GET_MY_INVOICES }],
+    awaitRefetchQueries: true,
+  });
 
   const [columns, setColumns] = useState<InvoiceColumnInput[]>([
     {
@@ -99,6 +104,7 @@ const Page = () => {
       client: invoiceData.client,
       business: invoiceData.business,
       currency: invoiceData.currency,
+      status: invoiceData.status,
       issueDate: invoiceData.issueDate,
       dueDate: invoiceData.dueDate,
       notes: invoiceData.notes,
@@ -154,9 +160,9 @@ const Page = () => {
             issueDate: invoiceData.issueDate,
             dueDate: invoiceData.dueDate,
             notes: invoiceData.notes,
-            status: "DRAFT",
+            status: invoiceData.status,
 
-            columns: columns.map(({ locked, ...c }) => ({
+            columns: columns.map((c) => ({
               ...c,
               id: c.id ?? uuid(),
             })),
@@ -167,7 +173,7 @@ const Page = () => {
               subTotal: invoiceData.subtotal,
               grandTotal: invoiceData.total,
               additions: { tax: 0, shipping: 0 },
-              subtractions: { discount: invoiceData.discount },
+              subtractions: { discount: invoiceData.discount, paid: invoiceData.paid },
             },
           },
         },
@@ -192,6 +198,7 @@ const Page = () => {
           setAddColumnModalOpen={setAddColumnModalOpen}
           handleSubmit={handleSubmit}
           loading={loading}
+          editing={false}
         />
       </div>
 

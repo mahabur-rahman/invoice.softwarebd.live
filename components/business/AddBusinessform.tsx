@@ -11,6 +11,7 @@ import { CREATE_BUSINESS_MUTATION, UPDATE_BUSINESS_MUTATION } from "@/lib/graphq
 import { useToast } from "@/app/providers/ToastProvider";
 import { useRouter } from "next/navigation";
 import { uploadLogo } from "@/utils/uploadLogo";
+import { GET_MY_BUSINESSES } from "@/lib/graphql/queries";
 
 interface Business {
     _id?: string;
@@ -25,6 +26,8 @@ interface Business {
 
 interface AddBusinessFormProps {
     business?: Business;
+    onSuccess?: () => void;
+    redirectOnSuccess?: boolean;
 }
 
 const BusinessSchema = Yup.object().shape({
@@ -37,7 +40,11 @@ const BusinessSchema = Yup.object().shape({
     websiteUrl: Yup.string().url("Must be a valid URL").nullable(),
 });
 
-const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business }) => {
+const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
+    business,
+    onSuccess,
+    redirectOnSuccess = true,
+}) => {
 
     const toast = useToast();
     const router = useRouter()
@@ -66,7 +73,10 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business }) => {
             websiteUrl: "",
         };
 
-    const [createBusiness, { loading }] = useMutation(CREATE_BUSINESS_MUTATION);
+    const [createBusiness, { loading }] = useMutation(CREATE_BUSINESS_MUTATION, {
+        refetchQueries: [{ query: GET_MY_BUSINESSES }],
+        awaitRefetchQueries: true,
+    });
     const [updateBusiness] = useMutation(UPDATE_BUSINESS_MUTATION);
 
 
@@ -92,7 +102,11 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business }) => {
             });
 
             toast?.success("Business created successfully!");
-            router.push("/my-business");
+            if (redirectOnSuccess) {
+                router.push("/my-business");
+            } else {
+                onSuccess?.();
+            }
             return;
         }
 
@@ -105,7 +119,11 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({ business }) => {
         });
 
         toast?.success("Business updated successfully!");
-        router.push("/my-business");
+        if (redirectOnSuccess) {
+            router.push("/my-business");
+        } else {
+            onSuccess?.();
+        }
     };
 
 

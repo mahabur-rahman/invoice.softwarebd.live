@@ -113,11 +113,15 @@ const InvoiceTable = () => {
             key: "status",
             render: (status: string) => {
                 const color =
-                    status === "PAID"
-                        ? "green"
-                        : status === "DRAFT"
-                            ? "blue"
-                            : "orange";
+                    status === "DRAFT"
+                        ? "blue"
+                        : status === "INVOICE"
+                            ? "green"
+                            : status === "PROPOSAL"
+                                ? "gold"
+                                : status === "QUOTATION"
+                                    ? "purple"
+                                    : "default";
 
                 return <Tag color={color}>{status}</Tag>;
             },

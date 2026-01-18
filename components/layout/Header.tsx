@@ -5,6 +5,7 @@ import { Layout, Dropdown, Avatar } from "antd";
 import type { MenuProps } from "antd";
 import { FiLogOut } from "react-icons/fi";
 import { useRouter } from "next/navigation";
+import { logout } from "@/utils/auth";
 
 const { Header: AntHeader } = Layout;
 
@@ -16,9 +17,7 @@ interface HeaderProps {
 const Header = ({ collapsed, setCollapsed }: HeaderProps) => {
   const router = useRouter();
   const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("user");
-    }
+    logout();
     router.push("/login");
   };
   const items: MenuProps["items"] = [

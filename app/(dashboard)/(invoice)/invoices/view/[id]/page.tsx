@@ -16,6 +16,7 @@ interface SingleInvoiceQueryResponse {
     clientId: string;
     clientName?: string;
     currency: string;
+    status: string;
     issueDate: string;
     dueDate: string;
     notes?: string;
@@ -50,6 +51,8 @@ const Page = () => {
     {
       variables: { id: invoiceId },
       skip: !invoiceId,
+      fetchPolicy: "network-only",
+      nextFetchPolicy: "cache-first",
     }
   );
 
@@ -64,12 +67,13 @@ const Page = () => {
       client: invoice.clientId,
       business: invoice.businessId,
       currency: invoice.currency,
+      status: invoice.status,
       issueDate: invoice.issueDate,
       dueDate: invoice.dueDate,
       notes: invoice.notes ?? "",
       subtotal: invoice.totals.subTotal,
       discount: invoice.totals.subtractions?.discount ?? 0,
-      paid: 0,
+      paid: invoice.totals.subtractions?.paid ?? 0,
       total: invoice.totals.grandTotal,
 
       items: invoice.items.map((item) => {

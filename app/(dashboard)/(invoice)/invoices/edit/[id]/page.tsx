@@ -43,10 +43,17 @@ interface SingleInvoiceQueryResponse {
     totals: {
       subTotal: number;
       grandTotal: number;
-      subtractions?: { discount?: number };
+      subtractions?: { discount?: number, paid?: number };
     };
   };
 }
+
+const toDateInputValue = (value?: string) => {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const [datePart] = value.split("T");
+  return datePart ?? "";
+};
 
 const EditInvoicePage = () => {
   const router = useRouter();
@@ -108,12 +115,13 @@ const EditInvoicePage = () => {
       client: invoice.clientId,
       business: invoice.businessId,
       currency: invoice.currency,
-      issueDate: invoice.issueDate,
-      dueDate: invoice.dueDate,
+      status: invoice.status ?? "DRAFT",
+      issueDate: toDateInputValue(invoice.issueDate),
+      dueDate: toDateInputValue(invoice.dueDate),
       items,
       notes: invoice.notes ?? "",
       discount: invoice.totals?.subtractions?.discount ?? 0,
-      paid: 0,
+      paid: invoice.totals?.subtractions?.paid ?? 0,
       subtotal: invoice.totals?.subTotal ?? 0,
       total: invoice.totals?.grandTotal ?? 0,
     });
@@ -151,11 +159,15 @@ const EditInvoicePage = () => {
           issueDate: invoiceData.issueDate,
           dueDate: invoiceData.dueDate,
           notes: invoiceData.notes,
-          status: data?.singleInvoice.status ?? "DRAFT",
-          columns: columns.map(({ locked, ...c }) => ({
-            ...c,
-            id: c.id ?? uuid(),
-          })),
+          status: invoiceData.status,
+          columns: columns.map((col) => {
+            const { __typename, ...c } = col as any;
+
+            return {
+              ...c,
+              id: c.id ?? uuid(),
+            };
+          }),
           items: itemsForApi,
           totals: {
             subTotal: invoiceData.subtotal,
@@ -201,6 +213,7 @@ const EditInvoicePage = () => {
           handleSubmit={handleSubmit}
           loading={saving}
           initialValues={invoiceData}
+          editing={true}
         />
       </div>
 

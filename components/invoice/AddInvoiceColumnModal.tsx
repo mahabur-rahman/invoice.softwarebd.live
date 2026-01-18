@@ -46,6 +46,13 @@ export default function AddInvoiceColumnModal({
               fieldKey: generateFieldKey(changedValues.label),
             });
           }
+          if (changedValues.behavior) {
+            const type =
+              changedValues.behavior === "ADD" || changedValues.behavior === "SUBTRACT"
+                ? "number"
+                : "text";
+            form.setFieldsValue({ type });
+          }
         }}
         onFinish={(values) => {
           setColumns((prev) => [
@@ -53,6 +60,10 @@ export default function AddInvoiceColumnModal({
             {
               ...values,
               fieldKey: generateFieldKey(values.label),
+              type:
+                values.behavior === "ADD" || values.behavior === "SUBTRACT"
+                  ? "number"
+                  : "text",
               order: prev.length + 1,
             },
           ]);
@@ -72,17 +83,6 @@ export default function AddInvoiceColumnModal({
           rules={[{ required: true, message: "Label is required" }]}
         >
           <Input placeholder="e.g. Delivery Charge" />
-        </Form.Item>
-
-        <Form.Item
-          label="Type"
-          name="type"
-          rules={[{ required: true }]}
-        >
-          <Select placeholder="Select type">
-            <Option value="number">Number</Option>
-            <Option value="text">Text</Option>
-          </Select>
         </Form.Item>
 
         <Form.Item

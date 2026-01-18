@@ -18,6 +18,7 @@ interface InvoiceData {
   client: string;
   business: string;
   currency: string;
+  status: string;
   issueDate: string;
   dueDate: string;
   items: InvoiceItem[];
@@ -33,6 +34,18 @@ interface InvoicePreviewProps {
   columns: InvoiceColumnInput[];
   showPrintButton?: boolean;
 }
+
+const formatDate = (value?: string) => {
+  if (!value) return "—";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const [datePart] = value.split("T");
+  if (datePart) return datePart;
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toISOString().substring(0, 10);
+  }
+  return value;
+};
 
 /* ================= COMPONENT ================= */
 
@@ -98,8 +111,9 @@ const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps)
           </div>
 
           <div className="text-right text-sm">
-            <p>Issue: {data.issueDate || "—"}</p>
-            <p>Due: {data.dueDate || "—"}</p>
+            <p className="text-3xl font-semibold">{data.status}</p>
+            <p>Issue: {formatDate(data.issueDate)}</p>
+            <p>Due: {formatDate(data.dueDate)}</p>
           </div>
         </div>
 
@@ -163,28 +177,31 @@ const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps)
         <div className="text-right space-y-1 text-sm">
           <p>
             Subtotal: {data.currency}{" "}
-            {data.subtotal.toFixed(2)}
+            {Number(data.subtotal ?? 0).toFixed(2)}
           </p>
+
           <p>
             Discount: {data.currency}{" "}
-            {data.discount.toFixed(2)}
+            {Number(data.discount ?? 0).toFixed(2)}
           </p>
+
           <p>
             Paid: {data.currency}{" "}
-            {data.paid.toFixed(2)}
+            {Number(data.paid ?? 0).toFixed(2)}
           </p>
 
           <h3 className="text-lg font-semibold mt-2">
             Amount Due: {data.currency}{" "}
-            {data.total.toFixed(2)}
+            {Number(data.total ?? 0).toFixed(2)}
           </h3>
         </div>
+
 
         {/* ================= NOTES ================= */}
 
         <div className="mt-4 border-t pt-4 text-sm text-gray-600">
           <p className="font-semibold">Notes:</p>
-          <p>{data.notes}</p>
+          <pre>{data.notes}</pre>
         </div>
       </div>
 

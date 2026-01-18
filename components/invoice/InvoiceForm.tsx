@@ -10,7 +10,7 @@ import {
   ErrorMessage,
 } from "formik";
 import * as Yup from "yup";
-import { FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiEdit2, FiPlus, FiTrash2 } from "react-icons/fi";
 import { useQuery } from "@apollo/client/react";
 import { GET_MY_BUSINESSES } from "@/lib/graphql/queries";
 import { GET_ALL_CLIENTS } from "@/lib/graphql/queries/invoice.queries";
@@ -44,6 +44,13 @@ import { CSS } from "@dnd-kit/utilities";
 import { FaTimes } from "react-icons/fa";
 import { v4 as uuid } from "uuid";
 import { LiveCalculation } from "./LiveCalculation";
+import { Input, Modal } from "antd";
+import {
+  INVOICE_CURRENCY_OPTIONS,
+  INVOICE_STATUS_OPTIONS,
+} from "@/lib/constants/invoice";
+import AddBusinessForm from "@/components/business/AddBusinessform";
+import AddNewClient from "@/components/client/AddNewClient";
 
 /* ================= PROPS ================= */
 
@@ -55,6 +62,7 @@ interface InvoiceFormProps {
   handleSubmit: () => void;
   loading: boolean;
   initialValues?: InvoiceFormValues | null;
+  editing:boolean;
 }
 
 /* ================= VALIDATION ================= */
@@ -63,6 +71,7 @@ const validationSchema = Yup.object({
   client: Yup.string().required("Client is required"),
   business: Yup.string().required("Business is required"),
   currency: Yup.string().required("Currency is required"),
+  status: Yup.string().required("Status is required"),
   issueDate: Yup.string().required("Issue date is required"),
   dueDate: Yup.string().required("Due date is required"),
   items: Yup.array()
@@ -228,6 +237,7 @@ const InvoiceForm = ({
   handleSubmit,
   loading,
   initialValues,
+  editing
 }: InvoiceFormProps) => {
   /* ================= HELPERS ================= */
 
@@ -245,6 +255,7 @@ const InvoiceForm = ({
     client: "",
     business: "",
     currency: "BDT",
+    status: "DRAFT",
     issueDate: "",
     dueDate: "",
     items: [createEmptyItem(initialRowId)],
@@ -261,6 +272,9 @@ const InvoiceForm = ({
   /* ================= DND CONFIG ================= */
 
   const [activeId, setActiveId] = React.useState<string | null>(null);
+  const [labelModalOpen, setLabelModalOpen] = React.useState(false);
+  const [labelDraft, setLabelDraft] = React.useState("");
+  const [labelTargetKey, setLabelTargetKey] = React.useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -319,27 +333,52 @@ const InvoiceForm = ({
     return columns.find((c) => getColDndId(c) === activeId) ?? null;
   }, [activeId, columns]);
 
+  const openLabelModal = (column: InvoiceColumnInput) => {
+    setLabelTargetKey(column.fieldKey);
+    setLabelDraft(column.label);
+    setLabelModalOpen(true);
+  };
+
+  const saveLabel = () => {
+    if (!labelTargetKey) return;
+    const nextLabel = labelDraft.trim();
+    if (!nextLabel) {
+      setLabelModalOpen(false);
+      return;
+    }
+    setColumns((prev) =>
+      prev.map((col) =>
+        col.fieldKey === labelTargetKey ? { ...col, label: nextLabel } : col
+      )
+    );
+    setLabelModalOpen(false);
+  };
+
   /* ================= QUERIES ================= */
 
-  const { data: businessData } =
+  const { data: businessData, refetch: refetchBusinesses } =
     useQuery<GetMyBusinessesQuery>(GET_MY_BUSINESSES);
-  const { data: clientData } =
+  const { data: clientData, refetch: refetchClients } =
     useQuery<{ findAllClients: ClientType[] }>(GET_ALL_CLIENTS);
+
+  const [businessModalOpen, setBusinessModalOpen] = React.useState(false);
+  const [clientModalOpen, setClientModalOpen] = React.useState(false);
 
   /* ================= RENDER ================= */
 
   return (
-    <Formik
-      initialValues={formInitialValues}
-      validationSchema={validationSchema}
-      onSubmit={handleSubmit}
-      enableReinitialize={Boolean(initialValues)}
-    >
-      {({ values, setFieldValue }) => (
-        <Form className="space-y-8">
+    <>
+      <Formik
+        initialValues={formInitialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+        enableReinitialize={Boolean(initialValues)}
+      >
+        {({ values, setFieldValue }) => (
+          <Form className="space-y-8">
           <ItemsColumnSync columns={columns} />
           <LiveCalculation columns={columns} onUpdate={onUpdate} />
-          <h2 className="text-2xl font-bold text-gray-800">Create Invoice</h2>
+          <h2 className="text-2xl font-bold text-gray-800">{editing ? 'Update': 'Create'} Invoice</h2>
 
           {/* ================= BUSINESS / CLIENT ================= */}
 
@@ -348,18 +387,28 @@ const InvoiceForm = ({
               <label className="text-sm font-medium text-gray-700">
                 Select Business
               </label>
-              <Field
-                as="select"
-                name="business"
-                className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
-              >
-                <option value="">Select business</option>
-                {businessData?.myBusinesses?.map((b) => (
-                  <option key={b._id} value={b._id}>
-                    {b.companyName}
-                  </option>
-                ))}
-              </Field>
+              <div className="mt-1 flex items-center gap-2">
+                <Field
+                  as="select"
+                  name="business"
+                  className="w-full p-2 border border-gray-300 rounded-md bg-white"
+                >
+                  <option value="">Select business</option>
+                  {businessData?.myBusinesses?.map((b) => (
+                    <option key={b._id} value={b._id}>
+                      {b.companyName}
+                    </option>
+                  ))}
+                </Field>
+                <button
+                  type="button"
+                  onClick={() => setBusinessModalOpen(true)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-linear-to-b from-white to-gray-50 text-gray-700 shadow-sm hover:border-gray-300 hover:from-gray-50 hover:to-white cursor-pointer transition"
+                  aria-label="Add business"
+                >
+                  <FiPlus className="text-sm" />
+                </button>
+              </div>
               <FieldError name="business" />
             </div>
 
@@ -367,25 +416,35 @@ const InvoiceForm = ({
               <label className="text-sm font-medium text-gray-700">
                 Select Client
               </label>
-              <Field
-                as="select"
-                name="client"
-                className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
-              >
-                <option value="">Select client</option>
-                {clientData?.findAllClients?.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))}
-              </Field>
+              <div className="mt-1 flex items-center gap-2">
+                <Field
+                  as="select"
+                  name="client"
+                  className="w-full p-2 border border-gray-300 rounded-md bg-white"
+                >
+                  <option value="">Select client</option>
+                  {clientData?.findAllClients?.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </Field>
+                <button
+                  type="button"
+                  onClick={() => setClientModalOpen(true)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-linear-to-b from-white to-gray-50 text-gray-700 shadow-sm hover:border-gray-300 hover:from-gray-50 hover:to-white cursor-pointer transition"
+                  aria-label="Add client"
+                >
+                  <FiPlus className="text-sm" />
+                </button>
+              </div>
               <FieldError name="client" />
             </div>
           </div>
 
           {/* ================= DATES & CURRENCY ================= */}
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700">
                 Issue Date
@@ -419,9 +478,31 @@ const InvoiceForm = ({
                 name="currency"
                 className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
               >
-                <option value="BDT">BDT</option>
+                {INVOICE_CURRENCY_OPTIONS.map((currency) => (
+                  <option key={currency} value={currency}>
+                    {currency}
+                  </option>
+                ))}
               </Field>
               <FieldError name="currency" />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">
+                Status
+              </label>
+              <Field
+                as="select"
+                name="status"
+                className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
+              >
+                {INVOICE_STATUS_OPTIONS.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </Field>
+              <FieldError name="status" />
             </div>
           </div>
 
@@ -495,36 +576,53 @@ const InvoiceForm = ({
                                             <div className="flex justify-between w-full">
                                               <span>{column.label}</span>
 
-                                              {!column.locked && (
-                                                <button
-                                                  type="button"
-                                                  onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
+                                              <div className="flex items-center gap-2">
+                                                {column.locked && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                      e.preventDefault();
+                                                      e.stopPropagation();
+                                                      openLabelModal(column);
+                                                    }}
+                                                    className="text-gray-500 hover:text-gray-700"
+                                                    aria-label={`Edit ${column.label} label`}
+                                                  >
+                                                    <FiEdit2 className="text-xs" />
+                                                  </button>
+                                                )}
 
-                                                    setColumns((prev) =>
-                                                      prev.filter(
-                                                        (c) =>
-                                                          c.fieldKey !== column.fieldKey
-                                                      )
-                                                    );
+                                                {!column.locked && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                      e.preventDefault();
+                                                      e.stopPropagation();
 
-                                                    setFieldValue(
-                                                      "items",
-                                                      values.items.map((item) => {
-                                                        const {
-                                                          [column.fieldKey]: __,
-                                                          ...rest
-                                                        } = item;
-                                                        return rest;
-                                                      })
-                                                    );
-                                                  }}
-                                                  className="text-white text-xs cursor-pointer bg-red-500 h-4 w-4 rounded-full flex items-center justify-center"
-                                                >
-                                                  <FaTimes />
-                                                </button>
-                                              )}
+                                                      setColumns((prev) =>
+                                                        prev.filter(
+                                                          (c) =>
+                                                            c.fieldKey !== column.fieldKey
+                                                        )
+                                                      );
+
+                                                      setFieldValue(
+                                                        "items",
+                                                        values.items.map((item) => {
+                                                          const {
+                                                            [column.fieldKey]: __,
+                                                            ...rest
+                                                          } = item;
+                                                          return rest;
+                                                        })
+                                                      );
+                                                    }}
+                                                    className="text-white text-xs cursor-pointer bg-red-500 h-4 w-4 rounded-full flex items-center justify-center"
+                                                  >
+                                                    <FaTimes />
+                                                  </button>
+                                                )}
+                                              </div>
                                             </div>
                                           }
                                         >
@@ -725,12 +823,62 @@ const InvoiceForm = ({
                 Please Wait
               </span>
             ) : (
-              "Create Invoice"
+              editing ? 'Update Invoice': 'Create Invoice'
             )}
           </button>
-        </Form>
-      )}
-    </Formik>
+          </Form>
+        )}
+      </Formik>
+      <Modal
+        title="Edit Column Label"
+        open={labelModalOpen}
+        onOk={saveLabel}
+        onCancel={() => setLabelModalOpen(false)}
+        okText="Save"
+      >
+        <Input
+          value={labelDraft}
+          onChange={(event) => setLabelDraft(event.target.value)}
+          placeholder="Column label"
+        />
+      </Modal>
+
+      <Modal
+        title={null}
+        open={businessModalOpen}
+        onCancel={() => setBusinessModalOpen(false)}
+        footer={null}
+        destroyOnClose
+        closable={false}
+        width={720}
+      >
+        <AddBusinessForm
+          redirectOnSuccess={false}
+          onSuccess={() => {
+            setBusinessModalOpen(false);
+            refetchBusinesses();
+          }}
+        />
+      </Modal>
+
+      <Modal
+        title={null}
+        open={clientModalOpen}
+        onCancel={() => setClientModalOpen(false)}
+        footer={null}
+        destroyOnClose
+        closable={false}
+        width={720}
+      >
+        <AddNewClient
+          redirectOnSuccess={false}
+          onSuccess={() => {
+            setClientModalOpen(false);
+            refetchClients();
+          }}
+        />
+      </Modal>
+    </>
   );
 };
 
