@@ -6,6 +6,9 @@ import { useMutation } from "@apollo/client/react";
 import { LOGIN_MUTATION, REGISTER_MUTATION } from "@/lib/graphql/mutations";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/lib/store/userStore";
+import Image from "next/image";
+import loginImage from "@/assets/login.png";
+import registerImage from "@/assets/register.png";
 
 interface AuthFormProps {
   type: "login" | "register";
@@ -153,89 +156,113 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
   const isSubmitting = isRegister ? registerLoading : loginLoading;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="w-full max-w-sm bg-white shadow-lg rounded-2xl p-8">
-        <h1 className="text-2xl font-bold text-center mb-6">
-          {type === "login" ? "Login" : "Create Account"}
-        </h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100 px-4 py-10">
+      <div
+        className={`w-full max-w-5xl rounded-3xl bg-gradient-to-t from-amber-50 via-white to-white shadow-[0_18px_50px_rgba(15,23,42,0.18)] overflow-hidden flex flex-col md:flex-row ${
+          isRegister ? "md:flex-row-reverse" : "md:flex-row"
+        }`}
+      >
+        <div className="relative hidden md:block md:w-1/2 min-h-[560px] bg-slate-50">
+          <Image
+            src={isRegister ? registerImage : loginImage}
+            alt={isRegister ? "Register illustration" : "Login illustration"}
+            fill
+            priority
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-tr from-white/70 via-white/10 to-transparent" />
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {isRegister && (
+        <div className="w-full md:w-1/2 px-8 py-10 md:px-12 md:py-14 flex items-center justify-center">
+          <div className="w-full max-w-sm rounded-3xl bg-white/80 px-8 py-10">
+            <div className="text-center mb-8">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                {type === "login" ? "Welcome back" : "Create your account"}
+              </p>
+              <h1 className="mt-2 text-3xl font-semibold text-slate-900">
+                {type === "login" ? "Login" : "Register"}
+              </h1>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+            {isRegister && (
+              <div>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Name"
+                  className="mt-2 w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-slate-900 shadow-sm outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-emerald-100"
+                  required
+                />
+              </div>
+            )}
+
             <div>
-              <label className="block text-sm font-medium text-gray-700">Name</label>
               <input
-                type="text"
-                name="name"
-                value={formData.name}
+                type="email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
-                className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                placeholder="Email"
+                className="mt-2 w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-slate-900 shadow-sm outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-emerald-100"
                 required
               />
             </div>
-          )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-          </div>
+            <div>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Password"
+                className="mt-2 w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-slate-900 shadow-sm outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-emerald-100"
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Password</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              required
-            />
-          </div>
+            {formError && (
+              <p className="text-sm text-red-600" role="alert">
+                {formError}
+              </p>
+            )}
 
-          {formError && (
-            <p className="text-sm text-red-600" role="alert">
-              {formError}
+            {formSuccess && (
+              <p className="text-sm text-green-600" role="status">
+                {formSuccess}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full rounded-full bg-emerald-500 py-3 text-white shadow-lg shadow-emerald-500/25 transition hover:-translate-y-0.5 hover:bg-emerald-600 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {isSubmitting ? "Submitting..." : isRegister ? "Register" : "Login"}
+            </button>
+            </form>
+
+            <p className="text-sm text-center text-slate-600 mt-5">
+              {isRegister ? (
+                <>
+                  Already have an account?{" "}
+                  <Link href="/login" className="text-slate-900 hover:underline">
+                    Login
+                  </Link>
+                </>
+              ) : (
+                <>
+                  Don’t have an account?{" "}
+                  <Link href="/register" className="text-slate-900 hover:underline">
+                    Register
+                  </Link>
+                </>
+              )}
             </p>
-          )}
-
-          {formSuccess && (
-            <p className="text-sm text-green-600" role="status">
-              {formSuccess}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-70"
-          >
-            {isSubmitting ? "Submitting..." : isRegister ? "Register" : "Login"}
-          </button>
-        </form>
-
-        <p className="text-sm text-center text-gray-600 mt-4">
-          {isRegister ? (
-            <>
-              Already have an account?{" "}
-              <Link href="/login" className="text-blue-600 hover:underline">
-                Login
-              </Link>
-            </>
-          ) : (
-            <>
-              Don’t have an account?{" "}
-              <Link href="/register" className="text-blue-600 hover:underline">
-                Register
-              </Link>
-            </>
-          )}
-        </p>
+          </div>
+        </div>
       </div>
     </div>
   );
