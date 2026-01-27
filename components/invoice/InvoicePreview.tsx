@@ -47,6 +47,22 @@ const formatDate = (value?: string) => {
   return value;
 };
 
+const getValidImageUrl = (value?: string) => {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("/")) return trimmed;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.toString();
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+
 /* ================= COMPONENT ================= */
 
 const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps) => {
@@ -99,15 +115,21 @@ const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps)
           </div>
 
           <div>
-            {businessData?.singleBusiness?.logoUrl &&
-              <Image
-                alt="logo"
-                src={businessData?.singleBusiness?.logoUrl || ""}
-                className="h-16 w-auto"
-                width={400}
-                height={400}
-              />
-            }
+            {(() => {
+              const logoUrl = getValidImageUrl(
+                businessData?.singleBusiness?.logoUrl,
+              );
+              if (!logoUrl) return null;
+              return (
+                <Image
+                  alt="logo"
+                  src={logoUrl}
+                  className="h-16 w-auto"
+                  width={400}
+                  height={400}
+                />
+              );
+            })()}
           </div>
 
           <div className="text-right text-sm">
