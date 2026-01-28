@@ -6,6 +6,7 @@ import { useQuery } from "@apollo/client/react";
 import InvoicePreview from "@/components/invoice/InvoicePreview";
 import { InvoiceColumnInput } from "@/app/(dashboard)/(invoice)/generate-invoice/page";
 import { SINGLE_INVOICE_QUERY } from "@/lib/graphql/queries/invoice.queries";
+import { InvoiceTemplateKey } from "@/components/invoice/templates";
 
 /* ================= TYPES ================= */
 
@@ -20,6 +21,7 @@ interface SingleInvoiceQueryResponse {
     issueDate: string;
     dueDate: string;
     notes?: string;
+    template?: InvoiceTemplateKey;
     columns: InvoiceColumnInput[];
     items: {
       id: string;
@@ -121,6 +123,7 @@ const Page = () => {
         data={previewData}
         columns={data?.singleInvoice.columns ?? []}
         showPrintButton
+        template={data?.singleInvoice.template ?? "CLASSIC"}
       />
     </div>
   );

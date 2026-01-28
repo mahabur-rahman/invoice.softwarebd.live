@@ -118,6 +118,7 @@ export const SINGLE_INVOICE_QUERY = gql`
       dueDate
       notes
       status
+      template
       columns {
         id
         fieldKey

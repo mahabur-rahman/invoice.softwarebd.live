@@ -13,6 +13,7 @@ import {
 } from "@/app/(dashboard)/(invoice)/generate-invoice/page";
 import AddInvoiceColumnModal from "@/components/invoice/AddInvoiceColumnModal";
 import InvoicePreview from "@/components/invoice/InvoicePreview";
+import { InvoiceTemplateKey } from "@/components/invoice/templates";
 import { SINGLE_INVOICE_QUERY } from "@/lib/graphql/queries/invoice.queries";
 import { UPDATE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
 
@@ -27,8 +28,9 @@ interface SingleInvoiceQueryResponse {
     dueDate: string;
       notes?: string;
       status: string;
-      invoiceNumber: string;
-      columns: InvoiceColumnInput[];
+    invoiceNumber: string;
+    template?: InvoiceTemplateKey;
+    columns: InvoiceColumnInput[];
     items: {
       id: string;
       order: number;
@@ -72,6 +74,7 @@ const EditInvoicePage = () => {
     null
   );
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
+  const [template, setTemplate] = useState<InvoiceTemplateKey>("CLASSIC");
 
   const { data, loading } = useQuery<SingleInvoiceQueryResponse>(
     SINGLE_INVOICE_QUERY,
@@ -88,6 +91,7 @@ const EditInvoicePage = () => {
 
     const invoice = data.singleInvoice;
     setColumns(invoice.columns ?? []);
+    setTemplate(invoice.template ?? "CLASSIC");
 
     const items: InvoiceItem[] = [...(invoice.items ?? [])]
       .sort((a, b) => a.order - b.order)
@@ -188,6 +192,7 @@ const EditInvoicePage = () => {
               value: Number(field.value || 0),
             })),
           },
+          template,
         },
       },
       onCompleted: () => {
@@ -237,7 +242,12 @@ const EditInvoicePage = () => {
         setColumns={setColumns}
       />
 
-      <InvoicePreview data={previewData} columns={columns} />
+      <InvoicePreview
+        data={previewData}
+        columns={columns}
+        template={template}
+        onTemplateChange={setTemplate}
+      />
     </div>
   );
 };

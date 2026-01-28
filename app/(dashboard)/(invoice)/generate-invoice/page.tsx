@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import InvoiceForm from "@/components/invoice/InvoiceForm";
 import AddInvoiceColumnModal from "@/components/invoice/AddInvoiceColumnModal";
 import InvoicePreview from "@/components/invoice/InvoicePreview";
+import { InvoiceTemplateKey } from "@/components/invoice/templates";
 import { CREATE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
 import { useMutation } from "@apollo/client/react";
 import { v4 as uuid } from "uuid";
@@ -56,6 +57,7 @@ const Page = () => {
   const router = useRouter();
   const [invoiceData, setInvoiceData] =
     useState<InvoiceFormValues | null>(null);
+  const [template, setTemplate] = useState<InvoiceTemplateKey>("CLASSIC");
 
   const [createInvoice, { loading }] = useMutation(CREATE_INVOICE, {
     refetchQueries: [{ query: GET_MY_INVOICES }],
@@ -193,6 +195,7 @@ const Page = () => {
                 value: Number(field.value || 0),
               })),
             },
+            template,
           },
         },
       });
@@ -227,7 +230,12 @@ const Page = () => {
         setColumns={setColumns}
       />
 
-      <InvoicePreview data={previewData} columns={columns} />
+      <InvoicePreview
+        data={previewData}
+        columns={columns}
+        template={template}
+        onTemplateChange={setTemplate}
+      />
     </div>
   );
 };
