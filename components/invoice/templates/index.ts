@@ -9,7 +9,7 @@ import SimpleTemplate from "./SimpleTemplate";
 import SmartTemplate from "./SmartTemplate";
 import StandardTemplate from "./StandardTemplate";
 import { InvoiceTemplateKey, InvoiceTemplateProps } from "./types";
-import type { ReactElement } from "react";
+import type { ComponentType } from "react";
 
 export const INVOICE_TEMPLATE_OPTIONS: {
   key: InvoiceTemplateKey;
@@ -29,7 +29,7 @@ export const INVOICE_TEMPLATE_OPTIONS: {
 
 export const TEMPLATE_COMPONENTS: Record<
   InvoiceTemplateKey,
-  (props: InvoiceTemplateProps) => ReactElement
+  ComponentType<InvoiceTemplateProps>
 > = {
   BUSINESS: BusinessTemplate,
   CLASSIC: ClassicTemplate,
