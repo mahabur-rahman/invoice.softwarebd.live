@@ -66,7 +66,7 @@ const InvoicePreview = ({
   onTemplateChange,
 }: InvoicePreviewProps) => {
   const componentRef = useRef<HTMLDivElement>(null);
-  const activeTemplate = template ?? "CLASSIC";
+  const activeTemplate = template ?? data?.template ?? "CLASSIC";
   const TemplateComponent =
     TEMPLATE_COMPONENTS[activeTemplate] ?? TEMPLATE_COMPONENTS.CLASSIC;
 

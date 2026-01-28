@@ -205,12 +205,13 @@ const EditInvoicePage = () => {
     if (!invoiceData) return null;
     return {
       ...invoiceData,
+      template,
       items: invoiceData.items.map((item) => ({
         ...item,
         total: Number(item.total ?? 0),
       })),
     };
-  }, [invoiceData]);
+  }, [invoiceData, template]);
 
   if (loading || !invoiceData) {
     return (

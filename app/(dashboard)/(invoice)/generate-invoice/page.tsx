@@ -124,6 +124,7 @@ const Page = () => {
       notes: invoiceData.notes,
       subtotal: invoiceData.subtotal,
       total: invoiceData.total,
+      template,
       totalsCustom: invoiceData.totalsCustom ?? [],
 
       items: invoiceData.items.map((item) => ({

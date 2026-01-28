@@ -24,6 +24,7 @@ export interface InvoiceData {
   notes: string;
   subtotal: number;
   total: number;
+  template?: InvoiceTemplateKey;
   totalsCustom?: {
     key: string;
     label: string;
