@@ -10,7 +10,7 @@ import {
   ErrorMessage,
 } from "formik";
 import * as Yup from "yup";
-import { FiEdit2, FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiEdit2, FiEye, FiEyeOff, FiPlus, FiTrash2 } from "react-icons/fi";
 import { useQuery } from "@apollo/client/react";
 import { GET_MY_BUSINESSES } from "@/lib/graphql/queries";
 import { GET_ALL_CLIENTS } from "@/lib/graphql/queries/invoice.queries";
@@ -134,7 +134,9 @@ const SortableCell = ({
         transition,
         opacity: isDragging ? 0.4 : 1,
       }}
-      className="flex flex-col gap-1 min-w-0 flex-1"
+      className={`flex flex-col gap-1 min-w-0 flex-1 ${
+        column.hidden ? "opacity-60" : ""
+      }`}
     >
 
       {/* ✅ DRAG HANDLE (LABEL ONLY) */}
@@ -380,6 +382,16 @@ const InvoiceForm = ({
     setLabelModalOpen(true);
   };
 
+  const toggleColumnHidden = (column: InvoiceColumnInput) => {
+    setColumns((prev) =>
+      prev.map((col) =>
+        col.fieldKey === column.fieldKey
+          ? { ...col, hidden: !col.hidden }
+          : col
+      )
+    );
+  };
+
   const saveLabel = () => {
     if (!labelTargetKey) return;
     const nextLabel = labelDraft.trim();
@@ -597,6 +609,7 @@ const InvoiceForm = ({
                                     {columns.map((column) => {
                                       const isTotal = column.fieldKey === "total";
 
+                                      const isHidden = Boolean(column.hidden);
                                       const fieldEl = (
                                         <Field
                                           name={`items.${i}.${column.fieldKey}`}
@@ -607,7 +620,7 @@ const InvoiceForm = ({
                                           className={`p-2 border rounded-md w-full min-w-0 ${isTotal
                                             ? "bg-gray-100 text-center font-semibold"
                                             : "bg-white"
-                                            } border-gray-300`}
+                                            } ${isHidden ? "text-gray-500" : ""} border-gray-300`}
                                         />
                                       );
 
@@ -617,9 +630,29 @@ const InvoiceForm = ({
                                           column={column}
                                           label={
                                             <div className="flex justify-between w-full">
-                                              <span>{column.label}</span>
+                                              <span className={isHidden ? "text-gray-400" : ""}>
+                                                {column.label}
+                                              </span>
 
                                               <div className="flex items-center gap-2">
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    toggleColumnHidden(column);
+                                                  }}
+                                                  className={`hover:text-gray-700 ${
+                                                    isHidden ? "text-gray-400" : "text-gray-500"
+                                                  }`}
+                                                  aria-label={`Toggle ${column.label} visibility`}
+                                                >
+                                                  {isHidden ? (
+                                                    <FiEyeOff className="text-xs" />
+                                                  ) : (
+                                                    <FiEye className="text-xs" />
+                                                  )}
+                                                </button>
                                                 {column.locked && (
                                                   <button
                                                     type="button"
@@ -685,13 +718,20 @@ const InvoiceForm = ({
                                   {columns.map((column) => {
                                     const isTotal = column.fieldKey === "total";
 
+                                    const isHidden = Boolean(column.hidden);
                                     return (
                                       <div
                                         key={column.fieldKey}
-                                        className="flex flex-col gap-1 min-w-0 flex-1"
+                                        className={`flex flex-col gap-1 min-w-0 flex-1 ${
+                                          isHidden ? "opacity-60" : ""
+                                        }`}
                                       >
                                         <div className="flex justify-between">
-                                          <label className="text-sm font-medium text-gray-700">
+                                          <label
+                                            className={`text-sm font-medium ${
+                                              isHidden ? "text-gray-400" : "text-gray-700"
+                                            }`}
+                                          >
                                             {column.label}
                                           </label>
 

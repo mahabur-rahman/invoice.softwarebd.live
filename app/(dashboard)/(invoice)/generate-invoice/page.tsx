@@ -40,6 +40,7 @@ export type InvoiceColumnInput = {
   order: number;
   behavior: "ADD" | "SUBTRACT" | "NONE";
   locked?: boolean;
+  hidden?: boolean;
 };
 
 /* ================= PAGE ================= */
@@ -63,6 +64,7 @@ const Page = () => {
       behavior: "NONE",
       order: 1,
       locked: true,
+      hidden: false,
     },
     {
       id: "quantity",
@@ -72,6 +74,7 @@ const Page = () => {
       behavior: "NONE",
       order: 2,
       locked: true,
+      hidden: false,
     },
     {
       id: "price",
@@ -81,6 +84,7 @@ const Page = () => {
       behavior: "NONE",
       order: 3,
       locked: true,
+      hidden: false,
     },
     {
       id: "total",
@@ -90,6 +94,7 @@ const Page = () => {
       behavior: "NONE",
       order: 4,
       locked: true,
+      hidden: false,
     },
   ]);
 

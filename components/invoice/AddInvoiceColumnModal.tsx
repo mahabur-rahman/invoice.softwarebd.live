@@ -65,6 +65,7 @@ export default function AddInvoiceColumnModal({
                   ? "number"
                   : "text",
               order: prev.length + 1,
+              hidden: false,
             },
           ]);
 

@@ -67,6 +67,7 @@ const getValidImageUrl = (value?: string | null) => {
 
 const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps) => {
   const componentRef = useRef<HTMLDivElement>(null);
+  const visibleColumns = columns.filter((col) => !col.hidden);
 
   const handlePrint = useReactToPrint({
     contentRef: componentRef,
@@ -154,7 +155,7 @@ const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps)
         <table className="w-full text-sm border border-gray-200 mb-4">
           <thead className="bg-gray-800 text-white">
             <tr>
-              {columns.map((col) => (
+              {visibleColumns.map((col) => (
                 <th
                   key={col.fieldKey}
                   className={`p-2 ${col.type === "number"
@@ -174,7 +175,7 @@ const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps)
                 key={idx}
                 className="border-t border-gray-200"
               >
-                {columns.map((col) => (
+                {visibleColumns.map((col) => (
                   <td
                     key={col.fieldKey}
                     className={`p-2 ${col.type === "number"
