@@ -95,3 +95,9 @@ export const DELETE_INVOICE = gql`
     }
   }
 `;
+
+export const ENABLE_INVOICE_PUBLIC_SHARE = gql`
+  mutation EnableInvoicePublicShare($id: ID!, $enabled: Boolean = true) {
+    enableInvoicePublicShare(id: $id, enabled: $enabled)
+  }
+`;

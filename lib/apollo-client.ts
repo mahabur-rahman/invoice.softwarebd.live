@@ -40,6 +40,9 @@ const httpLink = new HttpLink({
 const errorLink = onError(({ error, operation }) => {
   const { skipAuthRedirect } = operation.getContext();
   if (skipAuthRedirect) return;
+  if (typeof window !== "undefined") {
+    if (window.location.pathname.startsWith("/public-invoice/")) return;
+  }
 
   const hasUnauthorizedGraphql = CombinedGraphQLErrors.is(error)
     ? error.errors.some(

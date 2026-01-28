@@ -1,7 +1,7 @@
 "use client";
 
-import { Table, Spin, Tag, Button } from "antd";
-import { FiEye, FiTrash, FiEdit2, FiPlus } from "react-icons/fi";
+import { Table, Spin, Tag, Button, Switch, message, Tooltip } from "antd";
+import { FiEye, FiTrash, FiEdit2, FiPlus, FiLink } from "react-icons/fi";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -9,13 +9,20 @@ import Link from "next/link";
 // import { DELETE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
 import { InvoiceType } from "@/lib/graphql/generated-types";
 import { GET_MY_INVOICES } from "@/lib/graphql/queries/invoice.queries";
-import { DELETE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
-import { useState } from "react";
+import {
+    DELETE_INVOICE,
+    ENABLE_INVOICE_PUBLIC_SHARE,
+} from "@/lib/graphql/mutations/invoice.mutations";
+import { useEffect, useState } from "react";
 import ConfirmModal from "@/utils/ConfirmModal";
 
 /* ================= TYPES ================= */
 
-type InvoiceRow = InvoiceType;
+type InvoiceRow = InvoiceType & {
+    publicShare?: boolean;
+    publicShareEnabled?: boolean;
+    publicShareLink?: string;
+};
 
 /* ================= COMPONENT ================= */
 
@@ -23,18 +30,42 @@ const InvoiceTable = () => {
     const router = useRouter();
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const [shareState, setShareState] = useState<
+        Record<string, { enabled: boolean; link?: string }>
+    >({});
 
     /* ================= QUERY ================= */
 
     const { data, loading, error } = useQuery<{
         myInvoices: InvoiceType[];
-    }>(GET_MY_INVOICES);
+    }>(GET_MY_INVOICES, {
+        fetchPolicy: "cache-and-network",
+        nextFetchPolicy: "cache-first",
+    });
 
     /* ================= MUTATION ================= */
 
     const [deleteInvoice, { loading: deleteLoading }] = useMutation(DELETE_INVOICE, {
         refetchQueries: [{ query: GET_MY_INVOICES }],
     });
+    const [enableInvoicePublicShare] = useMutation(ENABLE_INVOICE_PUBLIC_SHARE);
+
+    const invoices = data?.myInvoices ?? [];
+
+    useEffect(() => {
+        if (!invoices.length) return;
+        const next: Record<string, { enabled: boolean; link?: string }> = {};
+        invoices.forEach((inv) => {
+            const enabled = Boolean(inv.publicShare || inv.publicShareEnabled || inv.publicShareLink);
+            if (enabled) {
+                next[inv._id] = {
+                    enabled: true,
+                    link: inv.publicShareLink,
+                };
+            }
+        });
+        setShareState(next);
+    }, [invoices]);
 
     /* ================= HANDLERS ================= */
 
@@ -72,7 +103,56 @@ const InvoiceTable = () => {
         );
     }
 
-    const invoices = data?.myInvoices ?? [];
+    const buildPublicLink = (value?: string, fallbackId?: string) => {
+        if (!value && !fallbackId) return "";
+        if (value && /^https?:\/\//i.test(value)) return value;
+        if (value && value.startsWith("/")) {
+            return typeof window === "undefined"
+                ? value
+                : `${window.location.origin}${value}`;
+        }
+        const id = value || fallbackId || "";
+        return typeof window === "undefined"
+            ? `/public-invoice/${id}`
+            : `${window.location.origin}/public-invoice/${id}`;
+    };
+
+    const handleToggleShare = async (record: InvoiceRow, enabled: boolean) => {
+        try {
+            const { data: mutationData } = await enableInvoicePublicShare({
+                variables: { id: record._id, enabled },
+            });
+            const shareValue = mutationData?.enableInvoicePublicShare as
+                | string
+                | undefined;
+            const link = enabled ? buildPublicLink(shareValue, record._id) : undefined;
+            setShareState((prev) => ({
+                ...prev,
+                [record._id]: { enabled, link },
+            }));
+            message.success(
+                enabled ? "Public share enabled" : "Public share disabled"
+            );
+        } catch (err) {
+            message.error("Failed to update public share");
+        }
+    };
+
+    const handleCopyLink = async (record: InvoiceRow) => {
+        const link =
+            shareState[record._id]?.link || record.publicShareLink || "";
+        const finalLink = buildPublicLink(link, record._id);
+        if (!finalLink) {
+            message.error("Public link not available");
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(finalLink);
+            message.success("Link copied");
+        } catch {
+            message.error("Failed to copy link");
+        }
+    };
 
     /* ================= TABLE COLUMNS ================= */
 
@@ -125,6 +205,34 @@ const InvoiceTable = () => {
                                     : "default";
 
                 return <Tag color={color}>{status}</Tag>;
+            },
+        },
+        {
+            title: "Public",
+            key: "public",
+            render: (_: unknown, record: InvoiceRow) => {
+                const enabled =
+                    shareState[record._id]?.enabled ??
+                    Boolean(record.publicShareEnabled || record.publicShare);
+                return (
+                    <div className="flex items-center gap-2">
+                        <Switch
+                            checked={enabled}
+                            onChange={(checked) =>
+                                handleToggleShare(record, checked)
+                            }
+                        />
+                        {enabled && (
+                            <Tooltip title="Copy public link">
+                                <Button
+                                    size="small"
+                                    icon={<FiLink />}
+                                    onClick={() => handleCopyLink(record)}
+                                />
+                            </Tooltip>
+                        )}
+                    </div>
+                );
             },
         },
         {

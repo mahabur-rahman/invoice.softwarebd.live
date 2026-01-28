@@ -89,6 +89,7 @@ export const GET_MY_INVOICES = gql`
         subTotal
         grandTotal
       }
+      publicShare
       createdAt
     }
   }
@@ -155,6 +156,75 @@ export const SINGLE_INVOICE_QUERY = gql`
           tax
         }
         subtractions{
+          discount
+          paid
+        }
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const VIEW_INVOICE_QUERY = gql`
+  query ViewInvoice($id: ID!) {
+    viewInvoice(id: $id) {
+      _id
+      businessId
+      businessInfo {
+        companyName
+        location
+        contactEmail
+      }
+      clientId
+      clientName
+      clientInfo {
+        name
+        address
+      }
+      invoiceNumber
+      currency
+      issueDate
+      dueDate
+      notes
+      status
+      template
+      columns {
+        id
+        fieldKey
+        label
+        type
+        order
+        behavior
+        locked
+        hidden
+      }
+      items {
+        id
+        order
+        itemTotal
+        values {
+          description
+          price
+          quantity
+          extra
+        }
+      }
+      totals {
+        subTotal
+        grandTotal
+        custom {
+          key
+          label
+          behavior
+          valueType
+          value
+        }
+        additions {
+          shipping
+          tax
+        }
+        subtractions {
           discount
           paid
         }

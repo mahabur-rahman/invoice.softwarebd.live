@@ -158,6 +158,19 @@ const EditInvoicePage = () => {
       };
     });
 
+    const columnsForApi = columns.map((col) => {
+      const { __typename, hidden, ...c } = col as any;
+      return {
+        id: c.id ?? uuid(),
+        fieldKey: c.fieldKey,
+        label: c.label,
+        type: c.type,
+        order: c.order,
+        behavior: c.behavior,
+        locked: c.locked,
+      };
+    });
+
     await updateInvoice({
       variables: {
         input: {
@@ -171,29 +184,14 @@ const EditInvoicePage = () => {
           dueDate: invoiceData.dueDate,
           notes: invoiceData.notes,
           status: invoiceData.status,
-          columns: columns.map((col) => {
-            const { __typename, ...c } = col as any;
-
-            return {
-              ...c,
-              id: c.id ?? uuid(),
-            };
-          }),
+          columns: columnsForApi,
           items: itemsForApi,
           totals: {
             subTotal: invoiceData.subtotal,
             grandTotal: invoiceData.total,
             additions: { tax: 0, shipping: 0 },
             subtractions: { discount: 0, paid: 0 },
-            custom: (invoiceData.totalsCustom ?? []).map((field) => ({
-              key: field.key,
-              label: field.label,
-              behavior: field.behavior,
-              valueType: field.valueType,
-              value: Number(field.value || 0),
-            })),
           },
-          template,
         },
       },
       onCompleted: () => {

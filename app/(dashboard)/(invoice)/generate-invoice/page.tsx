@@ -165,6 +165,16 @@ const Page = () => {
       };
     });
 
+    const columnsForApi = columns.map((c) => ({
+      id: c.id ?? uuid(),
+      fieldKey: c.fieldKey,
+      label: c.label,
+      type: c.type,
+      order: c.order,
+      behavior: c.behavior,
+      locked: c.locked,
+    }));
+
     try {
       await createInvoice({
         variables: {
@@ -179,10 +189,7 @@ const Page = () => {
             notes: invoiceData.notes,
             status: invoiceData.status,
 
-            columns: columns.map((c) => ({
-              ...c,
-              id: c.id ?? uuid(),
-            })),
+            columns: columnsForApi,
 
             items: itemsForApi,
 
@@ -191,15 +198,7 @@ const Page = () => {
               grandTotal: invoiceData.total,
               additions: { tax: 0, shipping: 0 },
               subtractions: { discount: 0, paid: 0 },
-              custom: (invoiceData.totalsCustom ?? []).map((field) => ({
-                key: field.key,
-                label: field.label,
-                behavior: field.behavior,
-                valueType: field.valueType,
-                value: Number(field.value || 0),
-              })),
             },
-            template,
           },
         },
       });

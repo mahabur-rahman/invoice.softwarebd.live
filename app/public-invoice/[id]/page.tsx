@@ -1,0 +1,139 @@
+"use client";
+
+import { useMemo } from "react";
+import { useParams } from "next/navigation";
+import { useQuery } from "@apollo/client/react";
+import InvoicePreview from "@/components/invoice/InvoicePreview";
+import { InvoiceColumnInput } from "@/app/(dashboard)/(invoice)/generate-invoice/page";
+import { VIEW_INVOICE_QUERY } from "@/lib/graphql/queries/invoice.queries";
+import { InvoiceTemplateKey } from "@/components/invoice/templates";
+
+interface ViewInvoiceQueryResponse {
+  viewInvoice: {
+    _id: string;
+    businessId: string;
+    clientId: string;
+    clientName?: string;
+    currency: string;
+    status: string;
+    issueDate: string;
+    dueDate: string;
+    notes?: string;
+    invoiceNumber: string;
+    template?: InvoiceTemplateKey;
+    columns: InvoiceColumnInput[];
+    items: {
+      id: string;
+      order: number;
+      itemTotal?: number;
+      values: {
+        description?: string;
+        price?: number;
+        quantity?: number;
+        extra?: Record<string, string | number>;
+      };
+    }[];
+    totals: {
+      subTotal: number;
+      grandTotal: number;
+      subtractions?: Record<string, number>;
+      custom?: {
+        key: string;
+        label: string;
+        behavior: "ADD" | "SUBTRACT" | "NONE";
+        valueType: "FIXED" | "PERCENT";
+        value: number;
+      }[];
+    };
+  };
+}
+
+const Page = () => {
+  const params = useParams();
+  const invoiceId = params.id as string;
+
+  const { data, loading, error } = useQuery<ViewInvoiceQueryResponse>(
+    VIEW_INVOICE_QUERY,
+    {
+      variables: { id: invoiceId },
+      skip: !invoiceId,
+      fetchPolicy: "network-only",
+      nextFetchPolicy: "cache-first",
+      context: { skipAuthRedirect: true },
+    }
+  );
+
+  const previewData = useMemo(() => {
+    if (!data?.viewInvoice) return null;
+
+    const invoice = data.viewInvoice;
+
+    return {
+      client: invoice.clientId,
+      business: invoice.businessId,
+      currency: invoice.currency,
+      status: invoice.status,
+      issueDate: invoice.issueDate,
+      dueDate: invoice.dueDate,
+      notes: invoice.notes ?? "",
+      subtotal: invoice.totals.subTotal,
+      total: invoice.totals.grandTotal,
+      totalsCustom: invoice.totals?.custom ?? [],
+      template: invoice.template ?? "CLASSIC",
+      invoiceNumber: invoice.invoiceNumber ?? "",
+      items: invoice.items.map((item) => {
+        const { description, price, quantity, extra = {} } = item.values || {};
+        return {
+          description: description ?? "",
+          price: Number(price ?? 0),
+          quantity: Number(quantity ?? 0),
+          total: Number(item.itemTotal ?? 0),
+          ...Object.entries(extra ?? {}).reduce<Record<string, string | number>>(
+            (acc, [key, val]) => {
+              if (typeof val === "number" || typeof val === "string") {
+                acc[key] = val;
+              } else if (val == null) {
+                acc[key] = "";
+              } else {
+                acc[key] = String(val);
+              }
+              return acc;
+            },
+            {}
+          ),
+        };
+      }),
+    };
+  }, [data]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20 text-gray-500">
+        Loading invoice…
+      </div>
+    );
+  }
+
+  if (error || !data?.viewInvoice) {
+    return (
+      <div className="flex justify-center py-20 text-gray-500">
+        Unable to load invoice.
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gray-100 min-h-screen p-6">
+      <div className="mx-auto w-full max-w-[210mm] min-h-[297mm] bg-white shadow-lg ring-1 ring-gray-200 p-6">
+        <InvoicePreview
+          data={previewData}
+          columns={data.viewInvoice.columns ?? []}
+          showPrintButton
+          template={data.viewInvoice.template ?? "CLASSIC"}
+        />
+      </div>
+    </div>
+  );
+};
+
+export default Page;
