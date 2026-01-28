@@ -192,6 +192,7 @@ const EditInvoicePage = () => {
             additions: { tax: 0, shipping: 0 },
             subtractions: { discount: 0, paid: 0 },
           },
+          template,
         },
       },
       onCompleted: () => {

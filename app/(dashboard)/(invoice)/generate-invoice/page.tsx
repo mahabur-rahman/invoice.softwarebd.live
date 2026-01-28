@@ -175,6 +175,9 @@ const Page = () => {
       locked: c.locked,
     }));
 
+    const finalInvoiceNumber =
+      invoiceData.invoiceNumber?.trim() || invoiceNumber;
+
     try {
       await createInvoice({
         variables: {
@@ -182,7 +185,7 @@ const Page = () => {
             businessId: invoiceData.business,
             clientId: invoiceData.client,
             clientName: "Test Name",
-            invoiceNumber: invoiceData.invoiceNumber ?? invoiceNumber,
+            invoiceNumber: finalInvoiceNumber,
             currency: invoiceData.currency,
             issueDate: invoiceData.issueDate,
             dueDate: invoiceData.dueDate,
@@ -199,6 +202,7 @@ const Page = () => {
               additions: { tax: 0, shipping: 0 },
               subtractions: { discount: 0, paid: 0 },
             },
+            template,
           },
         },
       });
@@ -223,6 +227,7 @@ const Page = () => {
           handleSubmit={handleSubmit}
           loading={loading}
           editing={false}
+          defaultInvoiceNumber={invoiceNumber}
         />
       </div>
 

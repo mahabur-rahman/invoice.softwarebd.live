@@ -63,6 +63,7 @@ interface InvoiceFormProps {
   loading: boolean;
   initialValues?: InvoiceFormValues | null;
   editing:boolean;
+  defaultInvoiceNumber?: string;
 }
 
 /* ================= VALIDATION ================= */
@@ -280,7 +281,8 @@ const InvoiceForm = ({
   handleSubmit,
   loading,
   initialValues,
-  editing
+  editing,
+  defaultInvoiceNumber
 }: InvoiceFormProps) => {
   /* ================= HELPERS ================= */
 
@@ -301,7 +303,7 @@ const InvoiceForm = ({
     status: "INVOICE",
     issueDate: "",
     dueDate: "",
-    invoiceNumber: "",
+    invoiceNumber: defaultInvoiceNumber ?? "",
     items: [createEmptyItem(initialRowId)],
     notes: "Thank you for your business.",
     subtotal: 0,
