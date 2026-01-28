@@ -1,6 +1,6 @@
 "use client";
 
-import { Table, Spin, Tag, Button, Switch, message, Tooltip } from "antd";
+import { Table, Spin, Tag, Button, Switch, Tooltip } from "antd";
 import { FiEye, FiTrash, FiEdit2, FiPlus, FiLink } from "react-icons/fi";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
@@ -19,6 +19,7 @@ import {
 } from "@/lib/graphql/mutations/invoice.mutations";
 import { useEffect, useState } from "react";
 import ConfirmModal from "@/utils/ConfirmModal";
+import { useToast } from "@/app/providers/ToastProvider";
 
 /* ================= TYPES ================= */
 
@@ -32,6 +33,7 @@ const InvoiceTable = () => {
     const router = useRouter();
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const toast = useToast();
     const [shareState, setShareState] = useState<
         Record<string, { enabled: boolean; link?: string }>
     >({});
@@ -122,9 +124,19 @@ const InvoiceTable = () => {
     };
 
     const handleToggleShare = async (record: InvoiceRow, enabled: boolean) => {
+        setShareState((prev) => ({
+            ...prev,
+            [record._id]: {
+                enabled,
+                link: enabled ? buildPublicLink(undefined, record._id) : undefined,
+            },
+        }));
         try {
             const { data: mutationData } = await enableInvoicePublicShare({
                 variables: { id: record._id, enabled },
+                optimisticResponse: {
+                    enableInvoicePublicShare: enabled ? record._id : "",
+                },
             });
             const shareValue = mutationData?.enableInvoicePublicShare;
             const link = enabled ? buildPublicLink(shareValue, record._id) : undefined;
@@ -132,25 +144,29 @@ const InvoiceTable = () => {
                 ...prev,
                 [record._id]: { enabled, link },
             }));
-            message.success(
+            toast?.success(
                 enabled ? "Public share enabled" : "Public share disabled"
             );
         } catch (err) {
-            message.error("Failed to update public share");
+            setShareState((prev) => ({
+                ...prev,
+                [record._id]: { enabled: !enabled, link: prev[record._id]?.link },
+            }));
+            toast?.error("Failed to update public share");
         }
     };
 
     const handleCopyLink = async (record: InvoiceRow) => {
         const finalLink = buildPublicLink(undefined, record._id);
         if (!finalLink) {
-            message.error("Public link not available");
+            toast?.error("Public link not available");
             return;
         }
         try {
             await navigator.clipboard.writeText(finalLink);
-            message.success("Link copied");
+            toast?.success("Link copied");
         } catch {
-            message.error("Failed to copy link");
+            toast?.error("Failed to copy link");
         }
     };
 

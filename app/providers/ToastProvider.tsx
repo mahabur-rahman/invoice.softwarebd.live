@@ -8,6 +8,7 @@ interface ToastMethods {
     error: (msg: string) => void;
     info: (msg: string) => void;
     warning: (msg: string) => void;
+    loading: (msg: string) => void;
 }
 
 
@@ -21,6 +22,7 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
         error: (msg: string) => messageApi.error(msg),
         info: (msg: string) => messageApi.info(msg),
         warning: (msg: string) => messageApi.warning(msg),
+        loading: (msg: string) => messageApi.loading(msg),
     };
 
     return (
