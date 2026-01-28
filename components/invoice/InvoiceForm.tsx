@@ -214,6 +214,23 @@ const DateDefaults = () => {
   return null;
 };
 
+const DefaultBusiness = ({
+  businesses,
+}: {
+  businesses?: GetMyBusinessesQuery["myBusinesses"];
+}) => {
+  const { values, setFieldValue } = useFormikContext<InvoiceFormValues>();
+
+  React.useEffect(() => {
+    if (values.business) return;
+    const defaultBusiness = businesses?.find((b) => b.defaultBusiness);
+    if (!defaultBusiness?._id) return;
+    setFieldValue("business", defaultBusiness._id, false);
+  }, [businesses, setFieldValue, values.business]);
+
+  return null;
+};
+
 const ItemsColumnSync = ({ columns }: { columns: InvoiceColumnInput[] }) => {
   const { values, setFieldValue } = useFormikContext<InvoiceFormValues>();
   const prevColumnsRef = React.useRef<InvoiceColumnInput[]>(columns);
@@ -402,6 +419,7 @@ const InvoiceForm = ({
           <Form className="space-y-8">
           <ItemsColumnSync columns={columns} />
           <DateDefaults />
+          <DefaultBusiness businesses={businessData?.myBusinesses} />
           <LiveCalculation columns={columns} onUpdate={onUpdate} />
           <h2 className="text-2xl font-bold text-gray-800">{editing ? 'Update': 'Create'} Invoice</h2>
 

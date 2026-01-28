@@ -30,6 +30,7 @@ export type Business = {
   companyName: Maybe<Scalars['String']['output']>;
   contactEmail: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['Timestamp']['output'];
+  defaultBusiness: Maybe<Scalars['Boolean']['output']>;
   location: Maybe<Scalars['String']['output']>;
   logoUrl: Maybe<Scalars['String']['output']>;
   ownerId: Scalars['ID']['output'];
@@ -45,6 +46,7 @@ export type BusinessType = {
   companyName: Maybe<Scalars['String']['output']>;
   contactEmail: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['Timestamp']['output'];
+  defaultBusiness: Maybe<Scalars['Boolean']['output']>;
   location: Maybe<Scalars['String']['output']>;
   logoUrl: Maybe<Scalars['String']['output']>;
   owner: Maybe<User>;
@@ -80,6 +82,7 @@ export type CreateBusinessInput = {
   branchs: InputMaybe<Array<Scalars['String']['input']>>;
   companyName: InputMaybe<Scalars['String']['input']>;
   contactEmail: InputMaybe<Scalars['String']['input']>;
+  defaultBusiness: InputMaybe<Scalars['Boolean']['input']>;
   location: InputMaybe<Scalars['String']['input']>;
   logoUrl: InputMaybe<Scalars['String']['input']>;
   ownerId: InputMaybe<Scalars['ID']['input']>;
@@ -401,6 +404,7 @@ export type UpdateBusinessInput = {
   branchs: InputMaybe<Array<Scalars['String']['input']>>;
   companyName: InputMaybe<Scalars['String']['input']>;
   contactEmail: InputMaybe<Scalars['String']['input']>;
+  defaultBusiness: InputMaybe<Scalars['Boolean']['input']>;
   location: InputMaybe<Scalars['String']['input']>;
   logoUrl: InputMaybe<Scalars['String']['input']>;
   ownerId: InputMaybe<Scalars['ID']['input']>;
@@ -549,14 +553,14 @@ export type DeleteInvoiceMutation = { __typename?: 'Mutation', deleteInvoice: { 
 export type GetMyBusinessesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMyBusinessesQuery = { __typename?: 'Query', myBusinesses: Array<{ __typename?: 'BusinessType', _id: string, companyName: string | null, contactEmail: string | null, createdAt: any, location: string | null, logoUrl: string | null, ownerId: string, phoneNumber: string | null, updatedAt: any, websiteUrl: string | null, owner: { __typename?: 'User', _id: string, createdAt: any, email: string, name: string | null, role: string, updatedAt: any } | null }> };
+export type GetMyBusinessesQuery = { __typename?: 'Query', myBusinesses: Array<{ __typename?: 'BusinessType', _id: string, companyName: string | null, contactEmail: string | null, createdAt: any, defaultBusiness: boolean | null, location: string | null, logoUrl: string | null, ownerId: string, phoneNumber: string | null, updatedAt: any, websiteUrl: string | null, owner: { __typename?: 'User', _id: string, createdAt: any, email: string, name: string | null, role: string, updatedAt: any } | null }> };
 
 export type SingleBusinessQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type SingleBusinessQuery = { __typename?: 'Query', singleBusiness: { __typename?: 'BusinessType', _id: string, companyName: string | null, contactEmail: string | null, createdAt: any, location: string | null, logoUrl: string | null, ownerId: string, phoneNumber: string | null, updatedAt: any, websiteUrl: string | null } };
+export type SingleBusinessQuery = { __typename?: 'Query', singleBusiness: { __typename?: 'BusinessType', _id: string, companyName: string | null, contactEmail: string | null, createdAt: any, defaultBusiness: boolean | null, location: string | null, logoUrl: string | null, ownerId: string, phoneNumber: string | null, updatedAt: any, websiteUrl: string | null } };
 
 export type FindAllClientsQueryVariables = Exact<{ [key: string]: never; }>;
 

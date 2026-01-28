@@ -7,6 +7,7 @@ export const SINGLE_BUSINESS_QUERY = gql`
       companyName
       contactEmail
       createdAt
+      defaultBusiness
       location
       logoUrl
       ownerId

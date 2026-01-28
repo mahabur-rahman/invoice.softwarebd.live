@@ -1,9 +1,10 @@
 "use client";
 
-import { Table, Spin, Tag } from "antd";
-import { FiEye, FiTrash, FiEdit2 } from "react-icons/fi";
+import { Table, Spin, Tag, Button } from "antd";
+import { FiEye, FiTrash, FiEdit2, FiPlus } from "react-icons/fi";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 // import { DELETE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
 import { InvoiceType } from "@/lib/graphql/generated-types";
@@ -163,9 +164,20 @@ const InvoiceTable = () => {
                 onConfirm={confirmDelete}
                 loading={deleteLoading}
             />
-            <h2 className="text-xl font-semibold mb-4">
-                Invoices
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">
+                    Invoices
+                </h2>
+                <Link href="/generate-invoice">
+                    <Button
+                        type="primary"
+                        icon={<FiPlus />}
+                        className="flex items-center gap-2"
+                    >
+                        Create Invoice
+                    </Button>
+                </Link>
+            </div>
 
             <Table<InvoiceRow>
                 columns={columns}

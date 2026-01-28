@@ -30,16 +30,23 @@ export const menuItems: MenuProps["items"] = [
         icon: <FiUsers size={16} />,
         label: <Link href="/clients">Clients</Link>,
       },
-        {
-        key: "104",
-        icon: <FiBriefcase size={16} />,
-        label: <Link href="/my-business">My Business</Link>,
-      },
     ],
   },
   {
     key: "3",
     icon: <FiSettings size={18} />,
-    label: <Link href="/settings">Settings</Link>,
+    label: "Settings",
+    children: [
+      {
+        key: "301",
+        icon: <FiSettings size={16} />,
+        label: <Link href="/settings">Settings</Link>,
+      },
+      {
+        key: "302",
+        icon: <FiBriefcase size={16} />,
+        label: <Link href="/my-business">My Business</Link>,
+      },
+    ],
   },
 ];
