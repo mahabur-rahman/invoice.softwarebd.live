@@ -10,7 +10,15 @@ import {
   ErrorMessage,
 } from "formik";
 import * as Yup from "yup";
-import { FiEdit2, FiEye, FiEyeOff, FiPlus, FiTrash2 } from "react-icons/fi";
+import {
+  FiChevronDown,
+  FiChevronUp,
+  FiEdit2,
+  FiEye,
+  FiEyeOff,
+  FiPlus,
+  FiTrash2,
+} from "react-icons/fi";
 import { useQuery } from "@apollo/client/react";
 import { GET_MY_BUSINESSES } from "@/lib/graphql/queries";
 import { GET_ALL_CLIENTS } from "@/lib/graphql/queries/invoice.queries";
@@ -25,19 +33,20 @@ import { Spin } from "antd";
 // ✅ dnd-kit
 import {
   DndContext,
-  closestCenter,
   DragEndEvent,
-  DragStartEvent,
   DragOverlay,
+  DragStartEvent,
+  Modifier,
   PointerSensor,
+  closestCenter,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  useSortable,
   arrayMove,
   rectSortingStrategy,
+  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -103,6 +112,24 @@ const formatDateInput = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
+const getColumnWidthClass = (fieldKey: string) => {
+  if (fieldKey === "description") return "flex-[2.4]";
+  if (fieldKey === "quantity") return "flex-[0.7]";
+  if (fieldKey === "price") return "flex-[0.9]";
+  if (fieldKey === "total") return "flex-[0.9]";
+  return "flex-1";
+};
+
+const restrictToHorizontalAxis: Modifier = ({ transform }) => ({
+  ...transform,
+  y: 0,
+});
+
+const restrictToVerticalAxis: Modifier = ({ transform }) => ({
+  ...transform,
+  x: 0,
+});
+
 
 /* ================= SORTABLE CELL (FIRST ROW ONLY) ================= */
 
@@ -115,6 +142,7 @@ const SortableCell = ({
   label: React.ReactNode;
   children: React.ReactNode;
 }) => {
+  const widthClass = getColumnWidthClass(column.fieldKey);
   const {
     setNodeRef,
     setActivatorNodeRef,
@@ -125,6 +153,7 @@ const SortableCell = ({
     isDragging,
   } = useSortable({
     id: getColDndId(column),
+    data: { type: "column" },
   });
 
   return (
@@ -135,7 +164,7 @@ const SortableCell = ({
         transition,
         opacity: isDragging ? 0.4 : 1,
       }}
-      className={`flex flex-col gap-1 min-w-0 flex-1 ${
+      className={`flex flex-col gap-1 min-w-0 ${widthClass} ${
         column.hidden ? "opacity-60" : ""
       }`}
     >
@@ -145,9 +174,9 @@ const SortableCell = ({
         ref={setActivatorNodeRef}
         {...attributes}
         {...listeners}
-        className="cursor-move text-sm font-medium text-gray-700 flex items-center gap-1"
+        className="w-full cursor-move text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 flex items-center gap-1"
       >
-        <span className="text-gray-400">≡</span>
+        <span className="text-slate-400">≡</span>
         {label}
       </div>
 
@@ -156,6 +185,29 @@ const SortableCell = ({
     </div>
   );
 };
+
+const StaticCell = ({
+  column,
+  label,
+  children,
+}: {
+  column: InvoiceColumnInput;
+  label: React.ReactNode;
+  children: React.ReactNode;
+}) => (
+  <div
+    className={`flex flex-col gap-1 min-w-0 ${getColumnWidthClass(
+      column.fieldKey
+    )} ${
+      column.hidden ? "opacity-60" : ""
+    }`}
+  >
+    <div className="w-full text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 flex items-center gap-1">
+      {label}
+    </div>
+    {children}
+  </div>
+);
 
 const SortableRow = ({
   id,
@@ -174,6 +226,7 @@ const SortableRow = ({
     isDragging,
   } = useSortable({
     id,
+    data: { type: "row" },
   });
 
   return (
@@ -191,10 +244,11 @@ const SortableRow = ({
         ref={setActivatorNodeRef}
         {...attributes}
         {...listeners}
-        className="absolute -left-5 top-4 text-gray-400 hover:text-gray-600 cursor-move"
+        className="absolute -left-8 top-1/2 z-10 flex h-8 w-5 -translate-y-1/2 flex-col items-center justify-center gap-0.5 rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:text-slate-700 cursor-move"
         aria-label="Reorder row"
       >
-        ≡
+        <FiChevronUp className="text-xs" />
+        <FiChevronDown className="text-xs" />
       </button>
       {children}
     </div>
@@ -267,7 +321,7 @@ const FieldError = ({ name }: { name: string }) => (
   <ErrorMessage
     name={name}
     component="div"
-    className="text-red-600 text-sm mt-1"
+    className="text-red-600 text-xs mt-1"
   />
 );
 
@@ -287,6 +341,11 @@ const InvoiceForm = ({
   /* ================= HELPERS ================= */
 
   const initialRowId = React.useId();
+  const inputBaseClass =
+    "mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200";
+  const selectBaseClass = `${inputBaseClass} pr-8`;
+  const cardBaseClass =
+    "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm";
 
   const createEmptyItem = (rowId?: string): InvoiceItem =>
     columns.reduce((acc, col) => {
@@ -327,17 +386,30 @@ const InvoiceForm = ({
     })
   );
 
-  const onDragStart = (event: DragStartEvent) => {
-    const id = String(event.active.id);
-    const isColumnDrag = columns.some((c) => getColDndId(c) === id);
-    setActiveId(isColumnDrag ? id : null);
+  const onColumnDragStart = (event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
   };
 
-  const onDragEnd = (
+  const onRowDragEnd = (
     event: DragEndEvent,
     items: InvoiceItem[],
     setFieldValue: (field: string, value: unknown) => void
   ) => {
+    const { active, over } = event;
+
+    if (!over) return;
+    if (active.id === over.id) return;
+
+    const activeStr = String(active.id);
+    const overStr = String(over.id);
+    const oldIndex = items.findIndex((item) => getRowDndId(item) === activeStr);
+    const newIndex = items.findIndex((item) => getRowDndId(item) === overStr);
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+    const reorderedItems = arrayMove(items, oldIndex, newIndex);
+    setFieldValue("items", reorderedItems);
+  };
+
+  const onColumnDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
 
@@ -346,31 +418,18 @@ const InvoiceForm = ({
 
     const activeStr = String(active.id);
     const overStr = String(over.id);
-
-    const isColumnDrag =
-      columns.some((c) => getColDndId(c) === activeStr) &&
-      columns.some((c) => getColDndId(c) === overStr);
-
-    if (isColumnDrag) {
-      setColumns((cols) => {
-        const oldIndex = cols.findIndex((c) => getColDndId(c) === activeStr);
-        const newIndex = cols.findIndex((c) => getColDndId(c) === overStr);
-        const reordered = arrayMove(cols, oldIndex, newIndex);
-        return reordered.map((c, i) => ({ ...c, order: i + 1 }));
-      });
-      return;
-    }
-
-    const isRowDrag =
-      activeStr.startsWith("row-") && overStr.startsWith("row-");
-
-    if (isRowDrag) {
-      const oldIndex = items.findIndex((item) => getRowDndId(item) === activeStr);
-      const newIndex = items.findIndex((item) => getRowDndId(item) === overStr);
-      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
-      const reorderedItems = arrayMove(items, oldIndex, newIndex);
-      setFieldValue("items", reorderedItems);
-    }
+    setColumns((cols) => {
+      const total = cols.find((c) => c.fieldKey === "total");
+      const draggable = cols.filter((c) => c.fieldKey !== "total");
+      const oldIndex = draggable.findIndex((c) => getColDndId(c) === activeStr);
+      const newIndex = draggable.findIndex((c) => getColDndId(c) === overStr);
+      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) {
+        return cols;
+      }
+      const reordered = arrayMove(draggable, oldIndex, newIndex);
+      const next = total ? [...reordered, total] : reordered;
+      return next.map((c, i) => ({ ...c, order: i + 1 }));
+    });
   };
 
   const activeColumn = React.useMemo(() => {
@@ -429,163 +488,318 @@ const InvoiceForm = ({
         onSubmit={handleSubmit}
         enableReinitialize={Boolean(initialValues)}
       >
-        {({ values, setFieldValue }) => (
-          <Form className="space-y-8">
+        {({ values, setFieldValue }) => {
+          const defaultBusiness = businessData?.myBusinesses?.find(
+            (business) => business.defaultBusiness
+          );
+          const selectedBusiness = businessData?.myBusinesses?.find(
+            (business) => business._id === values.business
+          );
+          const selectedClient = clientData?.findAllClients?.find(
+            (client) => client._id === values.client
+          );
+          const totalColumn = columns.find((column) => column.fieldKey === "total");
+          const draggableColumns = columns.filter(
+            (column) => column.fieldKey !== "total"
+          );
+          const displayColumns = totalColumn
+            ? [...draggableColumns, totalColumn]
+            : draggableColumns;
+
+          return (
+            <Form className="space-y-6">
           <ItemsColumnSync columns={columns} />
           <DateDefaults />
           <DefaultBusiness businesses={businessData?.myBusinesses} />
           <LiveCalculation columns={columns} onUpdate={onUpdate} />
-          <h2 className="text-2xl font-bold text-gray-800">{editing ? 'Update': 'Create'} Invoice</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                Invoice workspace
+              </p>
+              <h2 className="text-2xl font-semibold text-slate-900">
+                {editing ? "Update" : "Create"} Invoice
+              </h2>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              Real-time preview updates as you edit
+            </div>
+          </div>
 
           {/* ================= BUSINESS / CLIENT ================= */}
 
-          <div className="grid grid-cols-2 gap-4">
+          <section className={cardBaseClass}>
             <div>
-              <label className="text-sm font-medium text-gray-700">
-                Select Business
-              </label>
-              <div className="mt-1 flex items-center gap-2">
-                <Field
-                  as="select"
-                  name="business"
-                  className="w-full p-2 border border-gray-300 rounded-md bg-white"
-                >
-                  <option value="">Select business</option>
-                  {businessData?.myBusinesses?.map((b) => (
-                    <option key={b._id} value={b._id}>
-                      {b.companyName}
-                    </option>
-                  ))}
-                </Field>
-                <button
-                  type="button"
-                  onClick={() => setBusinessModalOpen(true)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-linear-to-b from-white to-gray-50 text-gray-700 shadow-sm hover:border-gray-300 hover:from-gray-50 hover:to-white cursor-pointer transition"
-                  aria-label="Add business"
-                >
-                  <FiPlus className="text-sm" />
-                </button>
-              </div>
-              <FieldError name="business" />
+              <p className="text-xs uppercase tracking-[0.28em] text-slate-400">
+                Business and client
+              </p>
+              <h3 className="text-lg font-semibold text-slate-900">
+                Who is this invoice for?
+              </h3>
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-gray-700">
-                Select Client
-              </label>
-              <div className="mt-1 flex items-center gap-2">
-                <Field
-                  as="select"
-                  name="client"
-                  className="w-full p-2 border border-gray-300 rounded-md bg-white"
-                >
-                  <option value="">Select client</option>
-                  {clientData?.findAllClients?.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </Field>
-                <button
-                  type="button"
-                  onClick={() => setClientModalOpen(true)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-linear-to-b from-white to-gray-50 text-gray-700 shadow-sm hover:border-gray-300 hover:from-gray-50 hover:to-white cursor-pointer transition"
-                  aria-label="Add client"
-                >
-                  <FiPlus className="text-sm" />
-                </button>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Business
+                  </label>
+                  {defaultBusiness?._id === values.business && (
+                    <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                      Default
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500">
+                  Select the business profile to bill from.
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <Field
+                    as="select"
+                    name="business"
+                    className={selectBaseClass}
+                  >
+                    <option value="">Select business</option>
+                    {businessData?.myBusinesses?.map((b) => (
+                      <option key={b._id} value={b._id}>
+                        {b.companyName}
+                      </option>
+                    ))}
+                  </Field>
+                  <button
+                    type="button"
+                    onClick={() => setBusinessModalOpen(true)}
+                    className="mt-1 inline-flex h-[42px] items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-800"
+                  >
+                    <FiPlus className="text-xs" />
+                    New business
+                  </button>
+                </div>
+                {selectedBusiness && (
+                  <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      {selectedBusiness.logoUrl && (
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm">
+                          <img
+                            src={selectedBusiness.logoUrl}
+                            alt={`${selectedBusiness.companyName} logo`}
+                            className="h-6 w-6 object-contain"
+                          />
+                        </div>
+                      )}
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">
+                        Business details
+                      </p>
+                    </div>
+                    <div className="mt-2 grid gap-1">
+                      <span>
+                        Email:{" "}
+                        <span className="font-semibold text-slate-900">
+                          {selectedBusiness.contactEmail || "—"}
+                        </span>
+                      </span>
+                      <span>
+                        Phone:{" "}
+                        <span className="font-semibold text-slate-900">
+                          {selectedBusiness.phoneNumber || "—"}
+                        </span>
+                      </span>
+                      <span>
+                        Address:{" "}
+                        <span className="font-semibold text-slate-900">
+                          {selectedBusiness.location || "—"}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                )}
+                <FieldError name="business" />
               </div>
-              <FieldError name="client" />
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Client
+                  </label>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Choose who will receive this invoice.
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <Field
+                    as="select"
+                    name="client"
+                    className={selectBaseClass}
+                  >
+                    <option value="">Select client</option>
+                    {clientData?.findAllClients?.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </Field>
+                  <button
+                    type="button"
+                    onClick={() => setClientModalOpen(true)}
+                    className="mt-1 inline-flex h-[42px] items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-800"
+                  >
+                    <FiPlus className="text-xs" />
+                    New client
+                  </button>
+                </div>
+                {selectedClient && (
+                  <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600 shadow-sm">
+                    <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">
+                      Client details
+                    </p>
+                    <div className="mt-2 grid gap-1">
+                      <span>
+                        Email:{" "}
+                        <span className="font-semibold text-slate-900">
+                          {selectedClient.email || "—"}
+                        </span>
+                      </span>
+                      <span>
+                        Phone:{" "}
+                        <span className="font-semibold text-slate-900">
+                          {selectedClient.phone || "—"}
+                        </span>
+                      </span>
+                      <span>
+                        Address:{" "}
+                        <span className="font-semibold text-slate-900">
+                          {selectedClient.address || "—"}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                )}
+                <FieldError name="client" />
+              </div>
             </div>
-          </div>
+          </section>
 
           {/* ================= DATES & CURRENCY ================= */}
 
-          <div className="grid grid-cols-4 gap-4">
+          <section className={cardBaseClass}>
             <div>
-              <label className="text-sm font-medium text-gray-700">
-                Issue Date
-              </label>
-              <Field
-                type="date"
-                name="issueDate"
-                className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
-              />
-              <FieldError name="issueDate" />
+              <p className="text-xs uppercase tracking-[0.28em] text-slate-400">
+                Invoice details
+              </p>
+              <h3 className="text-lg font-semibold text-slate-900">
+                Dates, currency, status
+              </h3>
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-gray-700">
-                Due Date
-              </label>
-              <Field
-                type="date"
-                name="dueDate"
-                className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
-              />
-              <FieldError name="dueDate" />
-            </div>
+            <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Issue Date
+                </label>
+                <Field
+                  type="date"
+                  name="issueDate"
+                  className={inputBaseClass}
+                />
+                <FieldError name="issueDate" />
+              </div>
 
-            <div>
-              <label className="text-sm font-medium text-gray-700">
-                Currency
-              </label>
-              <Field
-                as="select"
-                name="currency"
-                className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
-              >
-                {INVOICE_CURRENCY_OPTIONS.map((currency) => (
-                  <option key={currency} value={currency}>
-                    {currency}
-                  </option>
-                ))}
-              </Field>
-              <FieldError name="currency" />
-            </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Due Date
+                </label>
+                <Field
+                  type="date"
+                  name="dueDate"
+                  className={inputBaseClass}
+                />
+                <FieldError name="dueDate" />
+              </div>
 
-            <div>
-              <label className="text-sm font-medium text-gray-700">
-                Status
-              </label>
-              <Field
-                as="select"
-                name="status"
-                className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
-              >
-                {INVOICE_STATUS_OPTIONS.map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
-                  </option>
-                ))}
-              </Field>
-              <FieldError name="status" />
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Currency
+                </label>
+                <Field
+                  as="select"
+                  name="currency"
+                  className={selectBaseClass}
+                >
+                  {INVOICE_CURRENCY_OPTIONS.map((currency) => (
+                    <option key={currency} value={currency}>
+                      {currency}
+                    </option>
+                  ))}
+                </Field>
+                <FieldError name="currency" />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Status
+                </label>
+                <div className="mt-2 grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
+                  {INVOICE_STATUS_OPTIONS.map((status) => {
+                    const isActive = values.status === status.value;
+                    return (
+                      <button
+                        key={status.value}
+                        type="button"
+                        onClick={() => setFieldValue("status", status.value)}
+                        className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                          isActive
+                            ? "bg-white text-slate-900 shadow-sm"
+                            : "text-slate-500 hover:text-slate-700"
+                        }`}
+                        aria-pressed={isActive}
+                      >
+                        {status.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <FieldError name="status" />
+              </div>
             </div>
-          </div>
+          </section>
 
           {/* ================= ITEMS ================= */}
 
-          <FieldArray name="items">
-            {({ push, remove }) => (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragStart={onDragStart}
-                onDragEnd={(event) =>
-                  onDragEnd(event, values.items, setFieldValue)
-                }
+          <section className={cardBaseClass}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.28em] text-slate-400">
+                  Line items
+                </p>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Add your services
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Drag headers to reorder columns.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddColumnModalOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-800"
               >
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-semibold text-gray-800">Items</h3>
-                    <button
-                      type="button"
-                      onClick={() => setAddColumnModalOpen(true)}
-                      className="cursor-pointer flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-md text-sm border border-gray-300"
-                    >
-                      <FiPlus /> Add Column
-                    </button>
-                  </div>
+                <FiPlus className="text-xs" />
+                Add column
+              </button>
+            </div>
+
+            <FieldArray name="items">
+              {({ push, remove }) => (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  modifiers={[restrictToVerticalAxis]}
+                  onDragEnd={(event) =>
+                    onRowDragEnd(event, values.items, setFieldValue)
+                  }
+                >
+                  <div className="mt-5 space-y-4 pl-8">
 
                   <SortableContext
                     items={values.items.map((item) => getRowDndId(item))}
@@ -597,34 +811,80 @@ const InvoiceForm = ({
 
                       return (
                         <SortableRow key={rowId} id={rowId}>
-                          <div className="bg-white border border-gray-200 rounded-lg p-3">
+                          <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:bg-slate-50/70">
                             <div className="flex gap-3 w-full items-start relative">
                               {/* ✅ ONLY FIRST ROW IS SORTABLE, AND ONLY THE COLUMNS AREA IS IN SortableContext */}
                               {isFirstRow ? (
-                                <SortableContext
-                                  items={columns
-                                    .filter((c) => !c.locked)
-                                    .map((c) => getColDndId(c))}
-                                  strategy={rectSortingStrategy}
+                                <DndContext
+                                  sensors={sensors}
+                                  collisionDetection={closestCenter}
+                                  modifiers={[restrictToHorizontalAxis]}
+                                  onDragStart={onColumnDragStart}
+                                  onDragEnd={onColumnDragEnd}
                                 >
-                                  <div className="flex gap-3 w-full flex-1">
-                                    {columns.map((column) => {
+                                  <SortableContext
+                                    items={draggableColumns.map((c) =>
+                                      getColDndId(c)
+                                    )}
+                                    strategy={rectSortingStrategy}
+                                  >
+                                    <div className="flex gap-3 w-full flex-1">
+                                      {draggableColumns.map((column) => {
                                       const isTotal = column.fieldKey === "total";
 
                                       const isHidden = Boolean(column.hidden);
-                                      const fieldEl = (
-                                        <Field
-                                          name={`items.${i}.${column.fieldKey}`}
-                                          readOnly={isTotal}
-                                          type={
-                                            column.type === "number" ? "number" : "text"
-                                          }
-                                          className={`p-2 border rounded-md w-full min-w-0 ${isTotal
-                                            ? "bg-gray-100 text-center font-semibold"
-                                            : "bg-white"
-                                            } ${isHidden ? "text-gray-500" : ""} border-gray-300`}
-                                        />
-                                      );
+                                      const fieldEl =
+                                        column.fieldKey === "price" ||
+                                        column.fieldKey === "total" ? (
+                                          <Field name={`items.${i}.${column.fieldKey}`}>
+                                            {({ field }) => (
+                                              <input
+                                                {...field}
+                                                type={isTotal ? "text" : "number"}
+                                                inputMode="decimal"
+                                                step="0.01"
+                                                readOnly={isTotal}
+                                                value={
+                                                  isTotal
+                                                    ? Number(field.value ?? 0).toFixed(2)
+                                                    : field.value ?? ""
+                                                }
+                                                onBlur={(event) => {
+                                                  field.onBlur(event);
+                                                  if (isTotal) return;
+                                                  const raw = event.target.value;
+                                                  if (!raw) return;
+                                                  const numeric = Number(raw);
+                                                  if (Number.isNaN(numeric)) return;
+                                                  setFieldValue(
+                                                    field.name,
+                                                    Number(numeric.toFixed(2))
+                                                  );
+                                                }}
+                                                className={`w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 ${
+                                                  isTotal
+                                                    ? "bg-slate-50 text-center font-semibold"
+                                                    : ""
+                                                } ${isHidden ? "text-slate-500" : ""}`}
+                                              />
+                                            )}
+                                          </Field>
+                                        ) : (
+                                          <Field
+                                            name={`items.${i}.${column.fieldKey}`}
+                                            readOnly={isTotal}
+                                            type={
+                                              column.type === "number"
+                                                ? "number"
+                                                : "text"
+                                            }
+                                            className={`w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 ${
+                                              isTotal
+                                                ? "bg-slate-50 text-center font-semibold"
+                                                : ""
+                                            } ${isHidden ? "text-slate-500" : ""}`}
+                                          />
+                                        );
 
                                       return (
                                         <SortableCell
@@ -632,7 +892,11 @@ const InvoiceForm = ({
                                           column={column}
                                           label={
                                             <div className="flex justify-between w-full">
-                                              <span className={isHidden ? "text-gray-400" : ""}>
+                                              <span
+                                                className={
+                                                  isHidden ? "text-slate-400" : ""
+                                                }
+                                              >
                                                 {column.label}
                                               </span>
 
@@ -644,8 +908,10 @@ const InvoiceForm = ({
                                                     e.stopPropagation();
                                                     toggleColumnHidden(column);
                                                   }}
-                                                  className={`hover:text-gray-700 ${
-                                                    isHidden ? "text-gray-400" : "text-gray-500"
+                                                  className={`hover:text-slate-700 ${
+                                                    isHidden
+                                                      ? "text-slate-400"
+                                                      : "text-slate-500"
                                                   }`}
                                                   aria-label={`Toggle ${column.label} visibility`}
                                                 >
@@ -663,7 +929,7 @@ const InvoiceForm = ({
                                                       e.stopPropagation();
                                                       openLabelModal(column);
                                                     }}
-                                                    className="text-gray-500 hover:text-gray-700"
+                                                    className="text-slate-500 hover:text-slate-700"
                                                     aria-label={`Edit ${column.label} label`}
                                                   >
                                                     <FiEdit2 className="text-xs" />
@@ -705,33 +971,110 @@ const InvoiceForm = ({
                                           }
                                         >
                                           {fieldEl}
-                                          {column.fieldKey !== "total" && (
-                                            <FieldError
-                                              name={`items.${i}.${column.fieldKey}`}
-                                            />
-                                          )}
+                                          <FieldError
+                                            name={`items.${i}.${column.fieldKey}`}
+                                          />
                                         </SortableCell>
                                       );
                                     })}
-                                  </div>
-                                </SortableContext>
+                                    {totalColumn && (
+                                      <StaticCell
+                                        column={totalColumn}
+                                        label={
+                                          <div className="flex justify-between w-full">
+                                            <span
+                                              className={
+                                                totalColumn.hidden
+                                                  ? "text-slate-400"
+                                                  : ""
+                                              }
+                                            >
+                                              {totalColumn.label}
+                                            </span>
+
+                                            <div className="flex items-center gap-2">
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.preventDefault();
+                                                  e.stopPropagation();
+                                                  toggleColumnHidden(totalColumn);
+                                                }}
+                                                className={`hover:text-slate-700 ${
+                                                  totalColumn.hidden
+                                                    ? "text-slate-400"
+                                                    : "text-slate-500"
+                                                }`}
+                                                aria-label={`Toggle ${totalColumn.label} visibility`}
+                                              >
+                                                {totalColumn.hidden ? (
+                                                  <FiEyeOff className="text-xs" />
+                                                ) : (
+                                                  <FiEye className="text-xs" />
+                                                )}
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.preventDefault();
+                                                  e.stopPropagation();
+                                                  openLabelModal(totalColumn);
+                                                }}
+                                                className="text-slate-500 hover:text-slate-700"
+                                                aria-label={`Edit ${totalColumn.label} label`}
+                                              >
+                                                <FiEdit2 className="text-xs" />
+                                              </button>
+                                            </div>
+                                          </div>
+                                        }
+                                      >
+                                        <Field name={`items.${i}.${totalColumn.fieldKey}`}>
+                                          {({ field }) => (
+                                            <input
+                                              {...field}
+                                              readOnly
+                                              type="text"
+                                              value={Number(field.value ?? 0).toFixed(2)}
+                                              className="w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 text-center font-semibold shadow-sm"
+                                            />
+                                          )}
+                                        </Field>
+                                      </StaticCell>
+                                    )}
+                                    </div>
+                                  </SortableContext>
+
+                                  <DragOverlay>
+                                    {activeColumn ? (
+                                      <div className="pointer-events-none">
+                                        <div className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 shadow-lg">
+                                          <span className="font-medium text-slate-800">
+                                            {activeColumn.label}
+                                          </span>
+                                          <span className="text-slate-500">≡</span>
+                                        </div>
+                                      </div>
+                                    ) : null}
+                                  </DragOverlay>
+                                </DndContext>
                               ) : (
                                 <div className="flex gap-3 w-full flex-1">
-                                  {columns.map((column) => {
+                                  {displayColumns.map((column) => {
                                     const isTotal = column.fieldKey === "total";
 
                                     const isHidden = Boolean(column.hidden);
                                     return (
                                       <div
                                         key={column.fieldKey}
-                                        className={`flex flex-col gap-1 min-w-0 flex-1 ${
-                                          isHidden ? "opacity-60" : ""
-                                        }`}
+                                        className={`flex flex-col gap-1 min-w-0 ${getColumnWidthClass(
+                                          column.fieldKey
+                                        )} ${isHidden ? "opacity-60" : ""}`}
                                       >
                                         <div className="flex justify-between">
                                           <label
-                                            className={`text-sm font-medium ${
-                                              isHidden ? "text-gray-400" : "text-gray-700"
+                                            className={`text-xs font-semibold uppercase tracking-[0.12em] ${
+                                              isHidden ? "text-slate-400" : "text-slate-500"
                                             }`}
                                           >
                                             {column.label}
@@ -766,17 +1109,57 @@ const InvoiceForm = ({
                                           )}
                                         </div>
 
-                                        <Field
-                                          name={`items.${i}.${column.fieldKey}`}
-                                          readOnly={isTotal}
-                                          type={
-                                            column.type === "number" ? "number" : "text"
-                                          }
-                                          className={`p-2 border rounded-md ${isTotal
-                                            ? "bg-gray-100 text-center font-semibold"
-                                            : "bg-white"
-                                            } border-gray-300`}
-                                        />
+                                        {column.fieldKey === "price" ||
+                                        column.fieldKey === "total" ? (
+                                          <Field name={`items.${i}.${column.fieldKey}`}>
+                                            {({ field }) => (
+                                              <input
+                                                {...field}
+                                                type={isTotal ? "text" : "number"}
+                                                inputMode="decimal"
+                                                step="0.01"
+                                                readOnly={isTotal}
+                                                value={
+                                                  isTotal
+                                                    ? Number(field.value ?? 0).toFixed(2)
+                                                    : field.value ?? ""
+                                                }
+                                                onBlur={(event) => {
+                                                  field.onBlur(event);
+                                                  if (isTotal) return;
+                                                  const raw = event.target.value;
+                                                  if (!raw) return;
+                                                  const numeric = Number(raw);
+                                                  if (Number.isNaN(numeric)) return;
+                                                  setFieldValue(
+                                                    field.name,
+                                                    Number(numeric.toFixed(2))
+                                                  );
+                                                }}
+                                                className={`w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 ${
+                                                  isTotal
+                                                    ? "bg-slate-50 text-center font-semibold"
+                                                    : ""
+                                                }`}
+                                              />
+                                            )}
+                                          </Field>
+                                        ) : (
+                                          <Field
+                                            name={`items.${i}.${column.fieldKey}`}
+                                            readOnly={isTotal}
+                                            type={
+                                              column.type === "number"
+                                                ? "number"
+                                                : "text"
+                                            }
+                                            className={`w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 ${
+                                              isTotal
+                                                ? "bg-slate-50 text-center font-semibold"
+                                                : ""
+                                            }`}
+                                          />
+                                        )}
                                         {!isTotal && (
                                           <FieldError
                                             name={`items.${i}.${column.fieldKey}`}
@@ -793,7 +1176,7 @@ const InvoiceForm = ({
                                 <button
                                   type="button"
                                   onClick={() => remove(i)}
-                                  className="bg-red-600 p-1 cursor-pointer rounded-full text-white absolute -right-5 -bottom-5 flex items-center justify-center"
+                                  className="absolute -right-4 -bottom-4 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white shadow-md"
                                   disabled={values.items.length === 1}
                                   title={
                                     values.items.length === 1
@@ -811,127 +1194,138 @@ const InvoiceForm = ({
                     })}
                   </SortableContext>
 
+                  <div className="text-xs text-slate-500">
+                    Add line items to auto-calculate totals.
+                  </div>
                   <button
                     type="button"
                     onClick={() => push(createEmptyItem())}
-                    className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-2 rounded-md text-sm border border-gray-300"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-white"
                   >
-                    <FiPlus /> Add Item
+                    <FiPlus /> Add item
                   </button>
                 </div>
 
-                <DragOverlay>
-                  {activeColumn ? (
-                    <div className="pointer-events-none">
-                      <div className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 shadow-lg">
-                        <span className="font-medium text-gray-800">
-                          {activeColumn.label}
-                        </span>
-                        <span className="text-gray-500">≡</span>
-                      </div>
-                    </div>
-                  ) : null}
-                </DragOverlay>
               </DndContext>
             )}
           </FieldArray>
+          </section>
 
           {/* ================= SUMMARY ================= */}
 
           <div className="flex justify-end mt-6">
-            <div className="w-full max-w-sm space-y-3 bg-white border border-gray-200 rounded-lg p-4">
-              {/* Subtotal */}
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Subtotal</span>
-                <span className="font-semibold">
-                  {values.currency} {values.subtotal.toFixed(2)}
+            <div className={`w-full max-w-sm space-y-4 ${cardBaseClass}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.28em] text-slate-400">
+                    Summary
+                  </p>
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    Invoice totals
+                  </h3>
+                </div>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                  {INVOICE_STATUS_OPTIONS.find(
+                    (option) => option.value === values.status
+                  )?.label ?? values.status ?? "Draft"}
                 </span>
               </div>
 
-              {/* Custom Totals */}
-              <FieldArray name="totalsCustom">
-                {({ push, remove }) => (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-500">Custom</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          push({
-                            key: uuid(),
-                            label: "",
-                            behavior: "ADD",
-                            valueType: "FIXED",
-                            value: 0,
-                          })
-                        }
-                        className="text-xs text-gray-600 hover:text-gray-800"
-                      >
-                        + Add
-                      </button>
-                    </div>
+              <div className="space-y-3 text-sm">
+                {/* Subtotal */}
+                <div className="flex justify-between text-slate-600">
+                  <span>Subtotal</span>
+                  <span className="font-semibold text-slate-900">
+                    {values.currency} {values.subtotal.toFixed(2)}
+                  </span>
+                </div>
 
-                    {values.totalsCustom?.map((field, index) => (
-                      <div
-                        key={field.key ?? index}
-                        className="rounded-md border border-gray-100 p-2 space-y-2"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Field
-                            name={`totalsCustom.${index}.label`}
-                            placeholder="Label"
-                            className="flex-1 p-2 border border-gray-300 rounded-md"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => remove(index)}
-                            className="text-gray-400 hover:text-red-500"
-                            aria-label="Remove custom total"
-                          >
-                            <FaTimes />
-                          </button>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Field
-                            as="select"
-                            name={`totalsCustom.${index}.behavior`}
-                            className="p-2 border border-gray-300 rounded-md bg-white"
-                          >
-                            <option value="ADD">Add</option>
-                            <option value="SUBTRACT">Subtract</option>
-                            <option value="NONE">None</option>
-                          </Field>
-
-                          <Field
-                            as="select"
-                            name={`totalsCustom.${index}.valueType`}
-                            className="p-2 border border-gray-300 rounded-md bg-white"
-                          >
-                            <option value="FIXED">Fixed</option>
-                            <option value="PERCENT">Percent</option>
-                          </Field>
-
-                          <Field
-                            name={`totalsCustom.${index}.value`}
-                            type="number"
-                            className="w-28 p-2 border border-gray-300 rounded-md text-right"
-                          />
-                        </div>
+                {/* Custom Totals */}
+                <FieldArray name="totalsCustom">
+                  {({ push, remove }) => (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-400">
+                          Adjustments
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            push({
+                              key: uuid(),
+                              label: "",
+                              behavior: "ADD",
+                              valueType: "FIXED",
+                              value: 0,
+                            })
+                          }
+                          className="text-xs font-semibold text-slate-600 hover:text-slate-800"
+                        >
+                          + Add
+                        </button>
                       </div>
-                    ))}
+
+                      {values.totalsCustom?.map((field, index) => (
+                        <div
+                          key={field.key ?? index}
+                          className="rounded-lg border border-slate-100 bg-slate-50 p-2 space-y-2"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Field
+                              name={`totalsCustom.${index}.label`}
+                              placeholder="Label"
+                              className="flex-1 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => remove(index)}
+                              className="text-slate-400 hover:text-red-500"
+                              aria-label="Remove custom total"
+                            >
+                              <FaTimes />
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <Field
+                              as="select"
+                              name={`totalsCustom.${index}.behavior`}
+                              className="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs"
+                            >
+                              <option value="ADD">Add</option>
+                              <option value="SUBTRACT">Subtract</option>
+                              <option value="NONE">None</option>
+                            </Field>
+
+                            <Field
+                              as="select"
+                              name={`totalsCustom.${index}.valueType`}
+                              className="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs"
+                            >
+                              <option value="FIXED">Fixed</option>
+                              <option value="PERCENT">Percent</option>
+                            </Field>
+
+                            <Field
+                              name={`totalsCustom.${index}.value`}
+                              type="number"
+                              className="w-24 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-right text-xs"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </FieldArray>
+
+                <div className="border-t border-dashed border-slate-200 pt-3 text-base font-semibold text-slate-900">
+                  <div className="flex items-center justify-between">
+                    <span>Total</span>
+                    <span>
+                      {values.currency} {values.total.toFixed(2)}
+                    </span>
                   </div>
-                )}
-              </FieldArray>
-
-              <hr />
-
-              {/* Total */}
-              <div className="flex justify-between items-center text-lg font-bold">
-                <span>Total</span>
-                <span>
-                  {values.currency} {values.total.toFixed(2)}
-                </span>
+                </div>
               </div>
             </div>
           </div>
@@ -939,36 +1333,44 @@ const InvoiceForm = ({
 
           {/* ================= NOTES ================= */}
 
-          <div>
-            <label className="text-sm font-medium text-gray-700">
-              Notes / Terms
-            </label>
+          <section className={cardBaseClass}>
+            <div>
+              <p className="text-xs uppercase tracking-[0.28em] text-slate-400">
+                Notes and terms
+              </p>
+              <h3 className="text-lg font-semibold text-slate-900">
+                Add a closing note
+              </h3>
+            </div>
             <Field
               as="textarea"
               name="notes"
               rows={3}
-              className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
+              className={`${inputBaseClass} mt-4`}
             />
-          </div>
+          </section>
 
           {/* ================= SUBMIT ================= */}
 
           <button
             type="submit"
-            className="bg-gray-800 cursor-pointer text-white px-4 py-2 rounded-md hover:bg-gray-900 transition disabled:opacity-60"
+            className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 transition hover:-translate-y-0.5 hover:bg-emerald-700 disabled:opacity-60"
             disabled={loading}
           >
             {loading ? (
-              <span className="flex items-center gap-4">
+              <span className="flex items-center justify-center gap-3">
                 <Spin size="small" />
                 Please Wait
               </span>
+            ) : editing ? (
+              "Update Invoice"
             ) : (
-              editing ? 'Update Invoice': 'Create Invoice'
+              "Create Invoice"
             )}
           </button>
           </Form>
-        )}
+          );
+        }}
       </Formik>
       <Modal
         title="Edit Column Label"

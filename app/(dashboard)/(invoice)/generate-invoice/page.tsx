@@ -217,8 +217,8 @@ const Page = () => {
   /* ================= RENDER ================= */
 
   return (
-    <div className="min-h-screen flex flex-col gap-8 bg-gray-50">
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+    <div className="min-h-screen flex flex-col gap-8 bg-slate-50">
+      <div className="rounded-2xl border border-white/70 bg-white/80 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur">
         <InvoiceForm
           columns={columns}
           setColumns={setColumns}
