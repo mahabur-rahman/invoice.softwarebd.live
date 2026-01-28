@@ -22,6 +22,7 @@ interface Business {
     ownerId: string | null;
     phoneNumber: string | null;
     websiteUrl: string | null;
+    defaultBusiness?: boolean | null;
 }
 
 interface AddBusinessFormProps {
@@ -38,6 +39,7 @@ const BusinessSchema = Yup.object().shape({
     ownerId: Yup.string().required("Owner ID is required"),
     phoneNumber: Yup.string().required("Phone number is required"),
     websiteUrl: Yup.string().url("Must be a valid URL").nullable(),
+    defaultBusiness: Yup.boolean().nullable(),
 });
 
 const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
@@ -62,8 +64,9 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
 
     const mode = business ? "edit" : "add";
 
-    const initialValues: Business =
-        business ?? {
+    const initialValues: Business = business
+        ? { ...business, defaultBusiness: Boolean(business.defaultBusiness) }
+        : {
             companyName: "",
             contactEmail: "",
             location: "",
@@ -71,6 +74,7 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
             ownerId: userId,
             phoneNumber: "",
             websiteUrl: "",
+            defaultBusiness: false,
         };
 
     const [createBusiness, { loading }] = useMutation(CREATE_BUSINESS_MUTATION, {
@@ -88,6 +92,7 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
         ownerId: values.ownerId ?? "",
         phoneNumber: values.phoneNumber ?? "",
         websiteUrl: values.websiteUrl ?? "",
+        defaultBusiness: Boolean(values.defaultBusiness),
     });
 
     const handleSubmit = async (values: Business) => {
@@ -126,6 +131,19 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
         }
     };
 
+
+    const isValidImageSrc = (src: string | null | undefined) => {
+        if (!src) return false;
+        if (src.startsWith("/") || src.startsWith("data:") || src.startsWith("blob:")) {
+            return true;
+        }
+        try {
+            new URL(src);
+            return true;
+        } catch {
+            return false;
+        }
+    };
 
     return (
         <div className="w-full bg-white shadow-lg border border-gray-100 rounded-xl p-8">
@@ -200,13 +218,19 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
                                 {values.logoUrl && (
                                     <div className="flex items-center gap-4 mt-3 p-3 rounded-lg bg-gray-50">
                                         <div className="flex items-center justify-center h-20 w-20 rounded-lg overflow-hidden border">
-                                            <Image
-                                                src={values.logoUrl}
-                                                alt="Logo Preview"
-                                                height={80}
-                                                width={80}
-                                                className="object-cover"
-                                            />
+                                            {isValidImageSrc(values.logoUrl) ? (
+                                                <Image
+                                                    src={values.logoUrl}
+                                                    alt="Logo Preview"
+                                                    height={80}
+                                                    width={80}
+                                                    className="object-cover"
+                                                />
+                                            ) : (
+                                                <div className="text-xs text-gray-500 px-2 text-center">
+                                                    Invalid logo URL
+                                                </div>
+                                            )}
                                         </div>
 
                                         <Button
@@ -240,6 +264,28 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
                                 {errors.websiteUrl && touched.websiteUrl && (
                                     <p className="text-red-500 text-sm">{errors.websiteUrl}</p>
                                 )}
+                            </div>
+
+                            {/* Default Business */}
+                            <div className="flex items-start gap-3 md:col-span-2">
+                                <input
+                                    id="defaultBusiness"
+                                    name="defaultBusiness"
+                                    type="checkbox"
+                                    checked={Boolean(values.defaultBusiness)}
+                                    onChange={(event) =>
+                                        setFieldValue("defaultBusiness", event.target.checked)
+                                    }
+                                    className="mt-1 h-4 w-4 rounded border-gray-300"
+                                />
+                                <div>
+                                    <label htmlFor="defaultBusiness" className="font-medium">
+                                        Set as default business
+                                    </label>
+                                    <p className="text-sm text-gray-500">
+                                        This business will be selected by default when creating invoices.
+                                    </p>
+                                </div>
                             </div>
                         </div>
 

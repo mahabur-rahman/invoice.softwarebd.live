@@ -7,6 +7,7 @@ export const GET_MY_BUSINESSES = gql`
       companyName
       contactEmail
       createdAt
+      defaultBusiness
       location
       logoUrl
       owner {
