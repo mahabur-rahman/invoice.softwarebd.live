@@ -303,10 +303,9 @@ const InvoiceForm = ({
     dueDate: "",
     items: [createEmptyItem(initialRowId)],
     notes: "Thank you for your business.",
-    discount: 0,
-    paid: 0,
     subtotal: 0,
     total: 0,
+    totalsCustom: [],
   };
 
   const formInitialValues = initialValues ?? fallbackInitialValues;
@@ -846,25 +845,81 @@ const InvoiceForm = ({
                 </span>
               </div>
 
-              {/* Discount */}
-              <div className="flex justify-between items-center gap-4">
-                <label className="text-gray-600">Discount</label>
-                <Field
-                  name="discount"
-                  type="number"
-                  className="w-32 p-2 border border-gray-300 rounded-md text-right"
-                />
-              </div>
+              {/* Custom Totals */}
+              <FieldArray name="totalsCustom">
+                {({ push, remove }) => (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500">Custom</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          push({
+                            key: uuid(),
+                            label: "",
+                            behavior: "ADD",
+                            valueType: "FIXED",
+                            value: 0,
+                          })
+                        }
+                        className="text-xs text-gray-600 hover:text-gray-800"
+                      >
+                        + Add
+                      </button>
+                    </div>
 
-              {/* Paid */}
-              <div className="flex justify-between items-center gap-4">
-                <label className="text-gray-600">Paid</label>
-                <Field
-                  name="paid"
-                  type="number"
-                  className="w-32 p-2 border border-gray-300 rounded-md text-right"
-                />
-              </div>
+                    {values.totalsCustom?.map((field, index) => (
+                      <div
+                        key={field.key ?? index}
+                        className="rounded-md border border-gray-100 p-2 space-y-2"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Field
+                            name={`totalsCustom.${index}.label`}
+                            placeholder="Label"
+                            className="flex-1 p-2 border border-gray-300 rounded-md"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => remove(index)}
+                            className="text-gray-400 hover:text-red-500"
+                            aria-label="Remove custom total"
+                          >
+                            <FaTimes />
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Field
+                            as="select"
+                            name={`totalsCustom.${index}.behavior`}
+                            className="p-2 border border-gray-300 rounded-md bg-white"
+                          >
+                            <option value="ADD">Add</option>
+                            <option value="SUBTRACT">Subtract</option>
+                            <option value="NONE">None</option>
+                          </Field>
+
+                          <Field
+                            as="select"
+                            name={`totalsCustom.${index}.valueType`}
+                            className="p-2 border border-gray-300 rounded-md bg-white"
+                          >
+                            <option value="FIXED">Fixed</option>
+                            <option value="PERCENT">Percent</option>
+                          </Field>
+
+                          <Field
+                            name={`totalsCustom.${index}.value`}
+                            type="number"
+                            className="w-28 p-2 border border-gray-300 rounded-md text-right"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </FieldArray>
 
               <hr />
 

@@ -142,6 +142,13 @@ export const SINGLE_INVOICE_QUERY = gql`
       totals {
         subTotal
         grandTotal
+        custom {
+          key
+          label
+          behavior
+          valueType
+          value
+        }
         additions{
           shipping
           tax

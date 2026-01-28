@@ -41,8 +41,17 @@ export const LiveCalculation = ({
       return item;
     });
 
-    const total =
-      subtotal - Number(values.discount || 0) - Number(values.paid || 0);
+    const customDelta = (values.totalsCustom ?? []).reduce((acc, field) => {
+      const rawValue = Number(field.value || 0);
+      const amount =
+        field.valueType === "PERCENT" ? (subtotal * rawValue) / 100 : rawValue;
+
+      if (field.behavior === "ADD") return acc + amount;
+      if (field.behavior === "SUBTRACT") return acc - amount;
+      return acc;
+    }, 0);
+
+    const total = subtotal + customDelta;
 
     // ✅ Update only when necessary
     if (hasItemChange) {
@@ -66,8 +75,7 @@ export const LiveCalculation = ({
     });
   }, [
     values.items,
-    values.discount,
-    values.paid,
+    values.totalsCustom,
     columns,
     values.subtotal,
     values.total,
@@ -78,4 +86,3 @@ export const LiveCalculation = ({
 
   return null;
 };
-

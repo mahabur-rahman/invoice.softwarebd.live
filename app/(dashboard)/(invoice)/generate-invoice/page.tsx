@@ -26,11 +26,18 @@ export interface InvoiceFormValues {
   dueDate: string;
   items: InvoiceItem[];
   notes: string;
-  discount: number;
-  paid: number;
   subtotal: number;
   total: number;
+  totalsCustom: InvoiceTotalsCustomFieldInput[];
 }
+
+export type InvoiceTotalsCustomFieldInput = {
+  key: string;
+  label: string;
+  behavior: "ADD" | "SUBTRACT" | "NONE";
+  valueType: "FIXED" | "PERCENT";
+  value: number;
+};
 
 export type InvoiceColumnInput = {
   id?: string;
@@ -114,9 +121,8 @@ const Page = () => {
       dueDate: invoiceData.dueDate,
       notes: invoiceData.notes,
       subtotal: invoiceData.subtotal,
-      discount: invoiceData.discount,
-      paid: invoiceData.paid,
       total: invoiceData.total,
+      totalsCustom: invoiceData.totalsCustom ?? [],
 
       items: invoiceData.items.map((item) => ({
         ...item,
@@ -178,7 +184,14 @@ const Page = () => {
               subTotal: invoiceData.subtotal,
               grandTotal: invoiceData.total,
               additions: { tax: 0, shipping: 0 },
-              subtractions: { discount: invoiceData.discount, paid: invoiceData.paid },
+              subtractions: { discount: 0, paid: 0 },
+              custom: (invoiceData.totalsCustom ?? []).map((field) => ({
+                key: field.key,
+                label: field.label,
+                behavior: field.behavior,
+                valueType: field.valueType,
+                value: Number(field.value || 0),
+              })),
             },
           },
         },

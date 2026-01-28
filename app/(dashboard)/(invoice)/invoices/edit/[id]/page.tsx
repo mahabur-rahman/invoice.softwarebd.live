@@ -25,10 +25,10 @@ interface SingleInvoiceQueryResponse {
     currency: string;
     issueDate: string;
     dueDate: string;
-    notes?: string;
-    status: string;
-    invoiceNumber: string;
-    columns: InvoiceColumnInput[];
+      notes?: string;
+      status: string;
+      invoiceNumber: string;
+      columns: InvoiceColumnInput[];
     items: {
       id: string;
       order: number;
@@ -44,6 +44,13 @@ interface SingleInvoiceQueryResponse {
       subTotal: number;
       grandTotal: number;
       subtractions?: { discount?: number, paid?: number };
+      custom?: {
+        key: string;
+        label: string;
+        behavior: "ADD" | "SUBTRACT" | "NONE";
+        valueType: "FIXED" | "PERCENT";
+        value: number;
+      }[];
     };
   };
 }
@@ -120,10 +127,9 @@ const EditInvoicePage = () => {
       dueDate: toDateInputValue(invoice.dueDate),
       items,
       notes: invoice.notes ?? "",
-      discount: invoice.totals?.subtractions?.discount ?? 0,
-      paid: invoice.totals?.subtractions?.paid ?? 0,
       subtotal: invoice.totals?.subTotal ?? 0,
       total: invoice.totals?.grandTotal ?? 0,
+      totalsCustom: invoice.totals?.custom ?? [],
     });
   }, [data]);
 
@@ -173,7 +179,14 @@ const EditInvoicePage = () => {
             subTotal: invoiceData.subtotal,
             grandTotal: invoiceData.total,
             additions: { tax: 0, shipping: 0 },
-            subtractions: { discount: invoiceData.discount },
+            subtractions: { discount: 0, paid: 0 },
+            custom: (invoiceData.totalsCustom ?? []).map((field) => ({
+              key: field.key,
+              label: field.label,
+              behavior: field.behavior,
+              valueType: field.valueType,
+              value: Number(field.value || 0),
+            })),
           },
         },
       },

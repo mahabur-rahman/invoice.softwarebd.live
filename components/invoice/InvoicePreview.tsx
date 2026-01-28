@@ -24,9 +24,14 @@ interface InvoiceData {
   items: InvoiceItem[];
   notes: string;
   subtotal: number;
-  discount: number;
-  paid: number;
   total: number;
+  totalsCustom?: {
+    key: string;
+    label: string;
+    behavior: "ADD" | "SUBTRACT" | "NONE";
+    valueType: "FIXED" | "PERCENT";
+    value: number;
+  }[];
 }
 
 interface InvoicePreviewProps {
@@ -94,6 +99,14 @@ const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps)
   }
 
   /* ================= RENDER ================= */
+
+  const customTotals = data.totalsCustom ?? [];
+  const computeCustomAmount = (value: number, valueType: string) => {
+    if (valueType === "PERCENT") {
+      return (data.subtotal * value) / 100;
+    }
+    return value;
+  };
 
   return (
     <div className="relative">
@@ -203,15 +216,18 @@ const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps)
             {Number(data.subtotal ?? 0).toFixed(2)}
           </p>
 
-          <p>
-            Discount: {data.currency}{" "}
-            {Number(data.discount ?? 0).toFixed(2)}
-          </p>
-
-          <p>
-            Paid: {data.currency}{" "}
-            {Number(data.paid ?? 0).toFixed(2)}
-          </p>
+          {customTotals.map((field) => {
+            const amount = computeCustomAmount(Number(field.value || 0), field.valueType);
+            const signedAmount =
+              field.behavior === "SUBTRACT" ? -amount : amount;
+            if (field.behavior === "NONE") return null;
+            return (
+              <p key={field.key}>
+                {field.label || "Custom"}: {data.currency}{" "}
+                {Number(signedAmount ?? 0).toFixed(2)}
+              </p>
+            );
+          })}
 
           <h3 className="text-lg font-semibold mt-2">
             Amount Due: {data.currency}{" "}

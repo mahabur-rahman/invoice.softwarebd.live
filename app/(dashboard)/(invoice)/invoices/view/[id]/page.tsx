@@ -36,6 +36,13 @@ interface SingleInvoiceQueryResponse {
       subTotal: number;
       grandTotal: number;
       subtractions?: Record<string, number>;
+      custom?: {
+        key: string;
+        label: string;
+        behavior: "ADD" | "SUBTRACT" | "NONE";
+        valueType: "FIXED" | "PERCENT";
+        value: number;
+      }[];
     };
   };
 }
@@ -72,9 +79,8 @@ const Page = () => {
       dueDate: invoice.dueDate,
       notes: invoice.notes ?? "",
       subtotal: invoice.totals.subTotal,
-      discount: invoice.totals.subtractions?.discount ?? 0,
-      paid: invoice.totals.subtractions?.paid ?? 0,
       total: invoice.totals.grandTotal,
+      totalsCustom: invoice.totals?.custom ?? [],
 
       items: invoice.items.map((item) => {
         const { description, price, quantity, extra = {} } = item.values || {};
