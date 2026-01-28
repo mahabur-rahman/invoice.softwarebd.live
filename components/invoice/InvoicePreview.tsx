@@ -47,7 +47,7 @@ const formatDate = (value?: string) => {
   return value;
 };
 
-const getValidImageUrl = (value?: string) => {
+const getValidImageUrl = (value?: string | null) => {
   const trimmed = value?.trim();
   if (!trimmed) return null;
   if (trimmed.startsWith("/")) return trimmed;
