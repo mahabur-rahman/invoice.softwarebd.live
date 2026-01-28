@@ -16,6 +16,52 @@ export type Scalars = {
   Timestamp: { input: any; output: any; }
 };
 
+export type AdminClientsListType = {
+  __typename?: 'AdminClientsListType';
+  clients: Array<ClientType>;
+  limit: Scalars['Int']['output'];
+  page: Scalars['Int']['output'];
+  totalClients: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
+export type AdminUserStatsType = {
+  __typename?: 'AdminUserStatsType';
+  clientCount: Scalars['Int']['output'];
+  invoiceCount: Scalars['Int']['output'];
+};
+
+export type AdminUserSummaryType = {
+  __typename?: 'AdminUserSummaryType';
+  _id: Scalars['ID']['output'];
+  createdAt: Scalars['Timestamp']['output'];
+  email: Scalars['String']['output'];
+  isOnline: Scalars['Boolean']['output'];
+  lastSeenAt: Maybe<Scalars['Timestamp']['output']>;
+  name: Maybe<Scalars['String']['output']>;
+  picture: Maybe<Scalars['String']['output']>;
+  role: Scalars['String']['output'];
+  stats: AdminUserStatsType;
+  status: UserStatus;
+  updatedAt: Scalars['Timestamp']['output'];
+};
+
+export type AdminUsersListType = {
+  __typename?: 'AdminUsersListType';
+  stats: AdminUsersStatsType;
+  users: Array<AdminUserSummaryType>;
+};
+
+export type AdminUsersStatsType = {
+  __typename?: 'AdminUsersStatsType';
+  activeUserCount: Scalars['Int']['output'];
+  inactiveUserCount: Scalars['Int']['output'];
+  limit: Scalars['Int']['output'];
+  page: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+  userCount: Scalars['Int']['output'];
+};
+
 export type AuthResponse = {
   __typename?: 'AuthResponse';
   accessToken: Scalars['String']['output'];
@@ -39,6 +85,15 @@ export type Business = {
   websiteUrl: Maybe<Scalars['String']['output']>;
 };
 
+export type BusinessListType = {
+  __typename?: 'BusinessListType';
+  businesses: Array<BusinessType>;
+  limit: Scalars['Int']['output'];
+  page: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
 export type BusinessType = {
   __typename?: 'BusinessType';
   _id: Scalars['ID']['output'];
@@ -54,6 +109,15 @@ export type BusinessType = {
   phoneNumber: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['Timestamp']['output'];
   websiteUrl: Maybe<Scalars['String']['output']>;
+};
+
+export type ClientListType = {
+  __typename?: 'ClientListType';
+  clients: Array<ClientType>;
+  limit: Scalars['Int']['output'];
+  page: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
 };
 
 export type ClientType = {
@@ -80,13 +144,13 @@ export type ColumnBehavior =
 
 export type CreateBusinessInput = {
   branchs: InputMaybe<Array<Scalars['String']['input']>>;
-  companyName: InputMaybe<Scalars['String']['input']>;
-  contactEmail: InputMaybe<Scalars['String']['input']>;
+  companyName: Scalars['String']['input'];
+  contactEmail: Scalars['String']['input'];
   defaultBusiness: InputMaybe<Scalars['Boolean']['input']>;
   location: InputMaybe<Scalars['String']['input']>;
   logoUrl: InputMaybe<Scalars['String']['input']>;
   ownerId: InputMaybe<Scalars['ID']['input']>;
-  phoneNumber: InputMaybe<Scalars['String']['input']>;
+  phoneNumber: Scalars['String']['input'];
   websiteUrl: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -96,7 +160,7 @@ export type CreateClientInput = {
   clientCompanyName: InputMaybe<Scalars['String']['input']>;
   email: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
-  phone: InputMaybe<Scalars['String']['input']>;
+  phone: Scalars['String']['input'];
   socialProfiles: InputMaybe<Array<SocialProfileInput>>;
   userId: InputMaybe<Scalars['String']['input']>;
 };
@@ -113,6 +177,7 @@ export type CreateInvoiceInput = {
   items: InputMaybe<Array<InvoiceItemInput>>;
   notes: InputMaybe<Scalars['String']['input']>;
   status: InputMaybe<InvoiceStatus>;
+  template: InputMaybe<InvoiceTemplate>;
   totals: InputMaybe<InvoiceTotalsInput>;
 };
 
@@ -126,12 +191,15 @@ export type Currency =
 export type DeleteResponse = {
   __typename?: 'DeleteResponse';
   message: Scalars['String']['output'];
+  statusCode: Scalars['Int']['output'];
   success: Scalars['Boolean']['output'];
+  timestamp: Scalars['String']['output'];
 };
 
 export type InvoiceColumnInput = {
   behavior: ColumnBehavior;
   fieldKey: Scalars['String']['input'];
+  hidden: InputMaybe<Scalars['Boolean']['input']>;
   id: Scalars['String']['input'];
   label: Scalars['String']['input'];
   locked: InputMaybe<Scalars['Boolean']['input']>;
@@ -143,6 +211,7 @@ export type InvoiceColumnType = {
   __typename?: 'InvoiceColumnType';
   behavior: ColumnBehavior;
   fieldKey: Scalars['String']['output'];
+  hidden: Scalars['Boolean']['output'];
   id: Scalars['String']['output'];
   label: Scalars['String']['output'];
   locked: Scalars['Boolean']['output'];
@@ -180,14 +249,52 @@ export type InvoiceItemValuesType = {
   quantity: Scalars['Float']['output'];
 };
 
+export type InvoiceListType = {
+  __typename?: 'InvoiceListType';
+  invoices: Array<InvoiceType>;
+  limit: Scalars['Int']['output'];
+  page: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
 export type InvoiceStatus =
   | 'DRAFT'
   | 'INVOICE'
   | 'PROPOSAL'
   | 'QUOTATION';
 
+export type InvoiceTemplate =
+  | 'BUSINESS'
+  | 'CLASSIC'
+  | 'CLEAN'
+  | 'ELEGANT'
+  | 'MINIMAL'
+  | 'MODERN'
+  | 'PROFESSIONAL'
+  | 'SIMPLE'
+  | 'SMART'
+  | 'STANDARD';
+
+export type InvoiceTotalCustomValueType =
+  | 'FIXED'
+  | 'PERCENT';
+
+export type InvoiceTotalsCustomFieldType = {
+  __typename?: 'InvoiceTotalsCustomFieldType';
+  amount: Scalars['Float']['output'];
+  amountFormatted: Scalars['String']['output'];
+  behavior: ColumnBehavior;
+  key: Scalars['String']['output'];
+  label: Maybe<Scalars['String']['output']>;
+  value: Scalars['Float']['output'];
+  valueFormatted: Scalars['String']['output'];
+  valueType: InvoiceTotalCustomValueType;
+};
+
 export type InvoiceTotalsInput = {
   additions: InputMaybe<TotalsAdditionsInput>;
+  custom: InputMaybe<Array<TotalsCustomFieldInput>>;
   grandTotal: InputMaybe<Scalars['Float']['input']>;
   subTotal: InputMaybe<Scalars['Float']['input']>;
   subtractions: InputMaybe<TotalsSubtractionsInput>;
@@ -196,8 +303,11 @@ export type InvoiceTotalsInput = {
 export type InvoiceTotalsType = {
   __typename?: 'InvoiceTotalsType';
   additions: Maybe<TotalsAdditions>;
+  custom: Maybe<Array<InvoiceTotalsCustomFieldType>>;
   grandTotal: Scalars['Float']['output'];
+  grandTotalFormatted: Scalars['String']['output'];
   subTotal: Scalars['Float']['output'];
+  subTotalFormatted: Scalars['String']['output'];
   subtractions: Maybe<TotalsSubtractions>;
 };
 
@@ -219,7 +329,9 @@ export type InvoiceType = {
   issueDate: Scalars['String']['output'];
   items: Maybe<Array<InvoiceItemType>>;
   notes: Maybe<Scalars['String']['output']>;
+  publicShare: Maybe<Scalars['Boolean']['output']>;
   status: InvoiceStatus;
+  template: InvoiceTemplate;
   totals: Maybe<InvoiceTotalsType>;
   updatedAt: Scalars['String']['output'];
 };
@@ -242,6 +354,8 @@ export type Mutation = {
   deleteBusiness: DeleteResponse;
   deleteClient: DeleteResponse;
   deleteInvoice: DeleteResponse;
+  disableInvoicePublicShare: Scalars['Boolean']['output'];
+  enableInvoicePublicShare: Scalars['String']['output'];
   login: AuthResponse;
   logout: Scalars['Boolean']['output'];
   refreshToken: AuthResponse;
@@ -250,6 +364,7 @@ export type Mutation = {
   updateClient: ClientType;
   updateInvoice: InvoiceType;
   updateUser: User;
+  updateUserStatusByAdmin: UserType;
 };
 
 
@@ -279,6 +394,17 @@ export type MutationDeleteClientArgs = {
 
 
 export type MutationDeleteInvoiceArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDisableInvoicePublicShareArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationEnableInvoicePublicShareArgs = {
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
   id: Scalars['ID']['input'];
 };
 
@@ -323,26 +449,139 @@ export type MutationUpdateUserArgs = {
   updateUserInput: UpdateUserInput;
 };
 
+
+export type MutationUpdateUserStatusByAdminArgs = {
+  input: UpdateUserStatusInput;
+};
+
 export type Query = {
   __typename?: 'Query';
   adminOnly: Scalars['String']['output'];
+  adminUserSessions: UserSessionsListType;
   findAllBusinesses: Array<BusinessType>;
+  findAllBusinessesList: BusinessListType;
   findAllClients: Array<ClientType>;
-  findAllClientsAccessByAdmin: Array<ClientType>;
+  findAllClientsAccessByAdmin: AdminClientsListType;
+  findAllClientsList: ClientListType;
   findAllInvoicesByAdmin: Array<InvoiceType>;
+  findAllInvoicesByAdminList: InvoiceListType;
+  findAllUsersByAdmin: AdminUsersListType;
   findOneClient: ClientType;
   /** Health check endpoint */
   health: Scalars['String']['output'];
   me: Maybe<User>;
   myBusinesses: Array<BusinessType>;
+  myBusinessesList: BusinessListType;
   myInvoices: Array<InvoiceType>;
+  myInvoicesList: InvoiceListType;
+  mySessions: UserSessionsListType;
   singleBusiness: BusinessType;
   singleInvoice: InvoiceType;
+  viewInvoice: InvoiceType;
+};
+
+
+export type QueryAdminUserSessionsArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  search: InputMaybe<Scalars['String']['input']>;
+  userId: Scalars['String']['input'];
+};
+
+
+export type QueryFindAllBusinessesArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  search: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryFindAllBusinessesListArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  search: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryFindAllClientsArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  search: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryFindAllClientsAccessByAdminArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  search: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryFindAllClientsListArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  search: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryFindAllInvoicesByAdminArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  search: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryFindAllInvoicesByAdminListArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  search: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryFindAllUsersByAdminArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  search: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type QueryFindOneClientArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryMyBusinessesArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  search: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryMyBusinessesListArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  search: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryMyInvoicesArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  search: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryMyInvoicesListArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  search: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryMySessionsArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  page?: InputMaybe<Scalars['Int']['input']>;
+  search: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -352,6 +591,11 @@ export type QuerySingleBusinessArgs = {
 
 
 export type QuerySingleInvoiceArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryViewInvoiceArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -381,7 +625,9 @@ export type SocialProfileType = {
 export type TotalsAdditions = {
   __typename?: 'TotalsAdditions';
   shipping: Maybe<Scalars['Float']['output']>;
+  shippingFormatted: Maybe<Scalars['String']['output']>;
   tax: Maybe<Scalars['Float']['output']>;
+  taxFormatted: Maybe<Scalars['String']['output']>;
 };
 
 export type TotalsAdditionsInput = {
@@ -389,10 +635,20 @@ export type TotalsAdditionsInput = {
   tax: InputMaybe<Scalars['Float']['input']>;
 };
 
+export type TotalsCustomFieldInput = {
+  behavior: ColumnBehavior;
+  key: Scalars['String']['input'];
+  label: InputMaybe<Scalars['String']['input']>;
+  value: Scalars['Float']['input'];
+  valueType: InvoiceTotalCustomValueType;
+};
+
 export type TotalsSubtractions = {
   __typename?: 'TotalsSubtractions';
   discount: Maybe<Scalars['Float']['output']>;
+  discountFormatted: Maybe<Scalars['String']['output']>;
   paid: Maybe<Scalars['Float']['output']>;
+  paidFormatted: Maybe<Scalars['String']['output']>;
 };
 
 export type TotalsSubtractionsInput = {
@@ -439,6 +695,7 @@ export type UpdateInvoiceInput = {
   items: InputMaybe<Array<InvoiceItemInput>>;
   notes: InputMaybe<Scalars['String']['input']>;
   status: InputMaybe<InvoiceStatus>;
+  template: InputMaybe<InvoiceTemplate>;
   totals: InputMaybe<InvoiceTotalsInput>;
 };
 
@@ -447,6 +704,11 @@ export type UpdateUserInput = {
   password: InputMaybe<Scalars['String']['input']>;
   phone: InputMaybe<Scalars['String']['input']>;
   picture: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateUserStatusInput = {
+  status: UserStatus;
+  userId: Scalars['ID']['input'];
 };
 
 export type User = {
@@ -458,8 +720,47 @@ export type User = {
   phone: Maybe<Scalars['String']['output']>;
   picture: Maybe<Scalars['String']['output']>;
   role: Scalars['String']['output'];
+  status: UserStatus;
   updatedAt: Scalars['Timestamp']['output'];
 };
+
+export type UserSession = {
+  __typename?: 'UserSession';
+  _id: Scalars['ID']['output'];
+  browserName: Maybe<Scalars['String']['output']>;
+  browserVersion: Maybe<Scalars['String']['output']>;
+  city: Maybe<Scalars['String']['output']>;
+  country: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['Timestamp']['output'];
+  /** desktop | mobile | tablet | unknown */
+  deviceType: Maybe<Scalars['String']['output']>;
+  endedAt: Maybe<Scalars['Timestamp']['output']>;
+  ip: Maybe<Scalars['String']['output']>;
+  isActive: Scalars['Boolean']['output'];
+  lastSeenAt: Maybe<Scalars['Timestamp']['output']>;
+  latitude: Maybe<Scalars['Float']['output']>;
+  longitude: Maybe<Scalars['Float']['output']>;
+  osName: Maybe<Scalars['String']['output']>;
+  osVersion: Maybe<Scalars['String']['output']>;
+  region: Maybe<Scalars['String']['output']>;
+  sessionId: Scalars['String']['output'];
+  timezone: Maybe<Scalars['String']['output']>;
+  updatedAt: Scalars['Timestamp']['output'];
+  userAgent: Maybe<Scalars['String']['output']>;
+  userId: Scalars['String']['output'];
+};
+
+export type UserSessionsListType = {
+  __typename?: 'UserSessionsListType';
+  limit: Scalars['Int']['output'];
+  page: Scalars['Int']['output'];
+  sessions: Array<UserSession>;
+  total: Scalars['Int']['output'];
+};
+
+export type UserStatus =
+  | 'ACTIVE'
+  | 'INACTIVE';
 
 export type UserType = {
   __typename?: 'UserType';
@@ -469,6 +770,7 @@ export type UserType = {
   name: Maybe<Scalars['String']['output']>;
   picture: Maybe<Scalars['String']['output']>;
   role: Scalars['String']['output'];
+  status: UserStatus;
   updatedAt: Scalars['Timestamp']['output'];
 };
 
@@ -550,6 +852,14 @@ export type DeleteInvoiceMutationVariables = Exact<{
 
 export type DeleteInvoiceMutation = { __typename?: 'Mutation', deleteInvoice: { __typename?: 'DeleteResponse', message: string, success: boolean } };
 
+export type EnableInvoicePublicShareMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type EnableInvoicePublicShareMutation = { __typename?: 'Mutation', enableInvoicePublicShare: string };
+
 export type GetMyBusinessesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -582,11 +892,18 @@ export type GetMyBusinessesIdQuery = { __typename?: 'Query', myBusinesses: Array
 export type MyInvoicesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MyInvoicesQuery = { __typename?: 'Query', myInvoices: Array<{ __typename?: 'InvoiceType', _id: string, invoiceNumber: string, currency: Currency, status: InvoiceStatus, issueDate: string, dueDate: string, createdAt: string, businessInfo: { __typename?: 'BusinessType', companyName: string | null, contactEmail: string | null } | null, clientInfo: { __typename?: 'ClientType', name: string } | null, totals: { __typename?: 'InvoiceTotalsType', subTotal: number, grandTotal: number } | null }> };
+export type MyInvoicesQuery = { __typename?: 'Query', myInvoices: Array<{ __typename?: 'InvoiceType', _id: string, invoiceNumber: string, currency: Currency, status: InvoiceStatus, issueDate: string, dueDate: string, publicShare: boolean | null, createdAt: string, businessInfo: { __typename?: 'BusinessType', companyName: string | null, contactEmail: string | null } | null, clientInfo: { __typename?: 'ClientType', name: string } | null, totals: { __typename?: 'InvoiceTotalsType', subTotal: number, grandTotal: number } | null }> };
 
 export type SingleInvoiceQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type SingleInvoiceQuery = { __typename?: 'Query', singleInvoice: { __typename?: 'InvoiceType', _id: string, businessId: string, clientId: string, clientName: string, invoiceNumber: string, currency: Currency, issueDate: string, dueDate: string, notes: string | null, status: InvoiceStatus, createdAt: string, updatedAt: string, businessInfo: { __typename?: 'BusinessType', companyName: string | null, location: string | null, contactEmail: string | null } | null, clientInfo: { __typename?: 'ClientType', name: string, address: string | null } | null, columns: Array<{ __typename?: 'InvoiceColumnType', id: string, fieldKey: string, label: string, type: string, order: number, behavior: ColumnBehavior, locked: boolean }> | null, items: Array<{ __typename?: 'InvoiceItemType', id: string, order: number, itemTotal: number, values: { __typename?: 'InvoiceItemValuesType', description: string, price: number, quantity: number, extra: any | null } }> | null, totals: { __typename?: 'InvoiceTotalsType', subTotal: number, grandTotal: number, additions: { __typename?: 'TotalsAdditions', shipping: number | null, tax: number | null } | null, subtractions: { __typename?: 'TotalsSubtractions', discount: number | null, paid: number | null } | null } | null } };
+export type SingleInvoiceQuery = { __typename?: 'Query', singleInvoice: { __typename?: 'InvoiceType', _id: string, businessId: string, clientId: string, clientName: string, invoiceNumber: string, currency: Currency, issueDate: string, dueDate: string, notes: string | null, status: InvoiceStatus, template: InvoiceTemplate, createdAt: string, updatedAt: string, businessInfo: { __typename?: 'BusinessType', companyName: string | null, location: string | null, contactEmail: string | null } | null, clientInfo: { __typename?: 'ClientType', name: string, address: string | null } | null, columns: Array<{ __typename?: 'InvoiceColumnType', id: string, fieldKey: string, label: string, type: string, order: number, behavior: ColumnBehavior, locked: boolean, hidden: boolean }> | null, items: Array<{ __typename?: 'InvoiceItemType', id: string, order: number, itemTotal: number, values: { __typename?: 'InvoiceItemValuesType', description: string, price: number, quantity: number, extra: any | null } }> | null, totals: { __typename?: 'InvoiceTotalsType', subTotal: number, grandTotal: number, custom: Array<{ __typename?: 'InvoiceTotalsCustomFieldType', key: string, label: string | null, behavior: ColumnBehavior, valueType: InvoiceTotalCustomValueType, value: number }> | null, additions: { __typename?: 'TotalsAdditions', shipping: number | null, tax: number | null } | null, subtractions: { __typename?: 'TotalsSubtractions', discount: number | null, paid: number | null } | null } | null } };
+
+export type ViewInvoiceQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ViewInvoiceQuery = { __typename?: 'Query', viewInvoice: { __typename?: 'InvoiceType', _id: string, businessId: string, clientId: string, clientName: string, invoiceNumber: string, currency: Currency, issueDate: string, dueDate: string, notes: string | null, status: InvoiceStatus, template: InvoiceTemplate, createdAt: string, updatedAt: string, businessInfo: { __typename?: 'BusinessType', companyName: string | null, location: string | null, contactEmail: string | null } | null, clientInfo: { __typename?: 'ClientType', name: string, address: string | null } | null, columns: Array<{ __typename?: 'InvoiceColumnType', id: string, fieldKey: string, label: string, type: string, order: number, behavior: ColumnBehavior, locked: boolean, hidden: boolean }> | null, items: Array<{ __typename?: 'InvoiceItemType', id: string, order: number, itemTotal: number, values: { __typename?: 'InvoiceItemValuesType', description: string, price: number, quantity: number, extra: any | null } }> | null, totals: { __typename?: 'InvoiceTotalsType', subTotal: number, grandTotal: number, custom: Array<{ __typename?: 'InvoiceTotalsCustomFieldType', key: string, label: string | null, behavior: ColumnBehavior, valueType: InvoiceTotalCustomValueType, value: number }> | null, additions: { __typename?: 'TotalsAdditions', shipping: number | null, tax: number | null } | null, subtractions: { __typename?: 'TotalsSubtractions', discount: number | null, paid: number | null } | null } | null } };

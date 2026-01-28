@@ -16,6 +16,7 @@ interface SingleInvoiceQueryResponse {
     businessId: string;
     clientId: string;
     clientName?: string;
+    invoiceNumber?: string;
     currency: string;
     status: string;
     issueDate: string;

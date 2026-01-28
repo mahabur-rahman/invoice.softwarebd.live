@@ -7,7 +7,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 // import { DELETE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
-import { InvoiceType } from "@/lib/graphql/generated-types";
+import {
+    EnableInvoicePublicShareMutation,
+    EnableInvoicePublicShareMutationVariables,
+    InvoiceType,
+} from "@/lib/graphql/generated-types";
 import { GET_MY_INVOICES } from "@/lib/graphql/queries/invoice.queries";
 import {
     DELETE_INVOICE,
@@ -19,9 +23,7 @@ import ConfirmModal from "@/utils/ConfirmModal";
 /* ================= TYPES ================= */
 
 type InvoiceRow = InvoiceType & {
-    publicShare?: boolean;
-    publicShareEnabled?: boolean;
-    publicShareLink?: string;
+    publicShare?: boolean | null;
 };
 
 /* ================= COMPONENT ================= */
@@ -48,7 +50,10 @@ const InvoiceTable = () => {
     const [deleteInvoice, { loading: deleteLoading }] = useMutation(DELETE_INVOICE, {
         refetchQueries: [{ query: GET_MY_INVOICES }],
     });
-    const [enableInvoicePublicShare] = useMutation(ENABLE_INVOICE_PUBLIC_SHARE);
+    const [enableInvoicePublicShare] = useMutation<
+        EnableInvoicePublicShareMutation,
+        EnableInvoicePublicShareMutationVariables
+    >(ENABLE_INVOICE_PUBLIC_SHARE);
 
     const invoices = data?.myInvoices ?? [];
 
@@ -56,11 +61,10 @@ const InvoiceTable = () => {
         if (!invoices.length) return;
         const next: Record<string, { enabled: boolean; link?: string }> = {};
         invoices.forEach((inv) => {
-            const enabled = Boolean(inv.publicShare || inv.publicShareEnabled || inv.publicShareLink);
+            const enabled = Boolean(inv.publicShare);
             if (enabled) {
                 next[inv._id] = {
                     enabled: true,
-                    link: inv.publicShareLink,
                 };
             }
         });
@@ -122,9 +126,7 @@ const InvoiceTable = () => {
             const { data: mutationData } = await enableInvoicePublicShare({
                 variables: { id: record._id, enabled },
             });
-            const shareValue = mutationData?.enableInvoicePublicShare as
-                | string
-                | undefined;
+            const shareValue = mutationData?.enableInvoicePublicShare;
             const link = enabled ? buildPublicLink(shareValue, record._id) : undefined;
             setShareState((prev) => ({
                 ...prev,
@@ -139,9 +141,7 @@ const InvoiceTable = () => {
     };
 
     const handleCopyLink = async (record: InvoiceRow) => {
-        const link =
-            shareState[record._id]?.link || record.publicShareLink || "";
-        const finalLink = buildPublicLink(link, record._id);
+        const finalLink = buildPublicLink(undefined, record._id);
         if (!finalLink) {
             message.error("Public link not available");
             return;
@@ -213,7 +213,7 @@ const InvoiceTable = () => {
             render: (_: unknown, record: InvoiceRow) => {
                 const enabled =
                     shareState[record._id]?.enabled ??
-                    Boolean(record.publicShareEnabled || record.publicShare);
+                    Boolean(record.publicShare);
                 return (
                     <div className="flex items-center gap-2">
                         <Switch
