@@ -25,11 +25,6 @@ export const menuItems: MenuProps["items"] = [
         icon: <FiFileText size={16} />,
         label: <Link href="/generate-invoice">Create Invoice</Link>,
       },
-      {
-        key: "103",
-        icon: <FiUsers size={16} />,
-        label: <Link href="/clients">Clients</Link>,
-      },
     ],
   },
   {
@@ -41,6 +36,11 @@ export const menuItems: MenuProps["items"] = [
         key: "301",
         icon: <FiSettings size={16} />,
         label: <Link href="/settings">Settings</Link>,
+      },
+      {
+        key: "303",
+        icon: <FiUsers size={16} />,
+        label: <Link href="/clients">Clients</Link>,
       },
       {
         key: "302",

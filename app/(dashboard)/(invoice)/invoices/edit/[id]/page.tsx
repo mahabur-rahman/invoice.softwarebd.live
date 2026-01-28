@@ -13,6 +13,7 @@ import {
 } from "@/app/(dashboard)/(invoice)/generate-invoice/page";
 import AddInvoiceColumnModal from "@/components/invoice/AddInvoiceColumnModal";
 import InvoicePreview from "@/components/invoice/InvoicePreview";
+import { InvoiceTemplateKey } from "@/components/invoice/templates";
 import { SINGLE_INVOICE_QUERY } from "@/lib/graphql/queries/invoice.queries";
 import { UPDATE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
 
@@ -25,9 +26,10 @@ interface SingleInvoiceQueryResponse {
     currency: string;
     issueDate: string;
     dueDate: string;
-    notes?: string;
-    status: string;
-    invoiceNumber: string;
+      notes?: string;
+      status: string;
+      invoiceNumber: string;
+    template?: InvoiceTemplateKey;
     columns: InvoiceColumnInput[];
     items: {
       id: string;
@@ -44,6 +46,13 @@ interface SingleInvoiceQueryResponse {
       subTotal: number;
       grandTotal: number;
       subtractions?: { discount?: number, paid?: number };
+      custom?: {
+        key: string;
+        label: string;
+        behavior: "ADD" | "SUBTRACT" | "NONE";
+        valueType: "FIXED" | "PERCENT";
+        value: number;
+      }[];
     };
   };
 }
@@ -65,6 +74,7 @@ const EditInvoicePage = () => {
     null
   );
   const [addColumnModalOpen, setAddColumnModalOpen] = useState(false);
+  const [template, setTemplate] = useState<InvoiceTemplateKey>("CLASSIC");
 
   const { data, loading } = useQuery<SingleInvoiceQueryResponse>(
     SINGLE_INVOICE_QUERY,
@@ -81,6 +91,7 @@ const EditInvoicePage = () => {
 
     const invoice = data.singleInvoice;
     setColumns(invoice.columns ?? []);
+    setTemplate(invoice.template ?? "CLASSIC");
 
     const items: InvoiceItem[] = [...(invoice.items ?? [])]
       .sort((a, b) => a.order - b.order)
@@ -118,12 +129,12 @@ const EditInvoicePage = () => {
       status: invoice.status ?? "DRAFT",
       issueDate: toDateInputValue(invoice.issueDate),
       dueDate: toDateInputValue(invoice.dueDate),
+      invoiceNumber: invoice.invoiceNumber ?? "",
       items,
       notes: invoice.notes ?? "",
-      discount: invoice.totals?.subtractions?.discount ?? 0,
-      paid: invoice.totals?.subtractions?.paid ?? 0,
       subtotal: invoice.totals?.subTotal ?? 0,
       total: invoice.totals?.grandTotal ?? 0,
+      totalsCustom: invoice.totals?.custom ?? [],
     });
   }, [data]);
 
@@ -147,6 +158,19 @@ const EditInvoicePage = () => {
       };
     });
 
+    const columnsForApi = columns.map((col) => {
+      const { __typename, hidden, ...c } = col as any;
+      return {
+        id: c.id ?? uuid(),
+        fieldKey: c.fieldKey,
+        label: c.label,
+        type: c.type,
+        order: c.order,
+        behavior: c.behavior,
+        locked: c.locked,
+      };
+    });
+
     await updateInvoice({
       variables: {
         input: {
@@ -160,21 +184,15 @@ const EditInvoicePage = () => {
           dueDate: invoiceData.dueDate,
           notes: invoiceData.notes,
           status: invoiceData.status,
-          columns: columns.map((col) => {
-            const { __typename, ...c } = col as any;
-
-            return {
-              ...c,
-              id: c.id ?? uuid(),
-            };
-          }),
+          columns: columnsForApi,
           items: itemsForApi,
           totals: {
             subTotal: invoiceData.subtotal,
             grandTotal: invoiceData.total,
             additions: { tax: 0, shipping: 0 },
-            subtractions: { discount: invoiceData.discount },
+            subtractions: { discount: 0, paid: 0 },
           },
+          template,
         },
       },
       onCompleted: () => {
@@ -187,12 +205,14 @@ const EditInvoicePage = () => {
     if (!invoiceData) return null;
     return {
       ...invoiceData,
+      invoiceNumber: invoiceData.invoiceNumber ?? data?.singleInvoice.invoiceNumber ?? "",
+      template,
       items: invoiceData.items.map((item) => ({
         ...item,
         total: Number(item.total ?? 0),
       })),
     };
-  }, [invoiceData]);
+  }, [invoiceData, template, data?.singleInvoice.invoiceNumber]);
 
   if (loading || !invoiceData) {
     return (
@@ -224,7 +244,12 @@ const EditInvoicePage = () => {
         setColumns={setColumns}
       />
 
-      <InvoicePreview data={previewData} columns={columns} />
+      <InvoicePreview
+        data={previewData}
+        columns={columns}
+        template={template}
+        onTemplateChange={setTemplate}
+      />
     </div>
   );
 };

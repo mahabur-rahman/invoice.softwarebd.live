@@ -10,7 +10,7 @@ import {
   ErrorMessage,
 } from "formik";
 import * as Yup from "yup";
-import { FiEdit2, FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiEdit2, FiEye, FiEyeOff, FiPlus, FiTrash2 } from "react-icons/fi";
 import { useQuery } from "@apollo/client/react";
 import { GET_MY_BUSINESSES } from "@/lib/graphql/queries";
 import { GET_ALL_CLIENTS } from "@/lib/graphql/queries/invoice.queries";
@@ -63,6 +63,7 @@ interface InvoiceFormProps {
   loading: boolean;
   initialValues?: InvoiceFormValues | null;
   editing:boolean;
+  defaultInvoiceNumber?: string;
 }
 
 /* ================= VALIDATION ================= */
@@ -134,7 +135,9 @@ const SortableCell = ({
         transition,
         opacity: isDragging ? 0.4 : 1,
       }}
-      className="flex flex-col gap-1 min-w-0 flex-1"
+      className={`flex flex-col gap-1 min-w-0 flex-1 ${
+        column.hidden ? "opacity-60" : ""
+      }`}
     >
 
       {/* ✅ DRAG HANDLE (LABEL ONLY) */}
@@ -278,7 +281,8 @@ const InvoiceForm = ({
   handleSubmit,
   loading,
   initialValues,
-  editing
+  editing,
+  defaultInvoiceNumber
 }: InvoiceFormProps) => {
   /* ================= HELPERS ================= */
 
@@ -299,12 +303,12 @@ const InvoiceForm = ({
     status: "INVOICE",
     issueDate: "",
     dueDate: "",
+    invoiceNumber: defaultInvoiceNumber ?? "",
     items: [createEmptyItem(initialRowId)],
     notes: "Thank you for your business.",
-    discount: 0,
-    paid: 0,
     subtotal: 0,
     total: 0,
+    totalsCustom: [],
   };
 
   const formInitialValues = initialValues ?? fallbackInitialValues;
@@ -378,6 +382,16 @@ const InvoiceForm = ({
     setLabelTargetKey(column.fieldKey);
     setLabelDraft(column.label);
     setLabelModalOpen(true);
+  };
+
+  const toggleColumnHidden = (column: InvoiceColumnInput) => {
+    setColumns((prev) =>
+      prev.map((col) =>
+        col.fieldKey === column.fieldKey
+          ? { ...col, hidden: !col.hidden }
+          : col
+      )
+    );
   };
 
   const saveLabel = () => {
@@ -597,6 +611,7 @@ const InvoiceForm = ({
                                     {columns.map((column) => {
                                       const isTotal = column.fieldKey === "total";
 
+                                      const isHidden = Boolean(column.hidden);
                                       const fieldEl = (
                                         <Field
                                           name={`items.${i}.${column.fieldKey}`}
@@ -607,7 +622,7 @@ const InvoiceForm = ({
                                           className={`p-2 border rounded-md w-full min-w-0 ${isTotal
                                             ? "bg-gray-100 text-center font-semibold"
                                             : "bg-white"
-                                            } border-gray-300`}
+                                            } ${isHidden ? "text-gray-500" : ""} border-gray-300`}
                                         />
                                       );
 
@@ -617,9 +632,29 @@ const InvoiceForm = ({
                                           column={column}
                                           label={
                                             <div className="flex justify-between w-full">
-                                              <span>{column.label}</span>
+                                              <span className={isHidden ? "text-gray-400" : ""}>
+                                                {column.label}
+                                              </span>
 
                                               <div className="flex items-center gap-2">
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    toggleColumnHidden(column);
+                                                  }}
+                                                  className={`hover:text-gray-700 ${
+                                                    isHidden ? "text-gray-400" : "text-gray-500"
+                                                  }`}
+                                                  aria-label={`Toggle ${column.label} visibility`}
+                                                >
+                                                  {isHidden ? (
+                                                    <FiEyeOff className="text-xs" />
+                                                  ) : (
+                                                    <FiEye className="text-xs" />
+                                                  )}
+                                                </button>
                                                 {column.locked && (
                                                   <button
                                                     type="button"
@@ -685,13 +720,20 @@ const InvoiceForm = ({
                                   {columns.map((column) => {
                                     const isTotal = column.fieldKey === "total";
 
+                                    const isHidden = Boolean(column.hidden);
                                     return (
                                       <div
                                         key={column.fieldKey}
-                                        className="flex flex-col gap-1 min-w-0 flex-1"
+                                        className={`flex flex-col gap-1 min-w-0 flex-1 ${
+                                          isHidden ? "opacity-60" : ""
+                                        }`}
                                       >
                                         <div className="flex justify-between">
-                                          <label className="text-sm font-medium text-gray-700">
+                                          <label
+                                            className={`text-sm font-medium ${
+                                              isHidden ? "text-gray-400" : "text-gray-700"
+                                            }`}
+                                          >
                                             {column.label}
                                           </label>
 
@@ -806,25 +848,81 @@ const InvoiceForm = ({
                 </span>
               </div>
 
-              {/* Discount */}
-              <div className="flex justify-between items-center gap-4">
-                <label className="text-gray-600">Discount</label>
-                <Field
-                  name="discount"
-                  type="number"
-                  className="w-32 p-2 border border-gray-300 rounded-md text-right"
-                />
-              </div>
+              {/* Custom Totals */}
+              <FieldArray name="totalsCustom">
+                {({ push, remove }) => (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500">Custom</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          push({
+                            key: uuid(),
+                            label: "",
+                            behavior: "ADD",
+                            valueType: "FIXED",
+                            value: 0,
+                          })
+                        }
+                        className="text-xs text-gray-600 hover:text-gray-800"
+                      >
+                        + Add
+                      </button>
+                    </div>
 
-              {/* Paid */}
-              <div className="flex justify-between items-center gap-4">
-                <label className="text-gray-600">Paid</label>
-                <Field
-                  name="paid"
-                  type="number"
-                  className="w-32 p-2 border border-gray-300 rounded-md text-right"
-                />
-              </div>
+                    {values.totalsCustom?.map((field, index) => (
+                      <div
+                        key={field.key ?? index}
+                        className="rounded-md border border-gray-100 p-2 space-y-2"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Field
+                            name={`totalsCustom.${index}.label`}
+                            placeholder="Label"
+                            className="flex-1 p-2 border border-gray-300 rounded-md"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => remove(index)}
+                            className="text-gray-400 hover:text-red-500"
+                            aria-label="Remove custom total"
+                          >
+                            <FaTimes />
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Field
+                            as="select"
+                            name={`totalsCustom.${index}.behavior`}
+                            className="p-2 border border-gray-300 rounded-md bg-white"
+                          >
+                            <option value="ADD">Add</option>
+                            <option value="SUBTRACT">Subtract</option>
+                            <option value="NONE">None</option>
+                          </Field>
+
+                          <Field
+                            as="select"
+                            name={`totalsCustom.${index}.valueType`}
+                            className="p-2 border border-gray-300 rounded-md bg-white"
+                          >
+                            <option value="FIXED">Fixed</option>
+                            <option value="PERCENT">Percent</option>
+                          </Field>
+
+                          <Field
+                            name={`totalsCustom.${index}.value`}
+                            type="number"
+                            className="w-28 p-2 border border-gray-300 rounded-md text-right"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </FieldArray>
 
               <hr />
 

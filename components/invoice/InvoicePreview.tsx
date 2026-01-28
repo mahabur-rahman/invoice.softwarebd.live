@@ -1,38 +1,32 @@
 "use client";
 
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { useQuery } from "@apollo/client/react";
 import { useReactToPrint, UseReactToPrintOptions } from "react-to-print";
 import { InvoiceColumnInput } from "@/app/(dashboard)/(invoice)/generate-invoice/page";
-import { FIND_ONE_CLIENT, SINGLE_BUSINESS_QUERY } from "@/lib/graphql/queries/invoice.queries";
-import { SingleBusinessQueryResponse, SingleClientQueryResponse } from "@/lib/interfaces/responseTypes";
-import Image from "next/image";
+import {
+  FIND_ONE_CLIENT,
+  SINGLE_BUSINESS_QUERY,
+} from "@/lib/graphql/queries/invoice.queries";
+import {
+  SingleBusinessQueryResponse,
+  SingleClientQueryResponse,
+} from "@/lib/interfaces/responseTypes";
+import {
+  INVOICE_TEMPLATE_OPTIONS,
+  TEMPLATE_COMPONENTS,
+  InvoiceTemplateKey,
+} from "./templates";
+import { InvoiceData } from "./templates/types";
 
 /* ================= TYPES ================= */
-
-interface InvoiceItem {
-  [key: string]: string | number;
-}
-
-interface InvoiceData {
-  client: string;
-  business: string;
-  currency: string;
-  status: string;
-  issueDate: string;
-  dueDate: string;
-  items: InvoiceItem[];
-  notes: string;
-  subtotal: number;
-  discount: number;
-  paid: number;
-  total: number;
-}
 
 interface InvoicePreviewProps {
   data: InvoiceData | null;
   columns: InvoiceColumnInput[];
   showPrintButton?: boolean;
+  template?: InvoiceTemplateKey;
+  onTemplateChange?: (template: InvoiceTemplateKey) => void;
 }
 
 const formatDate = (value?: string) => {
@@ -62,11 +56,19 @@ const getValidImageUrl = (value?: string | null) => {
   }
 };
 
-
 /* ================= COMPONENT ================= */
 
-const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps) => {
+const InvoicePreview = ({
+  data,
+  columns,
+  showPrintButton,
+  template = "CLASSIC",
+  onTemplateChange,
+}: InvoicePreviewProps) => {
   const componentRef = useRef<HTMLDivElement>(null);
+  const activeTemplate = template ?? data?.template ?? "CLASSIC";
+  const TemplateComponent =
+    TEMPLATE_COMPONENTS[activeTemplate] ?? TEMPLATE_COMPONENTS.CLASSIC;
 
   const handlePrint = useReactToPrint({
     contentRef: componentRef,
@@ -74,15 +76,30 @@ const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps)
     removeAfterPrint: true,
   } as UseReactToPrintOptions);
 
-  const { data: businessData } = useQuery<SingleBusinessQueryResponse>(SINGLE_BUSINESS_QUERY, {
-    skip: !data?.business,
-    variables: { id: data?.business ?? "" },
-  });
+  const { data: businessData } = useQuery<SingleBusinessQueryResponse>(
+    SINGLE_BUSINESS_QUERY,
+    {
+      skip: !data?.business,
+      variables: { id: data?.business ?? "" },
+    }
+  );
 
-  const { data: clientData } = useQuery<SingleClientQueryResponse>(FIND_ONE_CLIENT, {
-    skip: !data?.client,
-    variables: { id: data?.client ?? "" },
-  });
+  const { data: clientData } = useQuery<SingleClientQueryResponse>(
+    FIND_ONE_CLIENT,
+    {
+      skip: !data?.client,
+      variables: { id: data?.client ?? "" },
+    }
+  );
+
+  const templateCards = useMemo(
+    () =>
+      INVOICE_TEMPLATE_OPTIONS.map((option) => ({
+        ...option,
+        isActive: option.key === activeTemplate,
+      })),
+    [activeTemplate]
+  );
 
   if (!data) {
     return (
@@ -92,146 +109,67 @@ const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps)
     );
   }
 
-  /* ================= RENDER ================= */
-
   return (
     <div className="relative">
-      <div
-        ref={componentRef}
-        className="p-6 border border-gray-200 rounded-xl bg-white shadow-sm print:p-8 print:border-0"
-      >
-        {/* ================= COMPANY ================= */}
-
-        <div className="flex justify-between border-b pb-4 mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">
-              {businessData?.singleBusiness?.companyName || "Company Name"}
-            </h2>
-            <p className="text-sm text-gray-600">
-              {businessData?.singleBusiness?.location || ""}
-              <br />
-              {businessData?.singleBusiness.contactEmail || ""}
-            </p>
-          </div>
-
-          <div>
-            {(() => {
-              const logoUrl = getValidImageUrl(
-                businessData?.singleBusiness?.logoUrl,
-              );
-              if (!logoUrl) return null;
-              return (
-                <Image
-                  alt="logo"
-                  src={logoUrl}
-                  className="h-16 w-auto"
-                  width={400}
-                  height={400}
-                />
-              );
-            })()}
-          </div>
-
-          <div className="text-right text-sm">
-            <p className="text-3xl font-semibold">{data.status}</p>
-            <p>Issue: {formatDate(data.issueDate)}</p>
-            <p>Due: {formatDate(data.dueDate)}</p>
-          </div>
-        </div>
-
-        {/* ================= CLIENT ================= */}
-
+      {onTemplateChange && (
         <div className="mb-4">
-          <h3 className="font-semibold text-gray-700">Bill To:</h3>
-          <p>{clientData?.findOneClient?.name || ""}</p>
-          <p className="text-sm text-gray-600">
-            {clientData?.findOneClient?.address || ""}
-          </p>
-        </div>
-
-        {/* ================= ITEMS TABLE ================= */}
-
-        <table className="w-full text-sm border border-gray-200 mb-4">
-          <thead className="bg-gray-800 text-white">
-            <tr>
-              {columns.map((col) => (
-                <th
-                  key={col.fieldKey}
-                  className={`p-2 ${col.type === "number"
-                    ? "text-right"
-                    : "text-left"
-                    }`}
-                >
-                  {col.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {data.items.map((item, idx) => (
-              <tr
-                key={idx}
-                className="border-t border-gray-200"
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-gray-700">
+              Choose template
+            </p>
+            <span className="text-xs text-gray-400">
+              {activeTemplate} selected
+            </span>
+          </div>
+          <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
+            {templateCards.map((card) => (
+              <button
+                key={card.key}
+                type="button"
+                onClick={() => onTemplateChange(card.key)}
+                className={`min-w-[120px] rounded-lg border p-2 text-left transition ${
+                  card.isActive
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
+                }`}
+                aria-pressed={card.isActive}
               >
-                {columns.map((col) => (
-                  <td
-                    key={col.fieldKey}
-                    className={`p-2 ${col.type === "number"
-                      ? "text-right"
-                      : "text-left"
-                      }`}
-                  >
-                    {col.type === "number"
-                      ? `${Number(
-                        item[col.fieldKey] || 0
-                      ).toFixed(2)}`
-                      : String(item[col.fieldKey] ?? "")}
-                  </td>
-                ))}
-              </tr>
+                <div
+                  className={`h-10 rounded-md border ${
+                    card.isActive
+                      ? "border-white/40 bg-white/10"
+                      : "border-gray-200 bg-gray-50"
+                  }`}
+                >
+                  <div
+                    className={`h-2 rounded-t-md ${
+                      card.key === "BUSINESS"
+                        ? "bg-slate-900"
+                        : "bg-gray-300"
+                    }`}
+                  />
+                  <div className="mt-2 h-2 w-3/4 rounded bg-gray-300/70" />
+                  <div className="mt-2 h-2 w-1/2 rounded bg-gray-300/50" />
+                </div>
+                <p className="mt-2 text-xs font-semibold">{card.label}</p>
+              </button>
             ))}
-          </tbody>
-        </table>
-
-        {/* ================= TOTALS ================= */}
-
-        <div className="text-right space-y-1 text-sm">
-          <p>
-            Subtotal: {data.currency}{" "}
-            {Number(data.subtotal ?? 0).toFixed(2)}
-          </p>
-
-          <p>
-            Discount: {data.currency}{" "}
-            {Number(data.discount ?? 0).toFixed(2)}
-          </p>
-
-          <p>
-            Paid: {data.currency}{" "}
-            {Number(data.paid ?? 0).toFixed(2)}
-          </p>
-
-          <h3 className="text-lg font-semibold mt-2">
-            Amount Due: {data.currency}{" "}
-            {Number(data.total ?? 0).toFixed(2)}
-          </h3>
+          </div>
         </div>
+      )}
 
-
-        {/* ================= NOTES ================= */}
-
-        <div className="mt-4 border-t pt-4 text-sm text-gray-600">
-          <p className="font-semibold">Notes:</p>
-          <pre>{data.notes}</pre>
-        </div>
+      <div ref={componentRef}>
+        <TemplateComponent
+          data={data}
+          columns={columns}
+          business={businessData?.singleBusiness}
+          client={clientData?.findOneClient}
+          formatDate={formatDate}
+          getValidImageUrl={getValidImageUrl}
+        />
       </div>
 
-      {/* ================= PRINT ================= */}
-
-      {
-        showPrintButton &&
-
+      {showPrintButton && (
         <div className="flex justify-end mt-4">
           <button
             onClick={handlePrint}
@@ -240,7 +178,7 @@ const InvoicePreview = ({ data, columns, showPrintButton }: InvoicePreviewProps)
             Print Invoice
           </button>
         </div>
-      }
+      )}
     </div>
   );
 };

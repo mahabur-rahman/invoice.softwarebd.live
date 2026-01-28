@@ -5,23 +5,21 @@ import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
 import InvoicePreview from "@/components/invoice/InvoicePreview";
 import { InvoiceColumnInput } from "@/app/(dashboard)/(invoice)/generate-invoice/page";
-import { SINGLE_INVOICE_QUERY } from "@/lib/graphql/queries/invoice.queries";
+import { VIEW_INVOICE_QUERY } from "@/lib/graphql/queries/invoice.queries";
 import { InvoiceTemplateKey } from "@/components/invoice/templates";
 
-/* ================= TYPES ================= */
-
-interface SingleInvoiceQueryResponse {
-  singleInvoice: {
+interface ViewInvoiceQueryResponse {
+  viewInvoice: {
     _id: string;
     businessId: string;
     clientId: string;
     clientName?: string;
-    invoiceNumber?: string;
     currency: string;
     status: string;
     issueDate: string;
     dueDate: string;
     notes?: string;
+    invoiceNumber: string;
     template?: InvoiceTemplateKey;
     columns: InvoiceColumnInput[];
     items: {
@@ -50,28 +48,25 @@ interface SingleInvoiceQueryResponse {
   };
 }
 
-/* ================= PAGE ================= */
-
 const Page = () => {
   const params = useParams();
   const invoiceId = params.id as string;
 
-  const { data, loading } = useQuery<SingleInvoiceQueryResponse>(
-    SINGLE_INVOICE_QUERY,
+  const { data, loading, error } = useQuery<ViewInvoiceQueryResponse>(
+    VIEW_INVOICE_QUERY,
     {
       variables: { id: invoiceId },
       skip: !invoiceId,
       fetchPolicy: "network-only",
       nextFetchPolicy: "cache-first",
+      context: { skipAuthRedirect: true },
     }
   );
 
-  /* ================= ADAPT DATA FOR PREVIEW ================= */
-
   const previewData = useMemo(() => {
-    if (!data?.singleInvoice) return null;
+    if (!data?.viewInvoice) return null;
 
-    const invoice = data.singleInvoice;
+    const invoice = data.viewInvoice;
 
     return {
       client: invoice.clientId,
@@ -86,7 +81,6 @@ const Page = () => {
       totalsCustom: invoice.totals?.custom ?? [],
       template: invoice.template ?? "CLASSIC",
       invoiceNumber: invoice.invoiceNumber ?? "",
-
       items: invoice.items.map((item) => {
         const { description, price, quantity, extra = {} } = item.values || {};
         return {
@@ -120,14 +114,24 @@ const Page = () => {
     );
   }
 
+  if (error || !data?.viewInvoice) {
+    return (
+      <div className="flex justify-center py-20 text-gray-500">
+        Unable to load invoice.
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-gray-50 min-h-screen p-6">
-      <InvoicePreview
-        data={previewData}
-        columns={data?.singleInvoice.columns ?? []}
-        showPrintButton
-        template={data?.singleInvoice.template ?? "CLASSIC"}
-      />
+    <div className="bg-gray-100 min-h-screen p-6">
+      <div className="mx-auto w-full max-w-[210mm] min-h-[297mm] bg-white shadow-lg ring-1 ring-gray-200 p-6">
+        <InvoicePreview
+          data={previewData}
+          columns={data.viewInvoice.columns ?? []}
+          showPrintButton
+          template={data.viewInvoice.template ?? "CLASSIC"}
+        />
+      </div>
     </div>
   );
 };

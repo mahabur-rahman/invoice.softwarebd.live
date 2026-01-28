@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import InvoiceForm from "@/components/invoice/InvoiceForm";
 import AddInvoiceColumnModal from "@/components/invoice/AddInvoiceColumnModal";
 import InvoicePreview from "@/components/invoice/InvoicePreview";
+import { InvoiceTemplateKey } from "@/components/invoice/templates";
 import { CREATE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
 import { useMutation } from "@apollo/client/react";
 import { v4 as uuid } from "uuid";
@@ -24,13 +25,21 @@ export interface InvoiceFormValues {
   status: string;
   issueDate: string;
   dueDate: string;
+  invoiceNumber?: string;
   items: InvoiceItem[];
   notes: string;
-  discount: number;
-  paid: number;
   subtotal: number;
   total: number;
+  totalsCustom: InvoiceTotalsCustomFieldInput[];
 }
+
+export type InvoiceTotalsCustomFieldInput = {
+  key: string;
+  label: string;
+  behavior: "ADD" | "SUBTRACT" | "NONE";
+  valueType: "FIXED" | "PERCENT";
+  value: number;
+};
 
 export type InvoiceColumnInput = {
   id?: string;
@@ -40,6 +49,7 @@ export type InvoiceColumnInput = {
   order: number;
   behavior: "ADD" | "SUBTRACT" | "NONE";
   locked?: boolean;
+  hidden?: boolean;
 };
 
 /* ================= PAGE ================= */
@@ -48,6 +58,8 @@ const Page = () => {
   const router = useRouter();
   const [invoiceData, setInvoiceData] =
     useState<InvoiceFormValues | null>(null);
+  const [invoiceNumber] = useState(() => `INV-${Date.now()}`);
+  const [template, setTemplate] = useState<InvoiceTemplateKey>("CLASSIC");
 
   const [createInvoice, { loading }] = useMutation(CREATE_INVOICE, {
     refetchQueries: [{ query: GET_MY_INVOICES }],
@@ -63,6 +75,7 @@ const Page = () => {
       behavior: "NONE",
       order: 1,
       locked: true,
+      hidden: false,
     },
     {
       id: "quantity",
@@ -72,6 +85,7 @@ const Page = () => {
       behavior: "NONE",
       order: 2,
       locked: true,
+      hidden: false,
     },
     {
       id: "price",
@@ -81,6 +95,7 @@ const Page = () => {
       behavior: "NONE",
       order: 3,
       locked: true,
+      hidden: false,
     },
     {
       id: "total",
@@ -90,6 +105,7 @@ const Page = () => {
       behavior: "NONE",
       order: 4,
       locked: true,
+      hidden: false,
     },
   ]);
 
@@ -107,11 +123,12 @@ const Page = () => {
       status: invoiceData.status,
       issueDate: invoiceData.issueDate,
       dueDate: invoiceData.dueDate,
+      invoiceNumber: invoiceData.invoiceNumber ?? invoiceNumber,
       notes: invoiceData.notes,
       subtotal: invoiceData.subtotal,
-      discount: invoiceData.discount,
-      paid: invoiceData.paid,
       total: invoiceData.total,
+      template,
+      totalsCustom: invoiceData.totalsCustom ?? [],
 
       items: invoiceData.items.map((item) => ({
         ...item,
@@ -148,6 +165,19 @@ const Page = () => {
       };
     });
 
+    const columnsForApi = columns.map((c) => ({
+      id: c.id ?? uuid(),
+      fieldKey: c.fieldKey,
+      label: c.label,
+      type: c.type,
+      order: c.order,
+      behavior: c.behavior,
+      locked: c.locked,
+    }));
+
+    const finalInvoiceNumber =
+      invoiceData.invoiceNumber?.trim() || invoiceNumber;
+
     try {
       await createInvoice({
         variables: {
@@ -155,17 +185,14 @@ const Page = () => {
             businessId: invoiceData.business,
             clientId: invoiceData.client,
             clientName: "Test Name",
-            invoiceNumber: `INV-${Date.now()}`,
+            invoiceNumber: finalInvoiceNumber,
             currency: invoiceData.currency,
             issueDate: invoiceData.issueDate,
             dueDate: invoiceData.dueDate,
             notes: invoiceData.notes,
             status: invoiceData.status,
 
-            columns: columns.map((c) => ({
-              ...c,
-              id: c.id ?? uuid(),
-            })),
+            columns: columnsForApi,
 
             items: itemsForApi,
 
@@ -173,8 +200,9 @@ const Page = () => {
               subTotal: invoiceData.subtotal,
               grandTotal: invoiceData.total,
               additions: { tax: 0, shipping: 0 },
-              subtractions: { discount: invoiceData.discount, paid: invoiceData.paid },
+              subtractions: { discount: 0, paid: 0 },
             },
+            template,
           },
         },
       });
@@ -199,6 +227,7 @@ const Page = () => {
           handleSubmit={handleSubmit}
           loading={loading}
           editing={false}
+          defaultInvoiceNumber={invoiceNumber}
         />
       </div>
 
@@ -209,7 +238,12 @@ const Page = () => {
         setColumns={setColumns}
       />
 
-      <InvoicePreview data={previewData} columns={columns} />
+      <InvoicePreview
+        data={previewData}
+        columns={columns}
+        template={template}
+        onTemplateChange={setTemplate}
+      />
     </div>
   );
 };
