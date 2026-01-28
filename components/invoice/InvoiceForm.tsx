@@ -95,6 +95,14 @@ const getColDndId = (column: InvoiceColumnInput) => (column.id ?? column.fieldKe
 
 const getRowDndId = (item: InvoiceItem) => `row-${item._rowId ?? ""}`;
 
+const formatDateInput = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+
 /* ================= SORTABLE CELL (FIRST ROW ONLY) ================= */
 
 const SortableCell = ({
@@ -190,6 +198,22 @@ const SortableRow = ({
   );
 };
 
+const DateDefaults = () => {
+  const { values, setFieldValue } = useFormikContext<InvoiceFormValues>();
+
+  React.useEffect(() => {
+    if (values.issueDate || values.dueDate) return;
+    const today = new Date();
+    const dueDate = new Date(today);
+    dueDate.setDate(dueDate.getDate() + 3);
+
+    setFieldValue("issueDate", formatDateInput(today), false);
+    setFieldValue("dueDate", formatDateInput(dueDate), false);
+  }, [setFieldValue, values.dueDate, values.issueDate]);
+
+  return null;
+};
+
 const ItemsColumnSync = ({ columns }: { columns: InvoiceColumnInput[] }) => {
   const { values, setFieldValue } = useFormikContext<InvoiceFormValues>();
   const prevColumnsRef = React.useRef<InvoiceColumnInput[]>(columns);
@@ -255,7 +279,7 @@ const InvoiceForm = ({
     client: "",
     business: "",
     currency: "BDT",
-    status: "DRAFT",
+    status: "INVOICE",
     issueDate: "",
     dueDate: "",
     items: [createEmptyItem(initialRowId)],
@@ -377,6 +401,7 @@ const InvoiceForm = ({
         {({ values, setFieldValue }) => (
           <Form className="space-y-8">
           <ItemsColumnSync columns={columns} />
+          <DateDefaults />
           <LiveCalculation columns={columns} onUpdate={onUpdate} />
           <h2 className="text-2xl font-bold text-gray-800">{editing ? 'Update': 'Create'} Invoice</h2>
 
@@ -848,7 +873,7 @@ const InvoiceForm = ({
         open={businessModalOpen}
         onCancel={() => setBusinessModalOpen(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
         closable={false}
         width={720}
       >
@@ -866,7 +891,7 @@ const InvoiceForm = ({
         open={clientModalOpen}
         onCancel={() => setClientModalOpen(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
         closable={false}
         width={720}
       >

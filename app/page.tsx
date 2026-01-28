@@ -75,11 +75,17 @@ export default function HomePage() {
       }}
     >
       <header className="relative overflow-hidden">
-        <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-emerald-200/50 blur-3xl animate-[float_14s_ease-in-out_infinite]" />
-        <div className="absolute -top-24 right-0 h-80 w-80 rounded-full bg-amber-200/50 blur-3xl animate-[float_16s_ease-in-out_infinite]" />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-emerald-200/50 blur-3xl animate-[float_14s_ease-in-out_infinite]"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-24 right-0 h-80 w-80 rounded-full bg-amber-200/50 blur-3xl animate-[float_16s_ease-in-out_infinite]"
+        />
 
         <nav
-          className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6"
+          className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6"
           aria-label="Primary"
         >
           <div className="flex items-center gap-3">
@@ -124,7 +130,7 @@ export default function HomePage() {
           </div>
         </nav>
 
-        <section className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-12 px-6 pb-16 pt-6 md:grid-cols-[1.08fr_0.92fr] md:pb-24 md:pt-12">
+        <section className="relative z-10 mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-12 px-6 pb-16 pt-6 md:grid-cols-[1.08fr_0.92fr] md:pb-24 md:pt-12">
           <div className="space-y-6 animate-[hero-fade_900ms_ease-out]">
             <p className="text-xs uppercase tracking-[0.45em] text-slate-400">
               Modern invoice generator

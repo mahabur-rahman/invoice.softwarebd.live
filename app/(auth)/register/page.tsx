@@ -1,10 +1,11 @@
 import AuthForm from "@/components/auth/AuthForm";
+import { Suspense } from "react";
 
 const page = () => {
   return (
-    <div>
+    <Suspense fallback={<div />}>
       <AuthForm type="register" />
-    </div>
+    </Suspense>
   );
 };
 
