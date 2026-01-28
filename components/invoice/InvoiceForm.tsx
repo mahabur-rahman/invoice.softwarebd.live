@@ -301,6 +301,7 @@ const InvoiceForm = ({
     status: "INVOICE",
     issueDate: "",
     dueDate: "",
+    invoiceNumber: "",
     items: [createEmptyItem(initialRowId)],
     notes: "Thank you for your business.",
     subtotal: 0,

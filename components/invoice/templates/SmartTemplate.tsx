@@ -72,7 +72,9 @@ const SmartTemplate = ({
             <div className="mt-4 rounded-2xl border border-amber-100 bg-amber-50/70 p-3 text-xs text-amber-800">
               <div className="flex justify-between">
                 <span>Invoice No</span>
-                <span className="font-medium text-amber-950">—</span>
+                <span className="font-medium text-amber-950">
+                  {data.invoiceNumber || "—"}
+                </span>
               </div>
               <div className="mt-2 flex justify-between">
                 <span>Currency</span>

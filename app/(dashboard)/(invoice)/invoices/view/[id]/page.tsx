@@ -84,6 +84,7 @@ const Page = () => {
       total: invoice.totals.grandTotal,
       totalsCustom: invoice.totals?.custom ?? [],
       template: invoice.template ?? "CLASSIC",
+      invoiceNumber: invoice.invoiceNumber ?? "",
 
       items: invoice.items.map((item) => {
         const { description, price, quantity, extra = {} } = item.values || {};

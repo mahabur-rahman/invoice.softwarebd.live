@@ -20,6 +20,7 @@ export interface InvoiceData {
   status: string;
   issueDate: string;
   dueDate: string;
+  invoiceNumber?: string;
   items: Record<string, string | number>[];
   notes: string;
   subtotal: number;

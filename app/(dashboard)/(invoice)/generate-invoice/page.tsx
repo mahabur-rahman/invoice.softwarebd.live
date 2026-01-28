@@ -25,6 +25,7 @@ export interface InvoiceFormValues {
   status: string;
   issueDate: string;
   dueDate: string;
+  invoiceNumber?: string;
   items: InvoiceItem[];
   notes: string;
   subtotal: number;
@@ -57,6 +58,7 @@ const Page = () => {
   const router = useRouter();
   const [invoiceData, setInvoiceData] =
     useState<InvoiceFormValues | null>(null);
+  const [invoiceNumber] = useState(() => `INV-${Date.now()}`);
   const [template, setTemplate] = useState<InvoiceTemplateKey>("CLASSIC");
 
   const [createInvoice, { loading }] = useMutation(CREATE_INVOICE, {
@@ -121,6 +123,7 @@ const Page = () => {
       status: invoiceData.status,
       issueDate: invoiceData.issueDate,
       dueDate: invoiceData.dueDate,
+      invoiceNumber: invoiceData.invoiceNumber ?? invoiceNumber,
       notes: invoiceData.notes,
       subtotal: invoiceData.subtotal,
       total: invoiceData.total,
@@ -169,7 +172,7 @@ const Page = () => {
             businessId: invoiceData.business,
             clientId: invoiceData.client,
             clientName: "Test Name",
-            invoiceNumber: `INV-${Date.now()}`,
+            invoiceNumber: invoiceData.invoiceNumber ?? invoiceNumber,
             currency: invoiceData.currency,
             issueDate: invoiceData.issueDate,
             dueDate: invoiceData.dueDate,

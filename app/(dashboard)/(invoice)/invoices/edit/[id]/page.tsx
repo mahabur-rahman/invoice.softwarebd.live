@@ -28,7 +28,7 @@ interface SingleInvoiceQueryResponse {
     dueDate: string;
       notes?: string;
       status: string;
-    invoiceNumber: string;
+      invoiceNumber: string;
     template?: InvoiceTemplateKey;
     columns: InvoiceColumnInput[];
     items: {
@@ -129,6 +129,7 @@ const EditInvoicePage = () => {
       status: invoice.status ?? "DRAFT",
       issueDate: toDateInputValue(invoice.issueDate),
       dueDate: toDateInputValue(invoice.dueDate),
+      invoiceNumber: invoice.invoiceNumber ?? "",
       items,
       notes: invoice.notes ?? "",
       subtotal: invoice.totals?.subTotal ?? 0,
@@ -205,13 +206,14 @@ const EditInvoicePage = () => {
     if (!invoiceData) return null;
     return {
       ...invoiceData,
+      invoiceNumber: invoiceData.invoiceNumber ?? data?.singleInvoice.invoiceNumber ?? "",
       template,
       items: invoiceData.items.map((item) => ({
         ...item,
         total: Number(item.total ?? 0),
       })),
     };
-  }, [invoiceData, template]);
+  }, [invoiceData, template, data?.singleInvoice.invoiceNumber]);
 
   if (loading || !invoiceData) {
     return (

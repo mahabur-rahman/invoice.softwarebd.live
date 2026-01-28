@@ -63,7 +63,9 @@ const ModernTemplate = ({
           <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600">
             <div className="flex justify-between">
               <span>Invoice No</span>
-              <span className="font-medium text-slate-900">—</span>
+              <span className="font-medium text-slate-900">
+                {data.invoiceNumber || "—"}
+              </span>
             </div>
             <div className="mt-2 flex justify-between">
               <span>Date</span>
