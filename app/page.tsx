@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 const stats = [
-  { value: "18k+", label: "Invoices generated" },
   { value: "4.9/5", label: "Average client rating" },
+  { value: "18k+", label: "Invoices generated" },
   { value: "2 min", label: "Average setup time" },
 ];
 
@@ -106,8 +106,11 @@ export default function HomePage() {
             <Link className="hover:text-slate-900" href="#features">
               Features
             </Link>
+            <Link className="hover:text-slate-900" href="#features">
+              Use cases
+            </Link>
             <Link className="hover:text-slate-900" href="#templates">
-              Templates
+              Examples
             </Link>
             <Link className="hover:text-slate-900" href="#workflow">
               How it works
@@ -136,32 +139,38 @@ export default function HomePage() {
               Modern invoice generator
             </p>
             <h1 className="text-4xl font-semibold leading-tight text-slate-900 md:text-5xl">
-              Design invoices that look
+              Get paid faster with invoices that look
               <span className="block bg-linear-to-r from-emerald-500 via-emerald-600 to-amber-500 bg-clip-text text-transparent">
                 premium from day one
               </span>
             </h1>
             <p className="max-w-xl text-base text-slate-600 md:text-lg">
-              Sellyx helps freelancers and teams craft polished invoices,
-              preview templates, and collect payments without the busywork.
+              Sellyx helps freelancers and teams create polished invoices and get
+              paid without the busywork.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link
                 href="/register"
-                className="rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:-translate-y-0.5 hover:bg-emerald-600"
+                className="rounded-full bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/30 transition hover:-translate-y-0.5 hover:bg-emerald-700"
               >
-                Create free account
+                Create your first invoice
               </Link>
               <Link
                 href="#templates"
-                className="rounded-full border border-emerald-200 bg-white/70 px-6 py-3 text-sm font-semibold text-emerald-700 transition hover:-translate-y-0.5 hover:border-emerald-300"
+                className="rounded-full border border-slate-200 bg-white/80 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-slate-300"
               >
-                Preview templates
+                See invoice examples
               </Link>
             </div>
-            <div className="flex flex-wrap gap-6 pt-4 text-sm text-slate-600">
-              {stats.map((stat) => (
-                <div key={stat.label} className="flex items-center gap-3">
+            <p className="text-xs text-slate-500">No credit card required</p>
+            <div className="flex flex-wrap gap-4 pt-2 text-sm text-slate-600">
+              {stats.map((stat, index) => (
+                <div
+                  key={stat.label}
+                  className={`flex items-center gap-3 ${
+                    index > 0 ? "pl-4 md:border-l md:border-slate-200/70" : ""
+                  }`}
+                >
                   <div className="h-10 w-10 rounded-2xl bg-white shadow-sm flex items-center justify-center text-slate-900 font-semibold">
                     {stat.value}
                   </div>
@@ -185,9 +194,14 @@ export default function HomePage() {
                     Invoice No. SLX-204
                   </h2>
                 </div>
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                  Draft
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                    Draft
+                  </span>
+                  <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500">
+                    Edit
+                  </span>
+                </div>
               </div>
 
               <div className="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
@@ -206,16 +220,31 @@ export default function HomePage() {
                   ].map((item) => (
                     <div
                       key={item}
-                      className="flex items-center justify-between border-b border-dashed border-slate-200 pb-2"
+                      className="flex items-center justify-between rounded-lg border-b border-dashed border-slate-200 pb-2 transition hover:bg-slate-50/80"
                     >
                       <span>{item}</span>
                       <span className="font-medium text-slate-900">$680</span>
                     </div>
                   ))}
                 </div>
-                <div className="mt-6 flex items-center justify-between rounded-2xl bg-slate-900 px-4 py-3 text-white">
+                <div className="mt-6 flex items-center justify-between rounded-2xl bg-slate-900 px-4 py-3 text-white transition">
                   <span className="text-sm">Total due</span>
                   <span className="text-lg font-semibold">$2,040</span>
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+                <span>Sent via Sellyx</span>
+                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  <span className="rounded-full border border-slate-200 px-2 py-1">
+                    Visa
+                  </span>
+                  <span className="rounded-full border border-slate-200 px-2 py-1">
+                    Stripe
+                  </span>
+                  <span className="rounded-full border border-slate-200 px-2 py-1">
+                    PayPal
+                  </span>
                 </div>
               </div>
 
