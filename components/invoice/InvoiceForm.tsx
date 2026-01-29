@@ -32,6 +32,7 @@ import { Spin } from "antd";
 
 // ✅ dnd-kit
 import {
+  CollisionDetection,
   DndContext,
   DragEndEvent,
   DragOverlay,
@@ -39,13 +40,15 @@ import {
   Modifier,
   PointerSensor,
   closestCenter,
+  pointerWithin,
+  rectIntersection,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   arrayMove,
-  rectSortingStrategy,
+  horizontalListSortingStrategy,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
@@ -129,6 +132,12 @@ const restrictToVerticalAxis: Modifier = ({ transform }) => ({
   ...transform,
   x: 0,
 });
+
+const columnCollisionDetection: CollisionDetection = (args) => {
+  const pointerIntersections = pointerWithin(args);
+  if (pointerIntersections.length) return pointerIntersections;
+  return rectIntersection(args);
+};
 
 
 /* ================= SORTABLE CELL (FIRST ROW ONLY) ================= */
@@ -817,7 +826,7 @@ const InvoiceForm = ({
                               {isFirstRow ? (
                                 <DndContext
                                   sensors={sensors}
-                                  collisionDetection={closestCenter}
+                                  collisionDetection={columnCollisionDetection}
                                   modifiers={[restrictToHorizontalAxis]}
                                   onDragStart={onColumnDragStart}
                                   onDragEnd={onColumnDragEnd}
@@ -826,7 +835,7 @@ const InvoiceForm = ({
                                     items={draggableColumns.map((c) =>
                                       getColDndId(c)
                                     )}
-                                    strategy={rectSortingStrategy}
+                                    strategy={horizontalListSortingStrategy}
                                   >
                                     <div className="flex gap-3 w-full flex-1">
                                       {draggableColumns.map((column) => {
@@ -870,20 +879,28 @@ const InvoiceForm = ({
                                             )}
                                           </Field>
                                         ) : (
-                                          <Field
-                                            name={`items.${i}.${column.fieldKey}`}
-                                            readOnly={isTotal}
-                                            type={
-                                              column.type === "number"
-                                                ? "number"
-                                                : "text"
-                                            }
-                                            className={`w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 ${
-                                              isTotal
-                                                ? "bg-slate-50 text-center font-semibold"
-                                                : ""
-                                            } ${isHidden ? "text-slate-500" : ""}`}
-                                          />
+                                          <Field name={`items.${i}.${column.fieldKey}`}>
+                                            {({ field }) => (
+                                              <input
+                                                {...field}
+                                                readOnly={isTotal}
+                                                type={
+                                                  column.type === "number"
+                                                    ? "number"
+                                                    : "text"
+                                                }
+                                                value={
+                                                  field.value ??
+                                                  (column.type === "number" ? 0 : "")
+                                                }
+                                                className={`w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 ${
+                                                  isTotal
+                                                    ? "bg-slate-50 text-center font-semibold"
+                                                    : ""
+                                                } ${isHidden ? "text-slate-500" : ""}`}
+                                              />
+                                            )}
+                                          </Field>
                                         );
 
                                       return (
@@ -1145,20 +1162,28 @@ const InvoiceForm = ({
                                             )}
                                           </Field>
                                         ) : (
-                                          <Field
-                                            name={`items.${i}.${column.fieldKey}`}
-                                            readOnly={isTotal}
-                                            type={
-                                              column.type === "number"
-                                                ? "number"
-                                                : "text"
-                                            }
-                                            className={`w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 ${
-                                              isTotal
-                                                ? "bg-slate-50 text-center font-semibold"
-                                                : ""
-                                            }`}
-                                          />
+                                          <Field name={`items.${i}.${column.fieldKey}`}>
+                                            {({ field }) => (
+                                              <input
+                                                {...field}
+                                                readOnly={isTotal}
+                                                type={
+                                                  column.type === "number"
+                                                    ? "number"
+                                                    : "text"
+                                                }
+                                                value={
+                                                  field.value ??
+                                                  (column.type === "number" ? 0 : "")
+                                                }
+                                                className={`w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 ${
+                                                  isTotal
+                                                    ? "bg-slate-50 text-center font-semibold"
+                                                    : ""
+                                                }`}
+                                              />
+                                            )}
+                                          </Field>
                                         )}
                                         {!isTotal && (
                                           <FieldError
