@@ -29,3 +29,14 @@ Project: sellyx-web (Next.js 16 App Router frontend)
 - Prefer Apollo `useQuery`/`useMutation` with generated types where possible.
 - For image URLs, Next.js remote patterns are configured in `next.config.ts`.
 
+## Git workflow (required)
+Before starting work on `RK`:
+- `git checkout dev`
+- `git pull`
+- `git checkout RK`
+- `git merge dev`
+
+Before pushing `RK`:
+- Ensure `RK` contains latest `origin/dev`.
+- Optional: set up a local pre-push hook to block pushes when `origin/dev` is not merged.
+
