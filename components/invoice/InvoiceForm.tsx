@@ -35,13 +35,12 @@ import {
   CollisionDetection,
   DndContext,
   DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
   Modifier,
   PointerSensor,
   closestCenter,
   pointerWithin,
   rectIntersection,
+  useDndMonitor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
@@ -218,6 +217,73 @@ const StaticCell = ({
   </div>
 );
 
+const ColumnDragOverlay = ({
+  columns,
+  rowRef,
+}: {
+  columns: InvoiceColumnInput[];
+  rowRef: React.RefObject<HTMLDivElement>;
+}) => {
+  const [overlay, setOverlay] = React.useState<{
+    id: string;
+    label: string;
+    startLeft: number;
+    top: number;
+  } | null>(null);
+  const [deltaX, setDeltaX] = React.useState(0);
+
+  useDndMonitor({
+    onDragStart: ({ active }) => {
+      if (active.data.current?.type !== "column") return;
+      const initialRect = active.rect.current?.initial;
+      if (!initialRect) return;
+      const rowRect = rowRef.current?.getBoundingClientRect();
+      const label =
+        columns.find((column) => getColDndId(column) === String(active.id))
+          ?.label ?? "";
+      setOverlay({
+        id: String(active.id),
+        label,
+        startLeft: initialRect.left,
+        top: rowRect?.top ?? initialRect.top,
+      });
+      setDeltaX(0);
+    },
+    onDragMove: ({ active, delta }) => {
+      if (active.data.current?.type !== "column") return;
+      setDeltaX(delta.x);
+    },
+    onDragEnd: ({ active }) => {
+      if (active.data.current?.type !== "column") return;
+      setOverlay(null);
+      setDeltaX(0);
+    },
+    onDragCancel: ({ active }) => {
+      if (active.data.current?.type !== "column") return;
+      setOverlay(null);
+      setDeltaX(0);
+    },
+  });
+
+  if (!overlay) return null;
+
+  return (
+    <div
+      className="pointer-events-none fixed z-50"
+      style={{
+        left: 0,
+        top: 0,
+        transform: `translate3d(${overlay.startLeft + deltaX}px, ${overlay.top}px, 0)`,
+      }}
+    >
+      <div className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 shadow-lg">
+        <span className="font-medium text-slate-800">{overlay.label}</span>
+        <span className="text-slate-500">â‰¡</span>
+      </div>
+    </div>
+  );
+};
+
 const SortableRow = ({
   id,
   children,
@@ -384,20 +450,16 @@ const InvoiceForm = ({
 
   /* ================= DND CONFIG ================= */
 
-  const [activeId, setActiveId] = React.useState<string | null>(null);
   const [labelModalOpen, setLabelModalOpen] = React.useState(false);
   const [labelDraft, setLabelDraft] = React.useState("");
   const [labelTargetKey, setLabelTargetKey] = React.useState<string | null>(null);
+  const columnRowRef = React.useRef<HTMLDivElement | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 6 },
     })
   );
-
-  const onColumnDragStart = (event: DragStartEvent) => {
-    setActiveId(String(event.active.id));
-  };
 
   const onRowDragEnd = (
     event: DragEndEvent,
@@ -420,7 +482,6 @@ const InvoiceForm = ({
 
   const onColumnDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    setActiveId(null);
 
     if (!over) return;
     if (active.id === over.id) return;
@@ -440,11 +501,6 @@ const InvoiceForm = ({
       return next.map((c, i) => ({ ...c, order: i + 1 }));
     });
   };
-
-  const activeColumn = React.useMemo(() => {
-    if (!activeId) return null;
-    return columns.find((c) => getColDndId(c) === activeId) ?? null;
-  }, [activeId, columns]);
 
   const openLabelModal = (column: InvoiceColumnInput) => {
     setLabelTargetKey(column.fieldKey);
@@ -828,7 +884,6 @@ const InvoiceForm = ({
                                   sensors={sensors}
                                   collisionDetection={columnCollisionDetection}
                                   modifiers={[restrictToHorizontalAxis]}
-                                  onDragStart={onColumnDragStart}
                                   onDragEnd={onColumnDragEnd}
                                 >
                                   <SortableContext
@@ -837,7 +892,10 @@ const InvoiceForm = ({
                                     )}
                                     strategy={horizontalListSortingStrategy}
                                   >
-                                    <div className="flex gap-3 w-full flex-1">
+                                    <div
+                                      ref={columnRowRef}
+                                      className="flex gap-3 w-full flex-1"
+                                    >
                                       {draggableColumns.map((column) => {
                                       const isTotal = column.fieldKey === "total";
 
@@ -1061,19 +1119,7 @@ const InvoiceForm = ({
                                     )}
                                     </div>
                                   </SortableContext>
-
-                                  <DragOverlay>
-                                    {activeColumn ? (
-                                      <div className="pointer-events-none">
-                                        <div className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 shadow-lg">
-                                          <span className="font-medium text-slate-800">
-                                            {activeColumn.label}
-                                          </span>
-                                          <span className="text-slate-500">≡</span>
-                                        </div>
-                                      </div>
-                                    ) : null}
-                                  </DragOverlay>
+                                  <ColumnDragOverlay columns={columns} rowRef={columnRowRef} />
                                 </DndContext>
                               ) : (
                                 <div className="flex gap-3 w-full flex-1">
@@ -1451,3 +1497,6 @@ const InvoiceForm = ({
 };
 
 export default InvoiceForm;
+
+
+
