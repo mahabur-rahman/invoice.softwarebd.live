@@ -18,7 +18,7 @@ const SimpleTemplate = ({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-[0_18px_40px_rgba(15,23,42,0.08)] print:border-0 print:shadow-none">
-      <div className="flex flex-wrap items-start justify-between gap-6">
+      <div className="flex flex-wrap items-start justify-between gap-6 print:flex-nowrap">
         <div>
           <h2 className="text-2xl font-semibold text-slate-900">Invoice</h2>
           <p className="mt-1 text-sm text-slate-500">
@@ -46,7 +46,7 @@ const SimpleTemplate = ({
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-[1.2fr_1fr]">
+      <div className="mt-6 grid gap-4 md:grid-cols-[1.2fr_1fr] print:grid-cols-[1.2fr_1fr]">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
             Bill To
@@ -109,7 +109,7 @@ const SimpleTemplate = ({
         </table>
       </div>
 
-      <div className="mt-6 grid gap-6 md:grid-cols-[1.3fr_1fr]">
+      <div className="mt-6 grid gap-6 md:grid-cols-[1.3fr_1fr] print:grid-cols-[1.3fr_1fr]">
         <div className="text-sm text-slate-500">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
             Notes

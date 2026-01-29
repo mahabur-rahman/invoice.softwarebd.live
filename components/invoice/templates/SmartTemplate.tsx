@@ -24,7 +24,7 @@ const SmartTemplate = ({
       <div className="pointer-events-none absolute right-10 bottom-16 h-40 w-40 rounded-full bg-fuchsia-200/30" />
 
       <div className="relative px-10 py-10">
-        <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+        <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr] print:grid-cols-[1.5fr_1fr]">
           <div className="rounded-[28px] bg-linear-to-br from-[#7f4a1d] via-[#5a2b73] to-[#3b1c59] p-6 text-white shadow-[0_20px_40px_rgba(88,28,135,0.35)]">
             <p className="text-xs uppercase tracking-[0.3em] text-white/70">
               Smart Luxury Invoice
@@ -32,7 +32,7 @@ const SmartTemplate = ({
             <h2 className="mt-3 text-4xl font-semibold tracking-[0.18em]">
               INVOICE
             </h2>
-            <div className="mt-6 flex flex-wrap gap-3 text-xs">
+            <div className="mt-6 flex flex-wrap gap-3 text-xs print:flex-nowrap">
               <span className="rounded-full bg-white/15 px-3 py-1">
                 {data.status}
               </span>
@@ -142,7 +142,7 @@ const SmartTemplate = ({
           </table>
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_1fr] print:grid-cols-[1.2fr_1fr]">
           <div className="rounded-[26px] border border-amber-100 bg-white/90 p-5 text-sm text-amber-800">
             <p className="text-xs uppercase tracking-[0.25em] text-amber-600">
               Notes

@@ -64,6 +64,7 @@ export const GET_MY_BUSINESSES_ID = gql`
     myBusinesses {
       _id
       companyName
+      defaultBusiness
     }
   }
 `;

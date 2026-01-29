@@ -47,6 +47,11 @@ export const menuItems: MenuProps["items"] = [
         icon: <FiBriefcase size={16} />,
         label: <Link href="/my-business">My Business</Link>,
       },
+      {
+        key: "304",
+        icon: <MdOutlineReceiptLong size={16} />,
+        label: <Link href="/settings/invoice">Invoice Settings</Link>,
+      },
     ],
   },
 ];

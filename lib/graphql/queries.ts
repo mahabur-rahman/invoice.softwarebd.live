@@ -8,6 +8,10 @@ export const GET_MY_BUSINESSES = gql`
       contactEmail
       createdAt
       defaultBusiness
+      invoiceNumberPaddingDigits
+      invoiceNumberPrefix
+      invoiceNumberResetYearly
+      invoiceNumberStartNumber
       location
       logoUrl
       owner {

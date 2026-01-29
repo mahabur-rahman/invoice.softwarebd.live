@@ -19,7 +19,7 @@ const StandardTemplate = ({
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.08)] print:border-0 print:shadow-none">
       <div className="border-b border-slate-200 bg-slate-50 px-8 py-6">
-        <div className="flex flex-wrap items-center justify-between gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-6 print:flex-nowrap">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
               Invoice
@@ -53,7 +53,7 @@ const StandardTemplate = ({
       </div>
 
       <div className="px-8 py-8">
-        <div className="grid gap-6 md:grid-cols-[1.4fr_1fr]">
+        <div className="grid gap-6 md:grid-cols-[1.4fr_1fr] print:grid-cols-[1.4fr_1fr]">
           <div className="rounded-xl border border-slate-200 bg-white p-4">
             <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
               Bill To
@@ -116,7 +116,7 @@ const StandardTemplate = ({
           </table>
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.3fr_1fr]">
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1.3fr_1fr] print:grid-cols-[1.3fr_1fr]">
           <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
             <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
               Notes

@@ -60,9 +60,15 @@ const ModernTemplate = ({
               Invoice To
             </p>
             <p className="mt-2 text-lg font-semibold text-slate-900">
+              {client?.clientCompanyName || ""}
+            </p>
+            <p className="text-base font-semibold text-slate-500">
               {client?.name || ""}
             </p>
-            <p className="text-sm text-slate-500">{client?.address || ""}</p>
+            <div className="mt-1 text-sm text-slate-500">
+              <p>{client?.email || ""}</p>
+            </div>
+            <p className="mt-2 text-sm text-slate-500">{client?.address || ""}</p>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600">

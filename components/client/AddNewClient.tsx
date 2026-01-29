@@ -1,7 +1,8 @@
 "use client";
 
+import React from "react";
 import { useRouter } from "next/navigation";
-import { Formik, Form, } from "formik";
+import { Formik, Form, useFormikContext } from "formik";
 import * as Yup from "yup";
 
 
@@ -26,7 +27,7 @@ const ClientSchema = Yup.object().shape({
 
 interface AddNewClientProps {
     client?: ClientType;
-    onSuccess?: () => void;
+    onSuccess?: (clientId?: string) => void;
     redirectOnSuccess?: boolean;
 }
 
@@ -85,7 +86,7 @@ const AddNewClient: React.FC<AddNewClientProps> = ({
     const handleSubmit = async (values: ClientFormValues) => {
         try {
             if (client) {
-                await updateClient({
+                const { data: updated } = await updateClient({
                     variables: {
                         input: {
                             id: client,
@@ -93,20 +94,41 @@ const AddNewClient: React.FC<AddNewClientProps> = ({
                         },
                     },
                 });
+                if (!redirectOnSuccess) {
+                    onSuccess?.((updated as any)?.updateClient?._id);
+                }
             } else {
-                await createClient({
+                const { data: created } = await createClient({
                     variables: { input: values },
                 });
+                if (!redirectOnSuccess) {
+                    onSuccess?.((created as any)?.createClient?._id);
+                }
             }
 
             if (redirectOnSuccess) {
                 router.push("/clients");
             } else {
-                onSuccess?.();
+                // handled above to pass created/updated id
             }
         } catch (err) {
             console.error(err);
         }
+    };
+
+    const defaultBusinessId =
+        businessList?.myBusinesses?.find((b) => b.defaultBusiness)?._id ??
+        businessList?.myBusinesses?.[0]?._id;
+
+    const DefaultBusinessSetter = ({ businessId }: { businessId?: string }) => {
+        const { values, setFieldValue } = useFormikContext<ClientFormValues>();
+        React.useEffect(() => {
+            if (client) return;
+            if (!businessId) return;
+            if (values.businessId) return;
+            setFieldValue("businessId", businessId);
+        }, [businessId, values.businessId, setFieldValue]);
+        return null;
     };
 
     return (
@@ -123,6 +145,7 @@ const AddNewClient: React.FC<AddNewClientProps> = ({
             >
                 {({ values, handleChange, errors, touched, isSubmitting }) => (
                     <Form>
+                        <DefaultBusinessSetter businessId={defaultBusinessId} />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                             {/* Client Name */}

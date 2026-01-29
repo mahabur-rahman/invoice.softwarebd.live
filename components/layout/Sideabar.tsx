@@ -3,6 +3,8 @@
 import dynamic from "next/dynamic";
 import { Layout, Menu } from "antd";
 import { menuItems } from "./menuItems";
+import { usePathname } from "next/navigation";
+import React from "react";
 
 const { Sider } = Layout;
 
@@ -10,35 +12,77 @@ interface SidebarProps {
   collapsed: boolean;
 }
 
-const SidebarContent = ({ collapsed }: SidebarProps) => (
-  <Sider
-    collapsible
-    collapsed={collapsed}
-    trigger={null}
-    width={220}
-    style={{
-      background: "#fff",
-      boxShadow: "2px 0 6px rgba(0,0,0,0.05)",
-      borderRight: "1px solid #f0f0f0",
-    }}
-    className="min-h-screen"
-  >
-    <div
-      className="flex items-center justify-center h-16 text-lg font-semibold text-gray-800 border-b border-gray-200"
-      style={{ whiteSpace: "nowrap" }}
-    >
-      {!collapsed ? "Sellyx" : "S"}
-    </div>
+const SidebarContent = ({ collapsed }: SidebarProps) => {
+  const pathname = usePathname();
 
-    <Menu
-      mode="inline"
-      defaultSelectedKeys={["1"]}
-      defaultOpenKeys={["sub1"]}
-      style={{ height: "100%", borderRight: 0 }}
-      items={menuItems}
-    />
-  </Sider>
-);
+  const selectedKey = React.useMemo(() => {
+    if (!pathname) return "1";
+    if (pathname.startsWith("/generate-invoice")) return "102";
+    if (pathname.startsWith("/invoices")) return "101";
+    if (pathname.startsWith("/clients")) return "303";
+    if (pathname.startsWith("/my-business")) return "302";
+    if (pathname.startsWith("/settings/invoice")) return "304";
+    if (pathname.startsWith("/settings")) return "301";
+    if (pathname.startsWith("/dashboard")) return "1";
+    return "1";
+  }, [pathname]);
+
+  const derivedOpenKeys = React.useMemo(() => {
+    if (selectedKey === "101" || selectedKey === "102") return ["2"];
+    if (
+      selectedKey === "301" ||
+      selectedKey === "302" ||
+      selectedKey === "303" ||
+      selectedKey === "304"
+    )
+      return ["3"];
+    return [];
+  }, [selectedKey]);
+
+  const [openKeys, setOpenKeys] = React.useState<string[]>(derivedOpenKeys);
+
+  React.useEffect(() => {
+    setOpenKeys(derivedOpenKeys);
+  }, [derivedOpenKeys]);
+
+  return (
+    <Sider
+      collapsible
+      collapsed={collapsed}
+      trigger={null}
+      width={220}
+      style={{
+        background: "#fff",
+        boxShadow: "2px 0 6px rgba(0,0,0,0.05)",
+        borderRight: "1px solid #f0f0f0",
+      }}
+      className="min-h-screen"
+    >
+      <div
+        className="flex items-center justify-center h-16 text-lg font-semibold text-gray-800 border-b border-gray-200"
+        style={{ whiteSpace: "nowrap" }}
+      >
+        {!collapsed ? "Sellyx" : "S"}
+      </div>
+
+      <Menu
+        mode="inline"
+        selectedKeys={[selectedKey]}
+        openKeys={openKeys}
+        onOpenChange={(keys) => {
+          const latest = keys[keys.length - 1];
+          if (!latest) {
+            setOpenKeys([]);
+            return;
+          }
+          setOpenKeys([latest]);
+        }}
+        style={{ height: "100%", borderRight: 0 }}
+        items={menuItems}
+      />
+    </Sider>
+  );
+};
 
 const Sidebar = dynamic(() => Promise.resolve(SidebarContent), {
   ssr: false,

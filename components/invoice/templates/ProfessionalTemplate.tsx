@@ -19,7 +19,7 @@ const ProfessionalTemplate = ({
   return (
     <div className="rounded-3xl border border-slate-200 bg-white shadow-[0_26px_60px_rgba(15,23,42,0.12)] print:border-0 print:shadow-none">
       <div className="bg-slate-900 text-white">
-        <div className="flex flex-wrap items-center justify-between gap-6 px-10 py-8">
+        <div className="flex flex-wrap items-center justify-between gap-6 px-10 py-8 print:flex-nowrap">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-white/60">
               Invoice
@@ -54,7 +54,7 @@ const ProfessionalTemplate = ({
       </div>
 
       <div className="px-10 py-8">
-        <div className="grid gap-6 md:grid-cols-[1.4fr_1fr]">
+        <div className="grid gap-6 md:grid-cols-[1.4fr_1fr] print:grid-cols-[1.4fr_1fr]">
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
             <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
               Bill To
@@ -125,7 +125,7 @@ const ProfessionalTemplate = ({
           </table>
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.3fr_1fr]">
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1.3fr_1fr] print:grid-cols-[1.3fr_1fr]">
           <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600">
             <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
               Notes

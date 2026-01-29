@@ -69,10 +69,14 @@ const InvoicePreview = ({
   const activeTemplate = template ?? data?.template ?? "CLASSIC";
   const TemplateComponent =
     TEMPLATE_COMPONENTS[activeTemplate] ?? TEMPLATE_COMPONENTS.CLASSIC;
+  const documentTitle = useMemo(() => {
+    const number = data?.invoiceNumber?.trim();
+    return number ? `Invoice-${number}` : "Invoice";
+  }, [data?.invoiceNumber]);
 
   const handlePrint = useReactToPrint({
     contentRef: componentRef,
-    documentTitle: "Invoice",
+    documentTitle,
     removeAfterPrint: true,
   } as UseReactToPrintOptions);
 
@@ -172,7 +176,13 @@ const InvoicePreview = ({
       </div>
 
       {showPrintButton && (
-        <div className="flex justify-end mt-4 print:hidden">
+        <div className="flex justify-end mt-4 gap-3 print:hidden">
+          <button
+            onClick={handlePrint}
+            className="bg-white text-gray-800 px-4 py-2 rounded-md border border-gray-300 hover:border-gray-400"
+          >
+            Download PDF
+          </button>
           <button
             onClick={handlePrint}
             className="bg-gray-800 text-white px-4 py-2 rounded-md"
