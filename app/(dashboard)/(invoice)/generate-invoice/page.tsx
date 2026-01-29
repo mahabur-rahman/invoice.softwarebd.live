@@ -41,6 +41,7 @@ export type InvoiceTotalsCustomFieldInput = {
   behavior: "ADD" | "SUBTRACT" | "NONE";
   valueType: "FIXED" | "PERCENT";
   value: number;
+  __typename?: string;
 };
 
 export type InvoiceColumnInput = {

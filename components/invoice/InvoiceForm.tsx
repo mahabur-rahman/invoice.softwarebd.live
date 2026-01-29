@@ -6,6 +6,7 @@ import {
   Form,
   Field,
   FieldArray,
+  FieldProps,
   useFormikContext,
   ErrorMessage,
 } from "formik";
@@ -76,6 +77,8 @@ interface InvoiceFormProps {
   editing:boolean;
   defaultInvoiceNumber?: string;
 }
+
+type InvoiceFieldProps = FieldProps<string | number, InvoiceFormValues>;
 
 /* ================= VALIDATION ================= */
 
@@ -222,7 +225,7 @@ const ColumnDragOverlay = ({
   rowRef,
 }: {
   columns: InvoiceColumnInput[];
-  rowRef: React.RefObject<HTMLDivElement>;
+  rowRef: React.RefObject<HTMLDivElement | null>;
 }) => {
   const [overlay, setOverlay] = React.useState<{
     id: string;
@@ -906,7 +909,7 @@ const InvoiceForm = ({
                                         column.fieldKey === "price" ||
                                         column.fieldKey === "total" ? (
                                           <Field name={`items.${i}.${column.fieldKey}`}>
-                                            {({ field }) => (
+                                            {({ field }: InvoiceFieldProps) => (
                                               <input
                                                 {...field}
                                                 type={isTotal ? "text" : "number"}
@@ -940,7 +943,7 @@ const InvoiceForm = ({
                                           </Field>
                                         ) : (
                                           <Field name={`items.${i}.${column.fieldKey}`}>
-                                            {({ field }) => (
+                                            {({ field }: InvoiceFieldProps) => (
                                               <input
                                                 {...field}
                                                 readOnly={isTotal}
@@ -1107,7 +1110,7 @@ const InvoiceForm = ({
                                         }
                                       >
                                         <Field name={`items.${i}.${totalColumn.fieldKey}`}>
-                                          {({ field }) => (
+                                          {({ field }: InvoiceFieldProps) => (
                                             <input
                                               {...field}
                                               readOnly
@@ -1177,7 +1180,7 @@ const InvoiceForm = ({
                                         {column.fieldKey === "price" ||
                                         column.fieldKey === "total" ? (
                                           <Field name={`items.${i}.${column.fieldKey}`}>
-                                            {({ field }) => (
+                                            {({ field }: InvoiceFieldProps) => (
                                               <input
                                                 {...field}
                                                 type={isTotal ? "text" : "number"}
@@ -1211,7 +1214,7 @@ const InvoiceForm = ({
                                           </Field>
                                         ) : (
                                           <Field name={`items.${i}.${column.fieldKey}`}>
-                                            {({ field }) => (
+                                            {({ field }: InvoiceFieldProps) => (
                                               <input
                                                 {...field}
                                                 readOnly={isTotal}
@@ -1407,7 +1410,7 @@ const InvoiceForm = ({
                       {values.currency}
                     </span>
                     <Field name="paid">
-                      {({ field }) => (
+                      {({ field }: InvoiceFieldProps) => (
                         <input
                           {...field}
                           type="number"

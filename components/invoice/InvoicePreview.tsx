@@ -112,7 +112,7 @@ const InvoicePreview = ({
   return (
     <div className="relative">
       {onTemplateChange && (
-        <div className="mb-4">
+        <div className="mb-4 print:hidden">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-gray-700">
               Choose template
@@ -159,18 +159,20 @@ const InvoicePreview = ({
       )}
 
       <div ref={componentRef}>
-        <TemplateComponent
-          data={data}
-          columns={columns}
-          business={businessData?.singleBusiness}
-          client={clientData?.findOneClient}
-          formatDate={formatDate}
-          getValidImageUrl={getValidImageUrl}
-        />
+        <div className="invoice-print-sheet">
+          <TemplateComponent
+            data={data}
+            columns={columns}
+            business={businessData?.singleBusiness}
+            client={clientData?.findOneClient}
+            formatDate={formatDate}
+            getValidImageUrl={getValidImageUrl}
+          />
+        </div>
       </div>
 
       {showPrintButton && (
-        <div className="flex justify-end mt-4">
+        <div className="flex justify-end mt-4 print:hidden">
           <button
             onClick={handlePrint}
             className="bg-gray-800 text-white px-4 py-2 rounded-md"

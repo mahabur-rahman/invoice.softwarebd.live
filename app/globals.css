@@ -24,6 +24,40 @@ body {
   scroll-behavior: smooth;
 }
 
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  html,
+  body {
+    background: #ffffff;
+    height: auto;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .invoice-print-sheet {
+    width: 190mm;
+    min-height: 0;
+    height: auto;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+
+  .invoice-print-sheet thead {
+    display: table-header-group;
+  }
+
+  .invoice-print-sheet tr {
+    page-break-inside: avoid;
+  }
+}
+
 @keyframes hero-fade {
   from {
     opacity: 0;
