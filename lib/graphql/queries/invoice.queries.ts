@@ -144,6 +144,7 @@ export const SINGLE_INVOICE_QUERY = gql`
       totals {
         subTotal
         grandTotal
+        balanceDue
         custom {
           key
           label
@@ -213,6 +214,7 @@ export const VIEW_INVOICE_QUERY = gql`
       totals {
         subTotal
         grandTotal
+        balanceDue
         custom {
           key
           label

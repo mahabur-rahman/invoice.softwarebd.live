@@ -12,6 +12,8 @@ const ClassicTemplate = ({
 }: InvoiceTemplateProps) => {
   const visibleColumns = columns.filter((col) => !col.hidden);
   const customTotals = getCustomTotals(data);
+  const paidAmount = Number(data.paid ?? 0);
+  const balanceDue = Number(data.balanceDue ?? data.total ?? 0);
   const logoUrl = getValidImageUrl(business?.logoUrl);
 
   return (
@@ -109,8 +111,12 @@ const ClassicTemplate = ({
           );
         })}
 
+        <p>
+          Paid: {data.currency} {paidAmount.toFixed(2)}
+        </p>
+
         <h3 className="text-lg font-semibold mt-2">
-          Amount Due: {data.currency} {Number(data.total ?? 0).toFixed(2)}
+          Amount Due: {data.currency} {balanceDue.toFixed(2)}
         </h3>
       </div>
 

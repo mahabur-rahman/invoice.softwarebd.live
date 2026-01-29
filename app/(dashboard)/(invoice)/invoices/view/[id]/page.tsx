@@ -38,6 +38,7 @@ interface SingleInvoiceQueryResponse {
     totals: {
       subTotal: number;
       grandTotal: number;
+      balanceDue?: number;
       subtractions?: Record<string, number>;
       custom?: {
         key: string;
@@ -72,6 +73,11 @@ const Page = () => {
     if (!data?.singleInvoice) return null;
 
     const invoice = data.singleInvoice;
+    const paid = Number(invoice.totals?.subtractions?.paid ?? 0);
+    const balanceDue = Number(
+      invoice.totals?.balanceDue ??
+        (invoice.totals?.grandTotal ?? 0) - paid
+    );
 
     return {
       client: invoice.clientId,
@@ -83,6 +89,8 @@ const Page = () => {
       notes: invoice.notes ?? "",
       subtotal: invoice.totals.subTotal,
       total: invoice.totals.grandTotal,
+      paid,
+      balanceDue,
       totalsCustom: invoice.totals?.custom ?? [],
       template: invoice.template ?? "CLASSIC",
       invoiceNumber: invoice.invoiceNumber ?? "",

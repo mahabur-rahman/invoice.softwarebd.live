@@ -30,6 +30,8 @@ export interface InvoiceFormValues {
   notes: string;
   subtotal: number;
   total: number;
+  paid: number;
+  balanceDue: number;
   totalsCustom: InvoiceTotalsCustomFieldInput[];
 }
 
@@ -127,6 +129,8 @@ const Page = () => {
       notes: invoiceData.notes,
       subtotal: invoiceData.subtotal,
       total: invoiceData.total,
+      paid: invoiceData.paid ?? 0,
+      balanceDue: invoiceData.balanceDue ?? invoiceData.total,
       template,
       totalsCustom: invoiceData.totalsCustom ?? [],
 
@@ -174,6 +178,9 @@ const Page = () => {
       behavior: c.behavior,
       locked: c.locked,
     }));
+    const customTotalsForApi = (invoiceData.totalsCustom ?? []).map(
+      ({ __typename, ...field }) => field
+    );
 
     const finalInvoiceNumber =
       invoiceData.invoiceNumber?.trim() || invoiceNumber;
@@ -200,7 +207,8 @@ const Page = () => {
               subTotal: invoiceData.subtotal,
               grandTotal: invoiceData.total,
               additions: { tax: 0, shipping: 0 },
-              subtractions: { discount: 0, paid: 0 },
+              subtractions: { discount: 0, paid: Number(invoiceData.paid || 0) },
+              custom: customTotalsForApi,
             },
             template,
           },

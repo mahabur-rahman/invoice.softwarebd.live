@@ -25,6 +25,8 @@ export interface InvoiceData {
   notes: string;
   subtotal: number;
   total: number;
+  paid?: number;
+  balanceDue?: number;
   template?: InvoiceTemplateKey;
   totalsCustom?: {
     key: string;
