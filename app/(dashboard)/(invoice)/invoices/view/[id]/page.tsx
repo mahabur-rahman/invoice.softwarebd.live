@@ -129,7 +129,7 @@ const Page = () => {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen p-6">
+    <div className="bg-gray-50 min-h-screen p-6 print:bg-white print:min-h-0 print:p-0">
       <InvoicePreview
         data={previewData}
         columns={data?.singleInvoice.columns ?? []}

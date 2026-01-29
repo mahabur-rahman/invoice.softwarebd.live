@@ -131,8 +131,8 @@ const Page = () => {
   }
 
   return (
-    <div className="bg-gray-100 min-h-screen p-6">
-      <div className="mx-auto w-full max-w-[210mm] min-h-[297mm] bg-white shadow-lg ring-1 ring-gray-200 p-6">
+    <div className="bg-gray-100 min-h-screen p-6 print:bg-white print:min-h-0 print:p-0">
+      <div className="mx-auto w-full max-w-[210mm] min-h-[297mm] bg-white shadow-lg ring-1 ring-gray-200 p-6 print:max-w-none print:min-h-0 print:shadow-none print:ring-0 print:p-0">
         <InvoicePreview
           data={previewData}
           columns={data.viewInvoice.columns ?? []}

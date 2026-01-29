@@ -68,15 +68,19 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <div className="h-screen w-full overflow-hidden flex">
-      <Sidebar collapsed={collapsed} />
+    <div className="h-screen w-full overflow-hidden flex print:h-auto print:overflow-visible print:block">
+      <div className="print:hidden">
+        <Sidebar collapsed={collapsed} />
+      </div>
 
-      <div className="flex flex-col flex-1 h-full">
-        <Header collapsed={collapsed} setCollapsed={setCollapsed} />
+      <div className="flex flex-col flex-1 h-full print:h-auto">
+        <div className="print:hidden">
+          <Header collapsed={collapsed} setCollapsed={setCollapsed} />
+        </div>
 
-        <div className="flex-1 overflow-hidden relative">
+        <div className="flex-1 overflow-hidden relative print:overflow-visible print:static">
           <Content
-            className="absolute inset-0 overflow-y-auto p-6 bg-white"
+            className="absolute inset-0 overflow-y-auto p-6 bg-white print:static print:inset-auto print:overflow-visible print:p-0"
             style={{
               borderRadius: 8,
               margin: "0",
