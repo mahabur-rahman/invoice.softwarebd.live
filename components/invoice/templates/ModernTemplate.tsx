@@ -12,6 +12,8 @@ const ModernTemplate = ({
 }: InvoiceTemplateProps) => {
   const visibleColumns = columns.filter((col) => !col.hidden);
   const customTotals = getCustomTotals(data);
+  const paidAmount = Number(data.paid ?? 0);
+  const balanceDue = Number(data.balanceDue ?? data.total ?? 0);
   const logoUrl = getValidImageUrl(business?.logoUrl);
 
   return (
@@ -171,6 +173,20 @@ const ModernTemplate = ({
                   <span>Total</span>
                   <span>
                     {data.currency} {Number(data.total ?? 0).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+              <div className="mt-3 flex justify-between text-teal-100">
+                <span>Paid</span>
+                <span className="font-semibold text-white">
+                  {data.currency} {paidAmount.toFixed(2)}
+                </span>
+              </div>
+              <div className="mt-3 border-t border-white/30 pt-4 text-base font-semibold">
+                <div className="flex justify-between">
+                  <span>Balance Due</span>
+                  <span>
+                    {data.currency} {balanceDue.toFixed(2)}
                   </span>
                 </div>
               </div>

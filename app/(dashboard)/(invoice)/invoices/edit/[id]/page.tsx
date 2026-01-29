@@ -45,6 +45,7 @@ interface SingleInvoiceQueryResponse {
     totals: {
       subTotal: number;
       grandTotal: number;
+      balanceDue?: number;
       subtractions?: { discount?: number, paid?: number };
       custom?: {
         key: string;
@@ -134,6 +135,10 @@ const EditInvoicePage = () => {
       notes: invoice.notes ?? "",
       subtotal: invoice.totals?.subTotal ?? 0,
       total: invoice.totals?.grandTotal ?? 0,
+      paid: Number(invoice.totals?.subtractions?.paid ?? 0),
+      balanceDue:
+        Number(invoice.totals?.grandTotal ?? 0) -
+        Number(invoice.totals?.subtractions?.paid ?? 0),
       totalsCustom: invoice.totals?.custom ?? [],
     });
   }, [data]);
@@ -170,6 +175,9 @@ const EditInvoicePage = () => {
         locked: c.locked,
       };
     });
+    const customTotalsForApi = (invoiceData.totalsCustom ?? []).map(
+      ({ __typename, ...field }) => field
+    );
 
     await updateInvoice({
       variables: {
@@ -190,7 +198,8 @@ const EditInvoicePage = () => {
             subTotal: invoiceData.subtotal,
             grandTotal: invoiceData.total,
             additions: { tax: 0, shipping: 0 },
-            subtractions: { discount: 0, paid: 0 },
+            subtractions: { discount: 0, paid: Number(invoiceData.paid || 0) },
+            custom: customTotalsForApi,
           },
           template,
         },

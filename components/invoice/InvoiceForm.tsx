@@ -442,6 +442,8 @@ const InvoiceForm = ({
     notes: "Thank you for your business.",
     subtotal: 0,
     total: 0,
+    paid: 0,
+    balanceDue: 0,
     totalsCustom: [],
   };
 
@@ -1394,6 +1396,45 @@ const InvoiceForm = ({
                     <span>Total</span>
                     <span>
                       {values.currency} {values.total.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-slate-600">
+                  <span>Paid</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400">
+                      {values.currency}
+                    </span>
+                    <Field name="paid">
+                      {({ field }) => (
+                        <input
+                          {...field}
+                          type="number"
+                          inputMode="decimal"
+                          step="0.01"
+                          value={field.value ?? 0}
+                          onBlur={(event) => {
+                            field.onBlur(event);
+                            const raw = event.target.value;
+                            if (!raw) return;
+                            const numeric = Number(raw);
+                            if (Number.isNaN(numeric)) return;
+                            setFieldValue(field.name, Number(numeric.toFixed(2)));
+                          }}
+                          className="w-24 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-right text-xs text-slate-700"
+                        />
+                      )}
+                    </Field>
+                  </div>
+                </div>
+
+                <div className="border-t border-dashed border-slate-200 pt-3 text-base font-semibold text-slate-900">
+                  <div className="flex items-center justify-between">
+                    <span>Balance Due</span>
+                    <span>
+                      {values.currency}{" "}
+                      {Number(values.balanceDue ?? values.total ?? 0).toFixed(2)}
                     </span>
                   </div>
                 </div>

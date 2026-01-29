@@ -52,6 +52,8 @@ export const LiveCalculation = ({
     }, 0);
 
     const total = subtotal + customDelta;
+    const paid = Number(values.paid || 0);
+    const balanceDue = total - paid;
 
     // ✅ Update only when necessary
     if (hasItemChange) {
@@ -65,6 +67,9 @@ export const LiveCalculation = ({
     if (values.total !== total) {
       setFieldValue("total", total, false);
     }
+    if (values.balanceDue !== balanceDue) {
+      setFieldValue("balanceDue", balanceDue, false);
+    }
 
     // ✅ Preview sync (safe)
     onUpdate({
@@ -72,6 +77,8 @@ export const LiveCalculation = ({
       items: hasItemChange ? updatedItems : values.items,
       subtotal,
       total,
+      paid,
+      balanceDue,
     });
   }, [
     values.items,
@@ -79,6 +86,8 @@ export const LiveCalculation = ({
     columns,
     values.subtotal,
     values.total,
+    values.paid,
+    values.balanceDue,
     setFieldValue,
     onUpdate,
     values
