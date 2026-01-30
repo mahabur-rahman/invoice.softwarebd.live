@@ -859,6 +859,11 @@ const InvoiceForm = ({
           const selectedClient = clientData?.findAllClients?.find(
             (client) => client._id === values.client
           );
+          const filteredClients = values.business
+            ? clientData?.findAllClients?.filter(
+                (client) => client.businessId === values.business
+              )
+            : clientData?.findAllClients;
           const totalColumn = columns.find((column) => column.fieldKey === "total");
           const draggableColumns = columns.filter(
             (column) => column.fieldKey !== "total"
@@ -927,6 +932,17 @@ const InvoiceForm = ({
               lastAutoInvoiceRef.current = current;
             }
           }, [invoiceNumberMode, values.invoiceNumber]);
+
+          React.useEffect(() => {
+            if (!values.business) return;
+            if (!values.client) return;
+            const isValid = filteredClients?.some(
+              (client) => client._id === values.client
+            );
+            if (!isValid) {
+              setFieldValue("client", "", false);
+            }
+          }, [filteredClients, setFieldValue, values.business, values.client]);
 
           const handleRemoveColumn = (column: InvoiceColumnInput) => {
             const removedIndex = columns.findIndex(
@@ -1120,8 +1136,12 @@ const InvoiceForm = ({
                     name="client"
                     className={selectBaseClass}
                   >
-                    <option value="">Select client</option>
-                    {clientData?.findAllClients?.map((c) => (
+                    <option value="">
+                      {values.business
+                        ? "Select client"
+                        : "Select business first"}
+                    </option>
+                    {filteredClients?.map((c) => (
                       <option key={c._id} value={c._id}>
                         {c.name}
                       </option>
