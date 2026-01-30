@@ -67,6 +67,19 @@ const InvoicePreview = ({
 }: InvoicePreviewProps) => {
   const componentRef = useRef<HTMLDivElement>(null);
   const activeTemplate = template ?? data?.template ?? "CLASSIC";
+  const orderedColumns = useMemo(() => {
+    if (!Array.isArray(columns)) return [];
+    const withIndex = columns.map((col, index) => ({ col, index }));
+    const totals = withIndex.filter(({ col }) => col.fieldKey === "total");
+    const others = withIndex.filter(({ col }) => col.fieldKey !== "total");
+    others.sort((a, b) => {
+      const aOrder = Number(a.col.order ?? a.index);
+      const bOrder = Number(b.col.order ?? b.index);
+      return aOrder - bOrder;
+    });
+    const ordered = [...others, ...totals].map((entry) => entry.col);
+    return ordered.map((col, index) => ({ ...col, order: index + 1 }));
+  }, [columns]);
   const TemplateComponent =
     TEMPLATE_COMPONENTS[activeTemplate] ?? TEMPLATE_COMPONENTS.CLASSIC;
   const documentTitle = useMemo(() => {
@@ -166,7 +179,7 @@ const InvoicePreview = ({
         <div className="invoice-print-sheet">
           <TemplateComponent
             data={data}
-            columns={columns}
+            columns={orderedColumns}
             business={businessData?.singleBusiness}
             client={clientData?.findOneClient}
             formatDate={formatDate}

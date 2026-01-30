@@ -17,7 +17,12 @@ import {
   FiEdit2,
   FiEye,
   FiEyeOff,
+  FiFileText,
+  FiInfo,
+  FiMinusCircle,
+  FiPercent,
   FiPlus,
+  FiPlusCircle,
   FiTrash2,
 } from "react-icons/fi";
 import { useMutation, useQuery } from "@apollo/client/react";
@@ -56,7 +61,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { FaTimes } from "react-icons/fa";
 import { v4 as uuid } from "uuid";
 import { LiveCalculation } from "./LiveCalculation";
-import { Input, Modal } from "antd";
+import { Input, Modal, Popconfirm, Popover, Tooltip } from "antd";
 import {
   INVOICE_CURRENCY_OPTIONS,
   INVOICE_STATUS_OPTIONS,
@@ -65,6 +70,12 @@ import { COUNTRY_OPTIONS } from "@/lib/constants/countries";
 import AddBusinessForm from "@/components/business/AddBusinessform";
 import AddNewClient from "@/components/client/AddNewClient";
 import { RESERVE_INVOICE_NUMBER } from "@/lib/graphql/mutations/invoice.mutations";
+import {
+  clampNumber,
+  computeColumnAmount,
+  getColumnMeta,
+  normalizeNumber,
+} from "./columnUtils";
 
 /* ================= PROPS ================= */
 
@@ -554,7 +565,14 @@ const ItemsColumnSync = ({ columns }: { columns: InvoiceColumnInput[] }) => {
         const next = { ...item };
         newColumns.forEach((col) => {
           if (!(col.fieldKey in next)) {
-            next[col.fieldKey] = col.type === "number" ? 0 : "";
+            const isCoreNumber = ["quantity", "price", "total"].includes(
+              col.fieldKey
+            );
+            if (col.type === "number") {
+              next[col.fieldKey] = isCoreNumber ? 0 : "";
+            } else {
+              next[col.fieldKey] = "";
+            }
           }
         });
         return next;
@@ -601,7 +619,12 @@ const InvoiceForm = ({
 
   const createEmptyItem = (rowId?: string): InvoiceItem =>
     columns.reduce((acc, col) => {
-      acc[col.fieldKey] = col.type === "number" ? 0 : "";
+      const isCoreNumber = ["quantity", "price", "total"].includes(col.fieldKey);
+      if (col.type === "number") {
+        acc[col.fieldKey] = isCoreNumber ? 0 : "";
+      } else {
+        acc[col.fieldKey] = "";
+      }
       return acc;
     }, { _rowId: rowId ?? uuid() } as InvoiceItem);
 
@@ -610,12 +633,29 @@ const InvoiceForm = ({
   >(() => (editing ? "auto" : "auto"));
   const lastCustomInvoiceRef = React.useRef<string | null>(null);
   const lastAutoInvoiceRef = React.useRef<string | null>(null);
+  const [undoState, setUndoState] = React.useState<{
+    column: InvoiceColumnInput;
+    index: number;
+    values: Array<{ rowKey: string; value: string | number | undefined }>;
+  } | null>(null);
+  const undoTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [columnHintUsed, setColumnHintUsed] = React.useState<
+    Record<string, boolean>
+  >({});
 
   React.useEffect(() => {
     if (editing) {
       setInvoiceNumberMode("auto");
     }
   }, [editing]);
+
+  React.useEffect(() => {
+    return () => {
+      if (undoTimerRef.current) {
+        clearTimeout(undoTimerRef.current);
+      }
+    };
+  }, []);
 
   /* ================= INITIAL VALUES ================= */
 
@@ -724,6 +764,60 @@ const InvoiceForm = ({
     setLabelModalOpen(false);
   };
 
+  const getColumnIcon = (column: InvoiceColumnInput) => {
+    const meta = getColumnMeta(column);
+    if (meta.role === "base") return null;
+    if (meta.format === "PERCENT") {
+      return <FiPercent className="text-xs text-slate-400" />;
+    }
+    if (meta.role === "discount") {
+      return <FiMinusCircle className="text-xs text-slate-400" />;
+    }
+    if (meta.role === "tax") {
+      return <FiFileText className="text-xs text-slate-400" />;
+    }
+    if (meta.role === "fee") {
+      return <FiPlusCircle className="text-xs text-slate-400" />;
+    }
+    return <FiPlusCircle className="text-xs text-slate-400" />;
+  };
+
+  const getColumnTooltip = (column: InvoiceColumnInput) => {
+    const meta = getColumnMeta(column);
+    if (meta.role === "base") {
+      if (column.fieldKey === "total") return "Line total for this row.";
+      return "Used to calculate the line total.";
+    }
+
+    const behaviorText =
+      !meta.affectsTotal || column.behavior === "NONE"
+        ? "Does not affect line total"
+        : column.behavior === "ADD"
+          ? "Adds to line total"
+          : "Subtracts from line total";
+    const formatText =
+      meta.format === "PERCENT"
+        ? "Calculated as a % of Qty x Price."
+        : "Uses a fixed amount.";
+
+    return `${behaviorText}. ${formatText}`;
+  };
+
+  const buildLineTotalFormula = () => {
+    const lines = ["Qty x Price"];
+    columns.forEach((column) => {
+      if (column.type !== "number") return;
+      if (["quantity", "price", "total"].includes(column.fieldKey)) return;
+      const meta = getColumnMeta(column);
+      if (!meta.affectsTotal || column.behavior === "NONE") return;
+      const sign = column.behavior === "ADD" ? "+" : "-";
+      const suffix = meta.format === "PERCENT" ? " (% of base)" : "";
+      lines.push(`${sign} ${column.label}${suffix}`);
+    });
+    lines.push("= Line total");
+    return lines;
+  };
+
   /* ================= QUERIES ================= */
 
   const { data: businessData, refetch: refetchBusinesses } =
@@ -783,6 +877,48 @@ const InvoiceForm = ({
             startNumber: selectedBusiness?.invoiceNumberStartNumber,
             issueDate: values.issueDate,
           });
+          const lineFormula = buildLineTotalFormula();
+
+          const roleTotals = (() => {
+            let discount = 0;
+            let tax = 0;
+            let hasDiscountColumn = false;
+            let hasTaxColumn = false;
+
+            values.items.forEach((item) => {
+              const qty = normalizeNumber(item.quantity);
+              const price = normalizeNumber(item.price);
+              const baseAmount = qty * price;
+
+              columns.forEach((column) => {
+                if (column.type !== "number") return;
+                if (["quantity", "price", "total"].includes(column.fieldKey)) return;
+
+                const meta = getColumnMeta(column);
+                if (!meta.affectsTotal || column.behavior === "NONE") return;
+                if (meta.role === "discount") hasDiscountColumn = true;
+                if (meta.role === "tax") hasTaxColumn = true;
+
+                if (meta.role !== "discount" && meta.role !== "tax") return;
+
+                const rawValue = normalizeNumber(item[column.fieldKey]);
+                const value =
+                  meta.format === "PERCENT"
+                    ? clampNumber(rawValue, 0, 100)
+                    : clampNumber(rawValue, 0);
+                const amount = computeColumnAmount({
+                  base: baseAmount,
+                  value,
+                  format: meta.format,
+                });
+
+                if (meta.role === "discount") discount += amount;
+                if (meta.role === "tax") tax += amount;
+              });
+            });
+
+            return { discount, tax, hasDiscountColumn, hasTaxColumn };
+          })();
 
           React.useEffect(() => {
             if (invoiceNumberMode !== "auto") return;
@@ -791,6 +927,69 @@ const InvoiceForm = ({
               lastAutoInvoiceRef.current = current;
             }
           }, [invoiceNumberMode, values.invoiceNumber]);
+
+          const handleRemoveColumn = (column: InvoiceColumnInput) => {
+            const removedIndex = columns.findIndex(
+              (c) => c.fieldKey === column.fieldKey
+            );
+            const removedValues = values.items.map((item, index) => {
+              const rowKey = String(item._rowId ?? item._apiId ?? index);
+              return { rowKey, value: item[column.fieldKey] as any };
+            });
+
+            setColumns((prev) =>
+              prev.filter((c) => c.fieldKey !== column.fieldKey)
+            );
+            setFieldValue(
+              "items",
+              values.items.map((item) => {
+                const { [column.fieldKey]: __, ...rest } = item;
+                return rest;
+              })
+            );
+
+            setUndoState({
+              column,
+              index: Math.max(0, removedIndex),
+              values: removedValues,
+            });
+            if (undoTimerRef.current) {
+              clearTimeout(undoTimerRef.current);
+            }
+            undoTimerRef.current = setTimeout(() => {
+              setUndoState(null);
+            }, 6000);
+          };
+
+          const handleUndoRemove = () => {
+            if (!undoState) return;
+            const valueMap = new Map(
+              undoState.values.map((entry) => [entry.rowKey, entry.value])
+            );
+
+            setColumns((prev) => {
+              const next = [...prev];
+              const insertAt = Math.min(
+                Math.max(undoState.index, 0),
+                next.length
+              );
+              next.splice(insertAt, 0, undoState.column);
+              return next;
+            });
+
+            setFieldValue(
+              "items",
+              values.items.map((item, index) => {
+                const rowKey = String(item._rowId ?? item._apiId ?? index);
+                const restored = valueMap.get(rowKey);
+                return {
+                  ...item,
+                  [undoState.column.fieldKey]: restored ?? "",
+                };
+              })
+            );
+            setUndoState(null);
+          };
 
           return (
             <Form className="space-y-6">
@@ -1169,6 +1368,21 @@ const InvoiceForm = ({
               </button>
             </div>
 
+            {undoState && (
+              <div className="mt-4 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
+                <span>
+                  {undoState.column.label} column removed. Values were cleared.
+                </span>
+                <button
+                  type="button"
+                  onClick={handleUndoRemove}
+                  className="text-xs font-semibold text-amber-900 hover:text-amber-700"
+                >
+                  Undo
+                </button>
+              </div>
+            )}
+
             <FieldArray name="items">
               {({ push, remove }) => (
                 <DndContext
@@ -1215,6 +1429,20 @@ const InvoiceForm = ({
                                       const isTotal = column.fieldKey === "total";
 
                                       const isHidden = Boolean(column.hidden);
+                                      const meta = getColumnMeta(column);
+                                      const icon = getColumnIcon(column);
+                                      const labelContent = (
+                                        <Tooltip title={getColumnTooltip(column)}>
+                                          <span
+                                            className={`inline-flex items-center gap-1 ${
+                                              isHidden ? "text-slate-400" : "text-slate-500"
+                                            }`}
+                                          >
+                                            {icon}
+                                            <span>{column.label}</span>
+                                          </span>
+                                        </Tooltip>
+                                      );
                                       const fieldEl =
                                         column.fieldKey === "price" ||
                                         column.fieldKey === "total" ? (
@@ -1225,6 +1453,7 @@ const InvoiceForm = ({
                                                 type={isTotal ? "text" : "number"}
                                                 inputMode="decimal"
                                                 step="0.01"
+                                                min={0}
                                                 readOnly={isTotal}
                                                 value={
                                                   isTotal
@@ -1262,10 +1491,53 @@ const InvoiceForm = ({
                                                     ? "number"
                                                     : "text"
                                                 }
-                                                value={
-                                                  field.value ??
-                                                  (column.type === "number" ? 0 : "")
+                                                inputMode={
+                                                  column.type === "number" ? "decimal" : undefined
                                                 }
+                                                min={column.type === "number" ? 0 : undefined}
+                                                max={
+                                                  column.type === "number" && meta.format === "PERCENT"
+                                                    ? 100
+                                                    : undefined
+                                                }
+                                                step={
+                                                  column.type === "number" && meta.format === "PERCENT"
+                                                    ? "0.01"
+                                                    : column.type === "number"
+                                                      ? "0.01"
+                                                      : undefined
+                                                }
+                                                placeholder={
+                                                  i === 0 &&
+                                                  column.type === "number" &&
+                                                  meta.role !== "base" &&
+                                                  !columnHintUsed[column.fieldKey]
+                                                    ? meta.format === "PERCENT"
+                                                      ? "10%"
+                                                      : "500"
+                                                    : undefined
+                                                }
+                                                value={field.value ?? ""}
+                                                onBlur={(event) => {
+                                                  field.onBlur(event);
+                                                  if (column.type !== "number") return;
+                                                  const raw = event.target.value;
+                                                  if (raw === "") return;
+                                                  const numeric = Number(raw);
+                                                  if (Number.isNaN(numeric)) return;
+                                                  const normalized =
+                                                    meta.format === "PERCENT"
+                                                      ? clampNumber(numeric, 0, 100)
+                                                      : clampNumber(numeric, 0);
+                                                  setFieldValue(
+                                                    field.name,
+                                                    Number(normalized.toFixed(2))
+                                                  );
+                                                  setColumnHintUsed((prev) => ({
+                                                    ...prev,
+                                                    [column.fieldKey]: true,
+                                                  }));
+                                                }}
                                                 className={`w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 ${
                                                   isTotal
                                                     ? "bg-slate-50 text-center font-semibold"
@@ -1282,13 +1554,7 @@ const InvoiceForm = ({
                                           column={column}
                                           label={
                                             <div className="flex justify-between w-full">
-                                              <span
-                                                className={
-                                                  isHidden ? "text-slate-400" : ""
-                                                }
-                                              >
-                                                {column.label}
-                                              </span>
+                                              {labelContent}
 
                                               <div className="flex items-center gap-2">
                                                 <button
@@ -1327,34 +1593,24 @@ const InvoiceForm = ({
                                                 )}
 
                                                 {!column.locked && (
-                                                  <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                      e.preventDefault();
-                                                      e.stopPropagation();
-
-                                                      setColumns((prev) =>
-                                                        prev.filter(
-                                                          (c) =>
-                                                            c.fieldKey !== column.fieldKey
-                                                        )
-                                                      );
-
-                                                      setFieldValue(
-                                                        "items",
-                                                        values.items.map((item) => {
-                                                          const {
-                                                            [column.fieldKey]: __,
-                                                            ...rest
-                                                          } = item;
-                                                          return rest;
-                                                        })
-                                                      );
-                                                    }}
-                                                    className="text-white text-xs cursor-pointer bg-red-500 h-4 w-4 rounded-full flex items-center justify-center"
+                                                  <Popconfirm
+                                                    title={`Remove ${column.label} column?`}
+                                                    description="Values will be lost."
+                                                    okText="Remove"
+                                                    cancelText="Cancel"
+                                                    onConfirm={() => handleRemoveColumn(column)}
                                                   >
-                                                    <FaTimes />
-                                                  </button>
+                                                    <button
+                                                      type="button"
+                                                      onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                      }}
+                                                      className="text-white text-xs cursor-pointer bg-red-500 h-4 w-4 rounded-full flex items-center justify-center"
+                                                    >
+                                                      <FaTimes />
+                                                    </button>
+                                                  </Popconfirm>
                                                 )}
                                               </div>
                                             </div>
@@ -1372,15 +1628,38 @@ const InvoiceForm = ({
                                         column={totalColumn}
                                         label={
                                           <div className="flex justify-between w-full">
-                                            <span
-                                              className={
-                                                totalColumn.hidden
-                                                  ? "text-slate-400"
-                                                  : ""
-                                              }
-                                            >
-                                              {totalColumn.label}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                              <Tooltip title={getColumnTooltip(totalColumn)}>
+                                                <span
+                                                  className={`inline-flex items-center gap-1 ${
+                                                    totalColumn.hidden
+                                                      ? "text-slate-400"
+                                                      : "text-slate-500"
+                                                  }`}
+                                                >
+                                                  {getColumnIcon(totalColumn)}
+                                                  <span>{totalColumn.label}</span>
+                                                </span>
+                                              </Tooltip>
+                                              <Popover
+                                                content={
+                                                  <div className="space-y-1 text-xs text-slate-600">
+                                                    {lineFormula.map((line, index) => (
+                                                      <div key={`${line}-${index}`}>{line}</div>
+                                                    ))}
+                                                  </div>
+                                                }
+                                                title="How is this calculated?"
+                                              >
+                                                <button
+                                                  type="button"
+                                                  className="text-slate-400 hover:text-slate-600"
+                                                  aria-label="How is this calculated?"
+                                                >
+                                                  <FiInfo className="text-xs" />
+                                                </button>
+                                              </Popover>
+                                            </div>
 
                                             <div className="flex items-center gap-2">
                                               <button
@@ -1442,6 +1721,20 @@ const InvoiceForm = ({
                                     const isTotal = column.fieldKey === "total";
 
                                     const isHidden = Boolean(column.hidden);
+                                    const meta = getColumnMeta(column);
+                                    const icon = getColumnIcon(column);
+                                    const labelContent = (
+                                      <Tooltip title={getColumnTooltip(column)}>
+                                        <span
+                                          className={`inline-flex items-center gap-1 ${
+                                            isHidden ? "text-slate-400" : "text-slate-500"
+                                          }`}
+                                        >
+                                          {icon}
+                                          <span>{column.label}</span>
+                                        </span>
+                                      </Tooltip>
+                                    );
                                     return (
                                       <div
                                         key={column.fieldKey}
@@ -1450,40 +1743,25 @@ const InvoiceForm = ({
                                         )} ${isHidden ? "opacity-60" : ""}`}
                                       >
                                         <div className="flex justify-between">
-                                          <label
-                                            className={`text-xs font-semibold uppercase tracking-[0.12em] ${
-                                              isHidden ? "text-slate-400" : "text-slate-500"
-                                            }`}
-                                          >
-                                            {column.label}
+                                          <label className="text-xs font-semibold uppercase tracking-[0.12em]">
+                                            {labelContent}
                                           </label>
 
                                           {!column.locked && (
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                setColumns((prev) =>
-                                                  prev.filter(
-                                                    (c) =>
-                                                      c.fieldKey !== column.fieldKey
-                                                  )
-                                                );
-
-                                                setFieldValue(
-                                                  "items",
-                                                  values.items.map((item) => {
-                                                    const {
-                                                      [column.fieldKey]: __,
-                                                      ...rest
-                                                    } = item;
-                                                    return rest;
-                                                  })
-                                                );
-                                              }}
-                                              className="text-white text-xs cursor-pointer bg-red-500 h-4 w-4 rounded-full flex items-center justify-center"
+                                            <Popconfirm
+                                              title={`Remove ${column.label} column?`}
+                                              description="Values will be lost."
+                                              okText="Remove"
+                                              cancelText="Cancel"
+                                              onConfirm={() => handleRemoveColumn(column)}
                                             >
-                                              <FaTimes />
-                                            </button>
+                                              <button
+                                                type="button"
+                                                className="text-white text-xs cursor-pointer bg-red-500 h-4 w-4 rounded-full flex items-center justify-center"
+                                              >
+                                                <FaTimes />
+                                              </button>
+                                            </Popconfirm>
                                           )}
                                         </div>
 
@@ -1496,6 +1774,7 @@ const InvoiceForm = ({
                                                 type={isTotal ? "text" : "number"}
                                                 inputMode="decimal"
                                                 step="0.01"
+                                                min={0}
                                                 readOnly={isTotal}
                                                 value={
                                                   isTotal
@@ -1533,10 +1812,39 @@ const InvoiceForm = ({
                                                     ? "number"
                                                     : "text"
                                                 }
-                                                value={
-                                                  field.value ??
-                                                  (column.type === "number" ? 0 : "")
+                                                inputMode={
+                                                  column.type === "number" ? "decimal" : undefined
                                                 }
+                                                min={column.type === "number" ? 0 : undefined}
+                                                max={
+                                                  column.type === "number" && meta.format === "PERCENT"
+                                                    ? 100
+                                                    : undefined
+                                                }
+                                                step={
+                                                  column.type === "number" && meta.format === "PERCENT"
+                                                    ? "0.01"
+                                                    : column.type === "number"
+                                                      ? "0.01"
+                                                      : undefined
+                                                }
+                                                value={field.value ?? ""}
+                                                onBlur={(event) => {
+                                                  field.onBlur(event);
+                                                  if (column.type !== "number") return;
+                                                  const raw = event.target.value;
+                                                  if (raw === "") return;
+                                                  const numeric = Number(raw);
+                                                  if (Number.isNaN(numeric)) return;
+                                                  const normalized =
+                                                    meta.format === "PERCENT"
+                                                      ? clampNumber(numeric, 0, 100)
+                                                      : clampNumber(numeric, 0);
+                                                  setFieldValue(
+                                                    field.name,
+                                                    Number(normalized.toFixed(2))
+                                                  );
+                                                }}
                                                 className={`w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 ${
                                                   isTotal
                                                     ? "bg-slate-50 text-center font-semibold"
@@ -1625,6 +1933,24 @@ const InvoiceForm = ({
                     {values.currency} {values.subtotal.toFixed(2)}
                   </span>
                 </div>
+
+                {roleTotals.hasDiscountColumn && (
+                  <div className="flex justify-between text-slate-600">
+                    <span>Total Discount</span>
+                    <span className="font-semibold text-slate-900">
+                      - {values.currency} {roleTotals.discount.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
+                {roleTotals.hasTaxColumn && (
+                  <div className="flex justify-between text-slate-600">
+                    <span>Total Tax</span>
+                    <span className="font-semibold text-slate-900">
+                      + {values.currency} {roleTotals.tax.toFixed(2)}
+                    </span>
+                  </div>
+                )}
 
                 {/* Custom Totals */}
                 <FieldArray name="totalsCustom">
