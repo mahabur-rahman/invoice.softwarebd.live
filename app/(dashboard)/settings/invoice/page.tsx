@@ -11,6 +11,7 @@ type BusinessSettings = {
   companyName?: string | null;
   defaultBusiness?: boolean | null;
   invoiceNumberPrefix?: string | null;
+  invoiceDueDays?: number | null;
   invoiceNumberPaddingDigits?: number | null;
   invoiceNumberResetYearly?: boolean | null;
   invoiceNumberStartNumber?: number | null;
@@ -51,6 +52,7 @@ const InvoiceSettingsPage = () => {
 
   const [selectedBusinessId, setSelectedBusinessId] = useState<string>("");
   const [prefix, setPrefix] = useState("INV");
+  const [dueDays, setDueDays] = useState("15");
   const [paddingDigits, setPaddingDigits] = useState("6");
   const [resetYearly, setResetYearly] = useState(true);
   const [startNumber, setStartNumber] = useState("1");
@@ -64,6 +66,7 @@ const InvoiceSettingsPage = () => {
     const selected = businesses.find((b) => b._id === selectedBusinessId);
     if (!selected) return;
     setPrefix(selected.invoiceNumberPrefix ?? "INV");
+    setDueDays(String(selected.invoiceDueDays ?? 15));
     setPaddingDigits(
       String(selected.invoiceNumberPaddingDigits ?? 6)
     );
@@ -89,6 +92,7 @@ const InvoiceSettingsPage = () => {
         id: selectedBusinessId,
         updateBusinessInput: {
           invoiceNumberPrefix: prefix.trim(),
+          invoiceDueDays: toNumberOrUndefined(dueDays),
           invoiceNumberPaddingDigits: toNumberOrUndefined(paddingDigits),
           invoiceNumberResetYearly: resetYearly,
           invoiceNumberStartNumber: toNumberOrUndefined(startNumber),
@@ -149,6 +153,22 @@ const InvoiceSettingsPage = () => {
                     className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200"
                     placeholder="INV"
                   />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700">
+                    Default due in days
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={dueDays}
+                    onChange={(event) => setDueDays(event.target.value)}
+                    className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  />
+                  <p className="mt-1 text-xs text-slate-400">
+                    Applied when creating new invoices.
+                  </p>
                 </div>
 
                 <div>

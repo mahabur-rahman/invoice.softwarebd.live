@@ -90,7 +90,22 @@ const validationSchema = Yup.object({
   currency: Yup.string().required("Currency is required"),
   status: Yup.string().required("Status is required"),
   issueDate: Yup.string().required("Issue date is required"),
-  dueDate: Yup.string().required("Due date is required"),
+  dueDate: Yup.string()
+    .required("Due date is required")
+    .test(
+      "due-after-issue",
+      "Due date must be on or after issue date",
+      function (value) {
+        const { issueDate } = this.parent as InvoiceFormValues;
+        if (!value || !issueDate) return true;
+        const due = new Date(value);
+        const issue = new Date(issueDate);
+        if (Number.isNaN(due.getTime()) || Number.isNaN(issue.getTime())) {
+          return true;
+        }
+        return due.getTime() >= issue.getTime();
+      }
+    ),
   items: Yup.array()
     .of(
       Yup.object({
@@ -117,6 +132,37 @@ const formatDateInput = (date: Date) => {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+};
+
+const addDays = (value: string, days: number) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  date.setDate(date.getDate() + days);
+  return formatDateInput(date);
+};
+
+const buildInvoicePreview = (options: {
+  prefix?: string | null;
+  paddingDigits?: number | null;
+  resetYearly?: boolean | null;
+  startNumber?: number | null;
+  issueDate?: string | null;
+}) => {
+  const prefix = (options.prefix ?? "INV").trim();
+  const digits = Number(options.paddingDigits ?? 6);
+  const padded = String(options.startNumber ?? 1).padStart(
+    Number.isFinite(digits) && digits > 0 ? digits : 6,
+    "0"
+  );
+  const year =
+    options.resetYearly === false
+      ? null
+      : options.issueDate
+      ? new Date(options.issueDate).getFullYear()
+      : new Date().getFullYear();
+
+  return [prefix, year, padded].filter(Boolean).join("-");
 };
 
 const getColumnWidthClass = (fieldKey: string) => {
@@ -339,14 +385,43 @@ const DateDefaults = () => {
   const { values, setFieldValue } = useFormikContext<InvoiceFormValues>();
 
   React.useEffect(() => {
-    if (values.issueDate || values.dueDate) return;
+    if (values.issueDate) return;
     const today = new Date();
-    const dueDate = new Date(today);
-    dueDate.setDate(dueDate.getDate() + 3);
-
     setFieldValue("issueDate", formatDateInput(today), false);
-    setFieldValue("dueDate", formatDateInput(dueDate), false);
-  }, [setFieldValue, values.dueDate, values.issueDate]);
+  }, [setFieldValue, values.issueDate]);
+
+  return null;
+};
+
+const DueDateAutoFill = ({ dueDays }: { dueDays: number }) => {
+  const { values, setFieldValue } = useFormikContext<InvoiceFormValues>();
+  const lastAutoRef = React.useRef<string | null>(null);
+  const lastIssueRef = React.useRef<string | null>(null);
+  const lastDueDaysRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    const issueDate = values.issueDate;
+    if (!issueDate) return;
+    const nextDue = addDays(issueDate, dueDays);
+    if (!nextDue) return;
+
+    const isIssueChanged = lastIssueRef.current !== issueDate;
+    const isAutoValue =
+      values.dueDate && lastAutoRef.current === values.dueDate;
+    const isDueDaysChanged =
+      lastDueDaysRef.current !== null && lastDueDaysRef.current !== dueDays;
+
+    if (
+      !values.dueDate ||
+      (isIssueChanged && isAutoValue) ||
+      (isDueDaysChanged && isAutoValue)
+    ) {
+      setFieldValue("dueDate", nextDue, false);
+      lastAutoRef.current = nextDue;
+    }
+    lastIssueRef.current = issueDate;
+    lastDueDaysRef.current = dueDays;
+  }, [dueDays, setFieldValue, values.dueDate, values.issueDate]);
 
   return null;
 };
@@ -397,7 +472,13 @@ const BusinessCurrencySync = ({
   return null;
 };
 
-const InvoiceNumberAutoFill = ({ enabled }: { enabled: boolean }) => {
+const InvoiceNumberAutoFill = ({
+  enabled,
+  mode,
+}: {
+  enabled: boolean;
+  mode: "auto" | "custom";
+}) => {
   const { values, setFieldValue } = useFormikContext<InvoiceFormValues>();
   const [reserveInvoiceNumber] = useMutation<
     { reserveInvoiceNumber: string },
@@ -410,6 +491,7 @@ const InvoiceNumberAutoFill = ({ enabled }: { enabled: boolean }) => {
 
   React.useEffect(() => {
     if (!enabled) return;
+    if (mode !== "auto") return;
     const businessId = values.business?.trim();
     if (!businessId) return;
     if (!values.issueDate) return;
@@ -422,7 +504,11 @@ const InvoiceNumberAutoFill = ({ enabled }: { enabled: boolean }) => {
     const isAutoValue = current && current === lastReserved;
 
     if (current && !isAutoValue) return;
-    if (!current && !businessChanged && !issueDateChanged && lastReserved) return;
+    if (!current && lastReserved && !businessChanged && !issueDateChanged) {
+      setFieldValue("invoiceNumber", lastReserved, false);
+      return;
+    }
+    if (current && isAutoValue && !businessChanged && !issueDateChanged) return;
     if (pendingRef.current) return;
 
     pendingRef.current = true;
@@ -443,6 +529,7 @@ const InvoiceNumberAutoFill = ({ enabled }: { enabled: boolean }) => {
       });
   }, [
     enabled,
+    mode,
     reserveInvoiceNumber,
     setFieldValue,
     values.business,
@@ -517,6 +604,18 @@ const InvoiceForm = ({
       acc[col.fieldKey] = col.type === "number" ? 0 : "";
       return acc;
     }, { _rowId: rowId ?? uuid() } as InvoiceItem);
+
+  const [invoiceNumberMode, setInvoiceNumberMode] = React.useState<
+    "auto" | "custom"
+  >(() => (editing ? "auto" : "auto"));
+  const lastCustomInvoiceRef = React.useRef<string | null>(null);
+  const lastAutoInvoiceRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    if (editing) {
+      setInvoiceNumberMode("auto");
+    }
+  }, [editing]);
 
   /* ================= INITIAL VALUES ================= */
 
@@ -654,7 +753,15 @@ const InvoiceForm = ({
           );
           const selectedBusiness = businessData?.myBusinesses?.find(
             (business) => business._id === values.business
-          );
+          ) as
+            | (GetMyBusinessesQuery["myBusinesses"][number] & {
+                invoiceDueDays?: number | null;
+                invoiceNumberPrefix?: string | null;
+                invoiceNumberPaddingDigits?: number | null;
+                invoiceNumberResetYearly?: boolean | null;
+                invoiceNumberStartNumber?: number | null;
+              })
+            | undefined;
           const selectedClient = clientData?.findAllClients?.find(
             (client) => client._id === values.client
           );
@@ -665,14 +772,34 @@ const InvoiceForm = ({
           const displayColumns = totalColumn
             ? [...draggableColumns, totalColumn]
             : draggableColumns;
+          const dueDays = Math.max(
+            1,
+            Number(selectedBusiness?.invoiceDueDays ?? 15) || 15
+          );
+          const invoicePreview = buildInvoicePreview({
+            prefix: selectedBusiness?.invoiceNumberPrefix,
+            paddingDigits: selectedBusiness?.invoiceNumberPaddingDigits,
+            resetYearly: selectedBusiness?.invoiceNumberResetYearly,
+            startNumber: selectedBusiness?.invoiceNumberStartNumber,
+            issueDate: values.issueDate,
+          });
+
+          React.useEffect(() => {
+            if (invoiceNumberMode !== "auto") return;
+            const current = String(values.invoiceNumber ?? "").trim();
+            if (current) {
+              lastAutoInvoiceRef.current = current;
+            }
+          }, [invoiceNumberMode, values.invoiceNumber]);
 
           return (
             <Form className="space-y-6">
           <ItemsColumnSync columns={columns} />
           <DateDefaults />
+          <DueDateAutoFill dueDays={dueDays} />
           <DefaultBusiness businesses={businessData?.myBusinesses} />
           <BusinessCurrencySync businesses={businessData?.myBusinesses} />
-          <InvoiceNumberAutoFill enabled={!editing} />
+          <InvoiceNumberAutoFill enabled={!editing} mode={invoiceNumberMode} />
           <LiveCalculation columns={columns} onUpdate={onUpdate} />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -871,21 +998,84 @@ const InvoiceForm = ({
             </div>
 
             <div className="mt-5">
-              <div>
-                <label className="text-sm font-medium text-slate-700">
-                  Invoice Number
-                </label>
-                <Field
-                  type="text"
-                  name="invoiceNumber"
-                  className={inputBaseClass}
-                  placeholder="Auto-generated on save"
-                />
-                <p className="mt-1 text-xs text-slate-400">
-                  Leave blank to let the system generate the invoice number.
-                </p>
+                <div>
+                  <label className="text-sm font-medium text-slate-700">
+                    Invoice Number
+                  </label>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (editing) return;
+                        const currentCustom = String(values.invoiceNumber ?? "").trim();
+                        if (currentCustom) {
+                          lastCustomInvoiceRef.current = currentCustom;
+                        }
+                        setInvoiceNumberMode("auto");
+                        const lastAuto = lastAutoInvoiceRef.current ?? "";
+                        setFieldValue("invoiceNumber", lastAuto, false);
+                      }}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                        invoiceNumberMode === "auto"
+                          ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                          : "border-slate-200 text-slate-500 hover:border-slate-300"
+                      } ${editing ? "opacity-60 cursor-not-allowed" : ""}`}
+                    >
+                      Auto-generate (recommended)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (editing) return;
+                        const currentAuto = String(values.invoiceNumber ?? "").trim();
+                        if (currentAuto) {
+                          lastAutoInvoiceRef.current = currentAuto;
+                        }
+                        setInvoiceNumberMode("custom");
+                        const lastCustom = lastCustomInvoiceRef.current ?? "";
+                        setFieldValue("invoiceNumber", lastCustom, false);
+                      }}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                        invoiceNumberMode === "custom"
+                          ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                          : "border-slate-200 text-slate-500 hover:border-slate-300"
+                      } ${editing ? "opacity-60 cursor-not-allowed" : ""}`}
+                    >
+                      Custom
+                    </button>
+                  </div>
+
+                  {invoiceNumberMode === "custom" && !editing ? (
+                    <Field
+                      type="text"
+                      name="invoiceNumber"
+                      className={inputBaseClass}
+                      placeholder="Enter custom number"
+                    />
+                  ) : (
+                    <Field name="invoiceNumber">
+                      {({ field }: InvoiceFieldProps) => (
+                        <input
+                          {...field}
+                          type="text"
+                          readOnly
+                          className={`${inputBaseClass} bg-slate-50`}
+                          placeholder="Auto-generated on save"
+                          value={field.value || invoicePreview}
+                        />
+                      )}
+                    </Field>
+                  )}
+
+                  <p className="mt-1 text-xs text-slate-400">
+                    {editing
+                      ? "Auto-generated numbers are locked after save."
+                      : invoiceNumberMode === "auto"
+                      ? `Preview: ${values.invoiceNumber || invoicePreview}`
+                      : "Enter a custom invoice number."}
+                  </p>
+                </div>
               </div>
-            </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div>
@@ -900,17 +1090,25 @@ const InvoiceForm = ({
                 <FieldError name="issueDate" />
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-slate-700">
-                  Due Date
-                </label>
-                <Field
-                  type="date"
-                  name="dueDate"
-                  className={inputBaseClass}
-                />
-                <FieldError name="dueDate" />
-              </div>
+                <div>
+                  <label className="text-sm font-medium text-slate-700">
+                    Due Date
+                  </label>
+                  <Field name="dueDate">
+                    {({ field }: InvoiceFieldProps) => (
+                      <input
+                        {...field}
+                        type="date"
+                        min={values.issueDate || undefined}
+                        className={inputBaseClass}
+                      />
+                    )}
+                  </Field>
+                  <FieldError name="dueDate" />
+                  <p className="mt-1 text-xs text-slate-400">
+                    Default due date is {dueDays} days from issue.
+                  </p>
+                </div>
 
               <div>
                 <label className="text-sm font-medium text-slate-700">

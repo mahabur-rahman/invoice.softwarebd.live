@@ -19,6 +19,7 @@ export const UPDATE_BUSINESS_MUTATION = gql`
       contactEmail
       country
       countryCode
+      invoiceDueDays
       invoiceNumberPaddingDigits
       invoiceNumberPrefix
       invoiceNumberResetYearly
