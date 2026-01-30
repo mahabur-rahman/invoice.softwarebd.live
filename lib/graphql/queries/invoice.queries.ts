@@ -29,6 +29,8 @@ export const GET_ALL_CLIENTS = gql`
       }
       businessId
       clientCompanyName
+      country
+      countryCode
       createdAt
       email
       name
@@ -51,6 +53,8 @@ export const FIND_ONE_CLIENT = gql`
       name
       address
       clientCompanyName
+      country
+      countryCode
       email
       phone
       businessId

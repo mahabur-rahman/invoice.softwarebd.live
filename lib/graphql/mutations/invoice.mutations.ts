@@ -17,6 +17,8 @@ export const UPDATE_BUSINESS_MUTATION = gql`
       _id
       companyName
       contactEmail
+      country
+      countryCode
       invoiceNumberPaddingDigits
       invoiceNumberPrefix
       invoiceNumberResetYearly
@@ -50,6 +52,8 @@ export const CREATE_CLIENT = gql`
       name
       email
       phone
+      country
+      countryCode
       clientCompanyName
       address
       businessId
@@ -66,6 +70,8 @@ export const UPDATE_CLIENT = gql`
       name
       email
       phone
+      country
+      countryCode
       clientCompanyName
       address
       businessId

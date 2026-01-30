@@ -11,7 +11,10 @@ import { GET_ALL_CLIENTS } from "@/lib/graphql/queries/invoice.queries";
 import { DELETE_CLIENT } from "@/lib/graphql/mutations/invoice.mutations";
 import { ClientType } from "@/lib/graphql/generated-types";
 
-type ClientRow = ClientType;
+type ClientRow = ClientType & {
+  country?: string | null;
+  countryCode?: string | null;
+};
 
 const ClientTable = () => {
   const router = useRouter();
@@ -72,6 +75,14 @@ const ClientTable = () => {
       title: "Phone",
       dataIndex: "phone",
       key: "phone",
+      render: (_: string, record: ClientRow) =>
+        [record.countryCode, record.phone].filter(Boolean).join(" ") || "—",
+    },
+    {
+      title: "Country",
+      dataIndex: "country",
+      key: "country",
+      render: (value: string | null | undefined) => value || "—",
     },
     {
       title: "Business",

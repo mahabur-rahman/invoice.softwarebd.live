@@ -61,6 +61,7 @@ import {
   INVOICE_CURRENCY_OPTIONS,
   INVOICE_STATUS_OPTIONS,
 } from "@/lib/constants/invoice";
+import { COUNTRY_OPTIONS } from "@/lib/constants/countries";
 import AddBusinessForm from "@/components/business/AddBusinessform";
 import AddNewClient from "@/components/client/AddNewClient";
 import { RESERVE_INVOICE_NUMBER } from "@/lib/graphql/mutations/invoice.mutations";
@@ -367,6 +368,35 @@ const DefaultBusiness = ({
   return null;
 };
 
+const BusinessCurrencySync = ({
+  businesses,
+}: {
+  businesses?: GetMyBusinessesQuery["myBusinesses"];
+}) => {
+  const { values, setFieldValue } = useFormikContext<InvoiceFormValues>();
+  const lastBusinessRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    const businessId = values.business?.trim();
+    if (!businessId) return;
+    if (lastBusinessRef.current === businessId) return;
+    lastBusinessRef.current = businessId;
+
+    const selectedBusiness = businesses?.find(
+      (business) => business._id === businessId
+    ) as { country?: string | null } | undefined;
+
+    const match = COUNTRY_OPTIONS.find(
+      (country) => country.name === selectedBusiness?.country
+    );
+    if (match?.currency) {
+      setFieldValue("currency", match.currency, false);
+    }
+  }, [businesses, setFieldValue, values.business]);
+
+  return null;
+};
+
 const InvoiceNumberAutoFill = ({ enabled }: { enabled: boolean }) => {
   const { values, setFieldValue } = useFormikContext<InvoiceFormValues>();
   const [reserveInvoiceNumber] = useMutation<
@@ -641,6 +671,7 @@ const InvoiceForm = ({
           <ItemsColumnSync columns={columns} />
           <DateDefaults />
           <DefaultBusiness businesses={businessData?.myBusinesses} />
+          <BusinessCurrencySync businesses={businessData?.myBusinesses} />
           <InvoiceNumberAutoFill enabled={!editing} />
           <LiveCalculation columns={columns} onUpdate={onUpdate} />
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1593,6 +1624,7 @@ const InvoiceForm = ({
       >
         <AddBusinessForm
           redirectOnSuccess={false}
+          variant="modal"
           onSuccess={() => {
             setBusinessModalOpen(false);
             refetchBusinesses();
@@ -1615,6 +1647,7 @@ const InvoiceForm = ({
         <AddNewClient
           client={clientModalClient}
           redirectOnSuccess={false}
+          variant="modal"
           onSuccess={(createdId) => {
             setClientModalOpen(false);
             setClientModalClient(undefined);

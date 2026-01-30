@@ -17,6 +17,8 @@ export const GET_MY_BUSINESSES = gql`
       _id
       companyName
       contactEmail
+      country
+      countryCode
       createdAt
       defaultBusiness
       invoiceNumberPaddingDigits

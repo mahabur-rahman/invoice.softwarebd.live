@@ -19,23 +19,16 @@ const SidebarContent = ({ collapsed }: SidebarProps) => {
     if (!pathname) return "1";
     if (pathname.startsWith("/generate-invoice")) return "102";
     if (pathname.startsWith("/invoices")) return "101";
-    if (pathname.startsWith("/clients")) return "303";
-    if (pathname.startsWith("/my-business")) return "302";
-    if (pathname.startsWith("/settings/invoice")) return "304";
-    if (pathname.startsWith("/settings")) return "301";
+    if (pathname.startsWith("/clients")) return "3";
+    if (pathname.startsWith("/my-business")) return "4";
+    if (pathname.startsWith("/settings/invoice")) return "5";
+    if (pathname.startsWith("/settings")) return "6";
     if (pathname.startsWith("/dashboard")) return "1";
     return "1";
   }, [pathname]);
 
   const derivedOpenKeys = React.useMemo(() => {
     if (selectedKey === "101" || selectedKey === "102") return ["2"];
-    if (
-      selectedKey === "301" ||
-      selectedKey === "302" ||
-      selectedKey === "303" ||
-      selectedKey === "304"
-    )
-      return ["3"];
     return [];
   }, [selectedKey]);
 
