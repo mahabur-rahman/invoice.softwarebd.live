@@ -11,7 +11,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ConfirmModal from "@/utils/ConfirmModal";
 
-type BusinessRow = GetMyBusinessesQuery["myBusinesses"][0];
+type BusinessRow = GetMyBusinessesQuery["myBusinesses"][0] & {
+  country?: string | null;
+  countryCode?: string | null;
+};
 
 const BusinessTable = () => {
   const router = useRouter()
@@ -73,9 +76,18 @@ const BusinessTable = () => {
       key: "location",
     },
     {
+      title: "Country",
+      dataIndex: "country",
+      key: "country",
+      render: (value: string | null | undefined) => value || "—",
+    },
+    {
       title: "Phone Number",
       dataIndex: "phoneNumber",
       key: "phoneNumber",
+      render: (_: string, record: BusinessRow) =>
+        [record.countryCode, record.phoneNumber].filter(Boolean).join(" ") ||
+        "—",
     },
     {
       title: "Website",

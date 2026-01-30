@@ -18,7 +18,7 @@ const MinimalTemplate = ({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-10 shadow-[0_18px_40px_rgba(15,23,42,0.08)] print:border-0 print:shadow-none">
-      <div className="flex flex-wrap items-start justify-between gap-6">
+      <div className="flex flex-wrap items-start justify-between gap-6 print:flex-nowrap">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
             Invoice
@@ -56,7 +56,7 @@ const MinimalTemplate = ({
         </div>
       </div>
 
-      <div className="mt-10 grid gap-6 md:grid-cols-2">
+      <div className="mt-10 grid gap-6 md:grid-cols-2 print:grid-cols-2">
         <div>
           <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
             Bill To
@@ -122,7 +122,7 @@ const MinimalTemplate = ({
         </table>
       </div>
 
-      <div className="mt-8 grid gap-6 md:grid-cols-[1.4fr_1fr]">
+      <div className="mt-8 grid gap-6 md:grid-cols-[1.4fr_1fr] print:grid-cols-[1.4fr_1fr]">
         <div>
           <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
             Notes

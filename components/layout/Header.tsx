@@ -6,6 +6,8 @@ import type { MenuProps } from "antd";
 import { FiLogOut } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { logout } from "@/utils/auth";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { getUserInitials } from "@/utils/auth-storage";
 
 const { Header: AntHeader } = Layout;
 
@@ -16,6 +18,8 @@ interface HeaderProps {
 
 const Header = ({ collapsed, setCollapsed }: HeaderProps) => {
   const router = useRouter();
+  const { user } = useAuthUser();
+  const initials = getUserInitials(user);
   const handleLogout = () => {
     logout();
     router.push("/login");
@@ -60,8 +64,11 @@ const Header = ({ collapsed, setCollapsed }: HeaderProps) => {
         <Avatar
           size={40}
           className="cursor-pointer hover:opacity-90 transition"
-          src="https://api.dicebear.com/7.x/avataaars/svg?seed=boss"
-        />
+          src={user?.picture || undefined}
+          style={!user?.picture ? { backgroundColor: "#0f172a" } : undefined}
+        >
+          {!user?.picture ? initials : null}
+        </Avatar>
       </Dropdown>
     </AntHeader>
   );

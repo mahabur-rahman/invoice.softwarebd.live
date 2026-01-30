@@ -18,7 +18,7 @@ const CleanTemplate = ({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_20px_45px_rgba(15,23,42,0.08)] print:border-0 print:shadow-none">
-      <div className="flex flex-wrap items-center justify-between gap-6 border-b border-slate-200 bg-slate-50 px-8 py-6">
+      <div className="flex flex-wrap items-center justify-between gap-6 border-b border-slate-200 bg-slate-50 px-8 py-6 print:flex-nowrap">
         <div className="space-y-2">
           <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
             Invoice
@@ -59,7 +59,7 @@ const CleanTemplate = ({
       </div>
 
       <div className="px-8 py-8">
-        <div className="mb-6 grid gap-6 md:grid-cols-[1.3fr_1fr]">
+        <div className="mb-6 grid gap-6 md:grid-cols-[1.3fr_1fr] print:grid-cols-[1.3fr_1fr]">
           <div className="rounded-xl border border-slate-200 bg-white p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
               Bill To
@@ -135,7 +135,7 @@ const CleanTemplate = ({
           </table>
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr] print:grid-cols-[1.4fr_1fr]">
           <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
               Notes

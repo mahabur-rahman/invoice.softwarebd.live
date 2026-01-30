@@ -61,8 +61,7 @@ const Page = () => {
   const router = useRouter();
   const [invoiceData, setInvoiceData] =
     useState<InvoiceFormValues | null>(null);
-  const [invoiceNumber] = useState(() => `INV-${Date.now()}`);
-  const [template, setTemplate] = useState<InvoiceTemplateKey>("CLASSIC");
+  const [template, setTemplate] = useState<InvoiceTemplateKey>("MODERN");
 
   const [createInvoice, { loading }] = useMutation(CREATE_INVOICE, {
     refetchQueries: [{ query: GET_MY_INVOICES }],
@@ -126,7 +125,7 @@ const Page = () => {
       status: invoiceData.status,
       issueDate: invoiceData.issueDate,
       dueDate: invoiceData.dueDate,
-      invoiceNumber: invoiceData.invoiceNumber ?? invoiceNumber,
+      invoiceNumber: invoiceData.invoiceNumber?.trim() || "Auto-generated",
       notes: invoiceData.notes,
       subtotal: invoiceData.subtotal,
       total: invoiceData.total,
@@ -183,9 +182,6 @@ const Page = () => {
       ({ __typename, ...field }) => field
     );
 
-    const finalInvoiceNumber =
-      invoiceData.invoiceNumber?.trim() || invoiceNumber;
-
     try {
       await createInvoice({
         variables: {
@@ -193,7 +189,9 @@ const Page = () => {
             businessId: invoiceData.business,
             clientId: invoiceData.client,
             clientName: "Test Name",
-            invoiceNumber: finalInvoiceNumber,
+            ...(invoiceData.invoiceNumber?.trim()
+              ? { invoiceNumber: invoiceData.invoiceNumber.trim() }
+              : {}),
             currency: invoiceData.currency,
             issueDate: invoiceData.issueDate,
             dueDate: invoiceData.dueDate,
@@ -236,7 +234,7 @@ const Page = () => {
           handleSubmit={handleSubmit}
           loading={loading}
           editing={false}
-          defaultInvoiceNumber={invoiceNumber}
+          defaultInvoiceNumber=""
         />
       </div>
 

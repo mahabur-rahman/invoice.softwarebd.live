@@ -17,6 +17,12 @@ export const UPDATE_BUSINESS_MUTATION = gql`
       _id
       companyName
       contactEmail
+      country
+      countryCode
+      invoiceNumberPaddingDigits
+      invoiceNumberPrefix
+      invoiceNumberResetYearly
+      invoiceNumberStartNumber
       location
       logoUrl
       ownerId
@@ -46,6 +52,8 @@ export const CREATE_CLIENT = gql`
       name
       email
       phone
+      country
+      countryCode
       clientCompanyName
       address
       businessId
@@ -62,6 +70,8 @@ export const UPDATE_CLIENT = gql`
       name
       email
       phone
+      country
+      countryCode
       clientCompanyName
       address
       businessId
@@ -99,5 +109,11 @@ export const DELETE_INVOICE = gql`
 export const ENABLE_INVOICE_PUBLIC_SHARE = gql`
   mutation EnableInvoicePublicShare($id: ID!, $enabled: Boolean = true) {
     enableInvoicePublicShare(id: $id, enabled: $enabled)
+  }
+`;
+
+export const RESERVE_INVOICE_NUMBER = gql`
+  mutation ReserveInvoiceNumber($businessId: ID!, $issueDate: String) {
+    reserveInvoiceNumber(businessId: $businessId, issueDate: $issueDate)
   }
 `;

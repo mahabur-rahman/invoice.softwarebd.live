@@ -20,7 +20,7 @@ import {
   FiPlus,
   FiTrash2,
 } from "react-icons/fi";
-import { useQuery } from "@apollo/client/react";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { GET_MY_BUSINESSES } from "@/lib/graphql/queries";
 import { GET_ALL_CLIENTS } from "@/lib/graphql/queries/invoice.queries";
 import {
@@ -61,8 +61,10 @@ import {
   INVOICE_CURRENCY_OPTIONS,
   INVOICE_STATUS_OPTIONS,
 } from "@/lib/constants/invoice";
+import { COUNTRY_OPTIONS } from "@/lib/constants/countries";
 import AddBusinessForm from "@/components/business/AddBusinessform";
 import AddNewClient from "@/components/client/AddNewClient";
+import { RESERVE_INVOICE_NUMBER } from "@/lib/graphql/mutations/invoice.mutations";
 
 /* ================= PROPS ================= */
 
@@ -366,6 +368,91 @@ const DefaultBusiness = ({
   return null;
 };
 
+const BusinessCurrencySync = ({
+  businesses,
+}: {
+  businesses?: GetMyBusinessesQuery["myBusinesses"];
+}) => {
+  const { values, setFieldValue } = useFormikContext<InvoiceFormValues>();
+  const lastBusinessRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    const businessId = values.business?.trim();
+    if (!businessId) return;
+    if (lastBusinessRef.current === businessId) return;
+    lastBusinessRef.current = businessId;
+
+    const selectedBusiness = businesses?.find(
+      (business) => business._id === businessId
+    ) as { country?: string | null } | undefined;
+
+    const match = COUNTRY_OPTIONS.find(
+      (country) => country.name === selectedBusiness?.country
+    );
+    if (match?.currency) {
+      setFieldValue("currency", match.currency, false);
+    }
+  }, [businesses, setFieldValue, values.business]);
+
+  return null;
+};
+
+const InvoiceNumberAutoFill = ({ enabled }: { enabled: boolean }) => {
+  const { values, setFieldValue } = useFormikContext<InvoiceFormValues>();
+  const [reserveInvoiceNumber] = useMutation<
+    { reserveInvoiceNumber: string },
+    { businessId: string; issueDate?: string | null }
+  >(RESERVE_INVOICE_NUMBER);
+  const lastReservedRef = React.useRef<string | null>(null);
+  const lastBusinessRef = React.useRef<string | null>(null);
+  const lastIssueDateRef = React.useRef<string | null>(null);
+  const pendingRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (!enabled) return;
+    const businessId = values.business?.trim();
+    if (!businessId) return;
+    if (!values.issueDate) return;
+
+    const current = values.invoiceNumber?.trim() ?? "";
+    const lastReserved = lastReservedRef.current ?? "";
+    const businessChanged = lastBusinessRef.current !== businessId;
+    const issueDateValue = values.issueDate ?? "";
+    const issueDateChanged = lastIssueDateRef.current !== issueDateValue;
+    const isAutoValue = current && current === lastReserved;
+
+    if (current && !isAutoValue) return;
+    if (!current && !businessChanged && !issueDateChanged && lastReserved) return;
+    if (pendingRef.current) return;
+
+    pendingRef.current = true;
+    reserveInvoiceNumber({
+      variables: { businessId, issueDate: values.issueDate || null },
+    })
+      .then(({ data }) => {
+        const nextNumber = data?.reserveInvoiceNumber;
+        if (nextNumber) {
+          setFieldValue("invoiceNumber", nextNumber, false);
+          lastReservedRef.current = nextNumber;
+          lastBusinessRef.current = businessId;
+          lastIssueDateRef.current = issueDateValue;
+        }
+      })
+      .finally(() => {
+        pendingRef.current = false;
+      });
+  }, [
+    enabled,
+    reserveInvoiceNumber,
+    setFieldValue,
+    values.business,
+    values.invoiceNumber,
+    values.issueDate,
+  ]);
+
+  return null;
+};
+
 const ItemsColumnSync = ({ columns }: { columns: InvoiceColumnInput[] }) => {
   const { values, setFieldValue } = useFormikContext<InvoiceFormValues>();
   const prevColumnsRef = React.useRef<InvoiceColumnInput[]>(columns);
@@ -547,6 +634,8 @@ const InvoiceForm = ({
 
   const [businessModalOpen, setBusinessModalOpen] = React.useState(false);
   const [clientModalOpen, setClientModalOpen] = React.useState(false);
+  const [clientModalClient, setClientModalClient] = React.useState<ClientType | undefined>(undefined);
+  const setFieldValueRef = React.useRef<((field: string, value: any) => void) | null>(null);
 
   /* ================= RENDER ================= */
 
@@ -559,6 +648,7 @@ const InvoiceForm = ({
         enableReinitialize={Boolean(initialValues)}
       >
         {({ values, setFieldValue }) => {
+          setFieldValueRef.current = setFieldValue;
           const defaultBusiness = businessData?.myBusinesses?.find(
             (business) => business.defaultBusiness
           );
@@ -581,6 +671,8 @@ const InvoiceForm = ({
           <ItemsColumnSync columns={columns} />
           <DateDefaults />
           <DefaultBusiness businesses={businessData?.myBusinesses} />
+          <BusinessCurrencySync businesses={businessData?.myBusinesses} />
+          <InvoiceNumberAutoFill enabled={!editing} />
           <LiveCalculation columns={columns} onUpdate={onUpdate} />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -711,7 +803,10 @@ const InvoiceForm = ({
                   </Field>
                   <button
                     type="button"
-                    onClick={() => setClientModalOpen(true)}
+                    onClick={() => {
+                      setClientModalClient(undefined);
+                      setClientModalOpen(true);
+                    }}
                     className="mt-1 inline-flex h-[42px] items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-800"
                   >
                     <FiPlus className="text-xs" />
@@ -720,9 +815,22 @@ const InvoiceForm = ({
                 </div>
                 {selectedClient && (
                   <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600 shadow-sm">
-                    <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">
-                      Client details
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] uppercase tracking-[0.22em] text-slate-400">
+                        Client details
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setClientModalClient(selectedClient);
+                          setClientModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-800"
+                      >
+                        <FiEdit2 className="text-xs" />
+                        Edit
+                      </button>
+                    </div>
                     <div className="mt-2 grid gap-1">
                       <span>
                         Email:{" "}
@@ -760,6 +868,23 @@ const InvoiceForm = ({
               <h3 className="text-lg font-semibold text-slate-900">
                 Dates, currency, status
               </h3>
+            </div>
+
+            <div className="mt-5">
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Invoice Number
+                </label>
+                <Field
+                  type="text"
+                  name="invoiceNumber"
+                  className={inputBaseClass}
+                  placeholder="Auto-generated on save"
+                />
+                <p className="mt-1 text-xs text-slate-400">
+                  Leave blank to let the system generate the invoice number.
+                </p>
+              </div>
             </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -809,26 +934,13 @@ const InvoiceForm = ({
                 <label className="text-sm font-medium text-slate-700">
                   Status
                 </label>
-                <div className="mt-2 grid grid-cols-2 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
-                  {INVOICE_STATUS_OPTIONS.map((status) => {
-                    const isActive = values.status === status.value;
-                    return (
-                      <button
-                        key={status.value}
-                        type="button"
-                        onClick={() => setFieldValue("status", status.value)}
-                        className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                          isActive
-                            ? "bg-white text-slate-900 shadow-sm"
-                            : "text-slate-500 hover:text-slate-700"
-                        }`}
-                        aria-pressed={isActive}
-                      >
-                        {status.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                <Field as="select" name="status" className={selectBaseClass}>
+                  {INVOICE_STATUS_OPTIONS.map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
+                </Field>
                 <FieldError name="status" />
               </div>
             </div>
@@ -1512,6 +1624,7 @@ const InvoiceForm = ({
       >
         <AddBusinessForm
           redirectOnSuccess={false}
+          variant="modal"
           onSuccess={() => {
             setBusinessModalOpen(false);
             refetchBusinesses();
@@ -1522,17 +1635,27 @@ const InvoiceForm = ({
       <Modal
         title={null}
         open={clientModalOpen}
-        onCancel={() => setClientModalOpen(false)}
+        onCancel={() => {
+          setClientModalOpen(false);
+          setClientModalClient(undefined);
+        }}
         footer={null}
         destroyOnHidden
         closable={false}
         width={720}
       >
         <AddNewClient
+          client={clientModalClient}
           redirectOnSuccess={false}
-          onSuccess={() => {
+          variant="modal"
+          onSuccess={(createdId) => {
             setClientModalOpen(false);
-            refetchClients();
+            setClientModalClient(undefined);
+            refetchClients().then(() => {
+              if (createdId) {
+                setFieldValueRef.current?.("client", createdId);
+              }
+            });
           }}
         />
       </Modal>

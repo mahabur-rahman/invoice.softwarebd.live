@@ -54,7 +54,7 @@ const BusinessTemplate = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4 text-sm print:flex-nowrap">
             <div className="rounded-xl bg-white/10 px-4 py-3">
               <p className="text-xs text-slate-300">Bill To</p>
               <p className="text-base font-semibold">{client?.name || ""}</p>
@@ -116,7 +116,7 @@ const BusinessTemplate = ({
           </tbody>
         </table>
 
-        <div className="mt-8 flex flex-wrap justify-between gap-6">
+        <div className="mt-8 flex flex-wrap justify-between gap-6 print:flex-nowrap">
           <div className="max-w-md text-sm text-slate-500">
             <p className="font-semibold text-slate-700">Notes</p>
             <p className="mt-2 whitespace-pre-line">{data.notes}</p>

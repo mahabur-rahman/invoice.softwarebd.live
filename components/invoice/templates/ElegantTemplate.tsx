@@ -25,7 +25,7 @@ const ElegantTemplate = ({
       <div className="pointer-events-none absolute -right-24 -bottom-24 h-52 w-52 rounded-full bg-lime-300/30" />
 
       <div className="relative px-10 py-10">
-        <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
+        <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr] print:grid-cols-[1.4fr_1fr]">
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
               Invoice
@@ -40,7 +40,7 @@ const ElegantTemplate = ({
               {business?.contactEmail || ""}
             </p>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3 print:flex-nowrap">
               <div className="rounded-full bg-slate-900 px-4 py-2 text-xs uppercase tracking-wide text-white">
                 {data.status}
               </div>
@@ -121,7 +121,7 @@ const ElegantTemplate = ({
           </table>
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.3fr_1fr]">
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1.3fr_1fr] print:grid-cols-[1.3fr_1fr]">
           <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 text-sm text-slate-600">
             <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
               Notes
