@@ -23,6 +23,7 @@ export const GET_MY_BUSINESSES = gql`
       defaultBusiness
       invoiceNumberPaddingDigits
       invoiceNumberPrefix
+      invoiceDueDays
       invoiceNumberResetYearly
       invoiceNumberStartNumber
       location
