@@ -1,7 +1,8 @@
 import { useUserStore } from "@/lib/store/userStore";
+import { writeStoredUser } from "@/utils/auth-storage";
 
 export const logout = () => {
   if (typeof window === "undefined") return;
-  localStorage.removeItem("user");
+  writeStoredUser(null);
   useUserStore.getState().clearUser();
 };

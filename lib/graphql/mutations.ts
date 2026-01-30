@@ -6,6 +6,12 @@ export const REGISTER_MUTATION = gql`
       accessToken
       refreshToken
       userId
+      user {
+        _id
+        email
+        name
+        picture
+      }
     }
   }
 `;
@@ -16,6 +22,12 @@ export const LOGIN_MUTATION = gql`
       accessToken
       refreshToken
       userId
+      user {
+        _id
+        email
+        name
+        picture
+      }
     }
   }
 `;

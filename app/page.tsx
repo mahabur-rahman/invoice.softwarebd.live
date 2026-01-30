@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LandingNavAuth from "@/components/landing/LandingNavAuth";
 
 const stats = [
   { value: "4.9/5", label: "Average client rating" },
@@ -117,20 +118,7 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-900"
-            >
-              Login
-            </Link>
-            <Link
-              href="/register"
-              className="rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-slate-900/25 transition hover:-translate-y-0.5 hover:bg-slate-800"
-            >
-              Get started
-            </Link>
-          </div>
+          <LandingNavAuth />
         </nav>
 
         <section className="relative z-10 mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-12 px-6 pb-16 pt-6 md:grid-cols-[1.08fr_0.92fr] md:pb-24 md:pt-12">

@@ -6,6 +6,7 @@ import { useMutation } from "@apollo/client/react";
 import { LOGIN_MUTATION, REGISTER_MUTATION } from "@/lib/graphql/mutations";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUserStore } from "@/lib/store/userStore";
+import { writeStoredUser } from "@/utils/auth-storage";
 import Image from "next/image";
 import loginImage from "@/assets/login.png";
 import registerImage from "@/assets/register.png";
@@ -14,10 +15,18 @@ interface AuthFormProps {
   type: "login" | "register";
 }
 
+interface AuthUser {
+  _id: string;
+  email: string;
+  name?: string | null;
+  picture?: string | null;
+}
+
 interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   userId: string;
+  user?: AuthUser;
 }
 
 interface RegisterInput {
@@ -86,10 +95,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
 
     if (accessToken && refreshToken && userId) {
       if (typeof window !== "undefined") {
-        localStorage.setItem(
-          "user",
-          JSON.stringify({ accessToken, refreshToken, userId }),
-        );
+        writeStoredUser({ accessToken, refreshToken, userId });
         setUserId(userId);
       }
       router.replace("/dashboard");
@@ -168,7 +174,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
 
       if (data?.login) {
         if (typeof window !== "undefined") {
-          localStorage.setItem("user", JSON.stringify(data.login));
+          writeStoredUser(data.login);
           setUserId(data.login.userId);
         }
         setFormSuccess("Logged in successfully.");
