@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { InvoiceTemplateProps } from "./types";
-import { getCustomTotals } from "./utils";
+import { getCustomTotals, getRoleTotals } from "./utils";
 
 const BusinessTemplate = ({
   data,
@@ -12,6 +12,7 @@ const BusinessTemplate = ({
 }: InvoiceTemplateProps) => {
   const visibleColumns = columns.filter((col) => !col.hidden);
   const customTotals = getCustomTotals(data);
+  const roleTotals = getRoleTotals(data, columns);
   const paidAmount = Number(data.paid ?? 0);
   const balanceDue = Number(data.balanceDue ?? data.total ?? 0);
   const logoUrl = getValidImageUrl(business?.logoUrl);
@@ -129,6 +130,16 @@ const BusinessTemplate = ({
                 {data.currency} {Number(data.subtotal ?? 0).toFixed(2)}
               </span>
             </div>
+
+            {roleTotals.hasDiscount && (
+              <div className="mt-2 flex justify-between text-slate-500">
+                <span>Total Discount</span>
+                <span className="font-semibold text-slate-700">
+                  - {data.currency}{" "}
+                  {Number(roleTotals.discountTotal ?? 0).toFixed(2)}
+                </span>
+              </div>
+            )}
 
             {customTotals.map((field) => {
               const signedAmount =

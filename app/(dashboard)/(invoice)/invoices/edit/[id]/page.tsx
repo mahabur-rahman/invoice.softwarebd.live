@@ -164,7 +164,7 @@ const EditInvoicePage = () => {
     });
 
     const columnsForApi = columns.map((col) => {
-      const { __typename, hidden, ...c } = col as any;
+      const { __typename, hidden, format, role, affectsTotal, ...c } = col as any;
       return {
         id: c.id ?? uuid(),
         fieldKey: c.fieldKey,
@@ -173,6 +173,9 @@ const EditInvoicePage = () => {
         order: c.order,
         behavior: c.behavior,
         locked: c.locked,
+        format,
+        role,
+        affectsTotal,
       };
     });
     const customTotalsForApi = (invoiceData.totalsCustom ?? []).map(

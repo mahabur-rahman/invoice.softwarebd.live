@@ -1,6 +1,12 @@
 import { InvoiceColumnInput, InvoiceFormValues } from "@/app/(dashboard)/(invoice)/generate-invoice/page";
 import { useFormikContext } from "formik";
 import { useEffect } from "react";
+import {
+  clampNumber,
+  computeColumnAmount,
+  getColumnMeta,
+  normalizeNumber,
+} from "./columnUtils";
 
 export const LiveCalculation = ({
   columns,
@@ -16,19 +22,32 @@ export const LiveCalculation = ({
     let hasItemChange = false;
 
     const updatedItems = values.items.map((item) => {
-      const qty = Number(item.quantity || 0);
-      const price = Number(item.price || 0);
+      const qty = normalizeNumber(item.quantity);
+      const price = normalizeNumber(item.price);
 
-      let itemTotal = qty * price;
+      const baseAmount = qty * price;
+      let itemTotal = baseAmount;
 
       columns.forEach((column) => {
         if (column.type !== "number") return;
         if (["quantity", "price", "total"].includes(column.fieldKey)) return;
 
-        const value = Number(item[column.fieldKey] || 0);
+        const meta = getColumnMeta(column);
+        if (!meta.affectsTotal || column.behavior === "NONE") return;
 
-        if (column.behavior === "ADD") itemTotal += value;
-        if (column.behavior === "SUBTRACT") itemTotal -= value;
+        const rawValue = normalizeNumber(item[column.fieldKey]);
+        const value =
+          meta.format === "PERCENT"
+            ? clampNumber(rawValue, 0, 100)
+            : clampNumber(rawValue, 0);
+        const amount = computeColumnAmount({
+          base: baseAmount,
+          value,
+          format: meta.format,
+        });
+
+        if (column.behavior === "ADD") itemTotal += amount;
+        if (column.behavior === "SUBTRACT") itemTotal -= amount;
       });
 
       subtotal += itemTotal;

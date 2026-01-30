@@ -134,6 +134,9 @@ export const SINGLE_INVOICE_QUERY = gql`
         behavior
         locked
         hidden
+        format
+        role
+        affectsTotal
       }
       items {
         id
@@ -204,6 +207,9 @@ export const VIEW_INVOICE_QUERY = gql`
         behavior
         locked
         hidden
+        format
+        role
+        affectsTotal
       }
       items {
         id

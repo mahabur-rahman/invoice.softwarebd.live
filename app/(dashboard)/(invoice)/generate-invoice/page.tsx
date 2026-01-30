@@ -53,6 +53,9 @@ export type InvoiceColumnInput = {
   behavior: "ADD" | "SUBTRACT" | "NONE";
   locked?: boolean;
   hidden?: boolean;
+  format?: "PERCENT" | "FIXED" | "TEXT";
+  role?: "discount" | "tax" | "fee" | "custom" | "base";
+  affectsTotal?: boolean;
 };
 
 /* ================= PAGE ================= */
@@ -177,6 +180,9 @@ const Page = () => {
       order: c.order,
       behavior: c.behavior,
       locked: c.locked,
+      format: c.format,
+      role: c.role,
+      affectsTotal: c.affectsTotal,
     }));
     const customTotalsForApi = (invoiceData.totalsCustom ?? []).map(
       ({ __typename, ...field }) => field
