@@ -17,7 +17,7 @@ interface SidebarProps {
 const SidebarContent = ({ collapsed }: SidebarProps) => {
   const pathname = usePathname();
   const role = useUserStore((state) => state.role);
-  const isAdmin = role === UserRole.ADMIN || role === "ADMIN";
+  const isAdmin = role === UserRole.ADMIN;
 
   const selectedKey = React.useMemo(() => {
     if (!pathname) return "1";

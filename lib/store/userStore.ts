@@ -38,6 +38,11 @@ type UserStoreState = {
   setHasHydrated: (value: boolean) => void;
 };
 
+type UserStorePersistedState = Pick<
+  UserStoreState,
+  "accessToken" | "refreshToken" | "userId" | "user" | "role"
+>;
+
 const initialState = {
   accessToken: null,
   refreshToken: null,
@@ -57,10 +62,9 @@ const isLegacyStoredUser = (value: unknown): value is LegacyStoredUser => {
   );
 };
 
-const toPersistedState = (legacy: LegacyStoredUser): UserStoreState => {
+const toPersistedState = (legacy: LegacyStoredUser): UserStorePersistedState => {
   const user = legacy.user ?? null;
   return {
-    ...initialState,
     accessToken: legacy.accessToken ?? null,
     refreshToken: legacy.refreshToken ?? null,
     userId: legacy.userId ?? user?._id ?? null,
@@ -69,15 +73,17 @@ const toPersistedState = (legacy: LegacyStoredUser): UserStoreState => {
   };
 };
 
-const storage: PersistStorage<UserStoreState> = {
+const storage: PersistStorage<UserStorePersistedState> = {
   getItem: (name) => {
     if (typeof window === "undefined") return null;
     const raw = localStorage.getItem(name);
     if (!raw) return null;
     try {
-      const parsed = JSON.parse(raw) as StorageValue<UserStoreState> | LegacyStoredUser;
+      const parsed = JSON.parse(raw) as
+        | StorageValue<UserStorePersistedState>
+        | LegacyStoredUser;
       if (parsed && typeof parsed === "object" && "state" in parsed) {
-        return parsed as StorageValue<UserStoreState>;
+        return parsed as StorageValue<UserStorePersistedState>;
       }
       if (isLegacyStoredUser(parsed)) {
         return { state: toPersistedState(parsed), version: 1 };
@@ -128,7 +134,7 @@ export const useUserStore = create<UserStoreState>()(
       name: "user",
       version: 1,
       storage,
-      partialize: (state) => ({
+      partialize: (state): UserStorePersistedState => ({
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
         userId: state.userId,
@@ -137,7 +143,7 @@ export const useUserStore = create<UserStoreState>()(
       }),
       merge: (persisted, current) => ({
         ...current,
-        ...(persisted as Partial<UserStoreState>),
+        ...(persisted as UserStorePersistedState),
         hasHydrated: current.hasHydrated,
       }),
       onRehydrateStorage: () => (state) => {

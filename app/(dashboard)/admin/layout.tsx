@@ -9,7 +9,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const role = useUserStore((state) => state.role);
   const hasHydrated = useUserStore((state) => state.hasHydrated);
-  const isAdmin = role === UserRole.ADMIN || role === "ADMIN";
+  const isAdmin = role === UserRole.ADMIN;
 
   useEffect(() => {
     if (!hasHydrated) return;
