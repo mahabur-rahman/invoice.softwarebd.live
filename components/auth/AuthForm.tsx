@@ -10,6 +10,7 @@ import Image from "next/image";
 import loginImage from "@/assets/login.png";
 import registerImage from "@/assets/register.png";
 import { UserRole } from "@/lib/constants/constants";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 interface AuthFormProps {
   type: "login" | "register";
@@ -79,6 +80,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
     email: "",
     password: ""
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
@@ -311,15 +313,25 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
             </div>
 
             <div>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Password"
-                className="mt-2 w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-slate-900 shadow-sm outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-emerald-100"
-                required
-              />
+              <div className="relative mt-2">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Password"
+                  className="w-full rounded-full border border-slate-200 bg-white px-5 py-3 pr-12 text-slate-900 shadow-sm outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-emerald-100"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-slate-500 transition hover:text-slate-700"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
+              </div>
             </div>
 
             {formError && (
