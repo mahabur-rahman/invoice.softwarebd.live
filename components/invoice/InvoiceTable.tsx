@@ -1,7 +1,7 @@
 "use client";
 
-import { Table, Spin, Tag, Button, Switch, Tooltip, Input, Select, Modal, Dropdown, Drawer } from "antd";
-import { FiEye, FiTrash, FiEdit2, FiPlus, FiLink, FiMoreVertical, FiCopy } from "react-icons/fi";
+import { Table, Spin, Tag, Button, Switch, Tooltip, Input, Select, Modal, Dropdown, Drawer, Pagination } from "antd";
+import { FiEye, FiTrash, FiEdit2, FiPlus, FiLink, FiMoreVertical, FiCopy, FiDownload } from "react-icons/fi";
 import { useLazyQuery, useMutation, useQuery } from "@apollo/client/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -22,7 +22,7 @@ import {
     ENABLE_INVOICE_PUBLIC_SHARE,
     UPDATE_INVOICE,
 } from "@/lib/graphql/mutations/invoice.mutations";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ConfirmModal from "@/utils/ConfirmModal";
 import { useToast } from "@/app/providers/ToastProvider";
 import InvoicePreview from "@/components/invoice/InvoicePreview";
@@ -89,7 +89,8 @@ type PreviewCacheEntry = {
     clientInfo?: ClientType | null;
 };
 
-const PAGE_SIZE = 5;
+const PER_PAGE_OPTIONS = [10, 25, 50];
+const DEFAULT_PER_PAGE = 10;
 
 const toNumber = (value?: number | null) => {
     const num = Number(value);
@@ -158,12 +159,23 @@ const InvoiceTable = () => {
     const [bulkActionLoading, setBulkActionLoading] = useState(false);
     const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
     const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+    const [downloadingId, setDownloadingId] = useState<string | null>(null);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewInvoiceId, setPreviewInvoiceId] = useState<string | null>(null);
     const [previewRow, setPreviewRow] = useState<InvoiceRow | null>(null);
     const [previewCache, setPreviewCache] = useState<
         Record<string, PreviewCacheEntry>
     >({});
+    const apiBase = useMemo(() => {
+        const endpoint = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT ?? "";
+        if (!endpoint) return "";
+        try {
+            const url = new URL(endpoint);
+            return url.origin;
+        } catch {
+            return endpoint.replace(/\/graphql\/?$/i, "");
+        }
+    }, []);
     const toast = useToast();
     const [shareState, setShareState] = useState<
         Record<string, { enabled: boolean; link?: string }>
@@ -229,6 +241,10 @@ const InvoiceTable = () => {
     const toParam = searchParams.get("to") ?? "";
     const pageParamRaw = Number(searchParams.get("page") ?? "1");
     const pageParam = Number.isFinite(pageParamRaw) && pageParamRaw > 0 ? pageParamRaw : 1;
+    const perPageRaw = Number(searchParams.get("per_page") ?? "");
+    const perPageParam = PER_PAGE_OPTIONS.includes(perPageRaw)
+        ? perPageRaw
+        : DEFAULT_PER_PAGE;
     const clearSelection = () => setSelectedRowKeys([]);
 
     const setQueryParams = (
@@ -268,6 +284,15 @@ const InvoiceTable = () => {
         const nextSearch = searchParams.get("search") ?? "";
         setSearchInput(nextSearch);
         setDebouncedSearch(nextSearch.trim());
+    }, [searchParams]);
+
+    useEffect(() => {
+        const raw = searchParams.get("per_page");
+        if (!raw) return;
+        const parsed = Number(raw);
+        if (!PER_PAGE_OPTIONS.includes(parsed)) {
+            setQueryParams({ per_page: String(DEFAULT_PER_PAGE) }, true);
+        }
     }, [searchParams]);
 
     useEffect(() => {
@@ -444,6 +469,42 @@ const InvoiceTable = () => {
         }
     };
 
+    const handleDownloadPdf = (id: string, invoiceNumber?: string | null) => {
+        if (downloadingId) return;
+        setDownloadingId(id);
+        toast?.info("Preparing PDF...");
+        try {
+            const safeId = encodeURIComponent(id);
+            const base = apiBase ? apiBase.replace(/\/$/, "") : "";
+            let token = "";
+            if (typeof window !== "undefined") {
+                try {
+                    const storedUser = localStorage.getItem("user");
+                    const user = storedUser ? JSON.parse(storedUser) : null;
+                    token = user?.accessToken ?? "";
+                } catch {
+                    token = "";
+                }
+            }
+            if (!token) {
+                toast?.error("Login required to download PDF.");
+                setDownloadingId(null);
+                return;
+            }
+            const tokenParam = `token=${encodeURIComponent(token)}`;
+            const url = base
+                ? `${base}/api/invoices/${safeId}/pdf?${tokenParam}`
+                : `/api/invoices/${safeId}/pdf?${tokenParam}`;
+            window.open(url, "_blank", "noopener,noreferrer");
+        } catch (err) {
+            toast?.error("Failed to download PDF. Please try again.");
+        } finally {
+            setTimeout(() => {
+                setDownloadingId((current) => (current === id ? null : current));
+            }, 800);
+        }
+    };
+
     const openPreview = (record: InvoiceRow) => {
         const id = record._id;
         setPreviewInvoiceId(id);
@@ -595,8 +656,15 @@ const InvoiceTable = () => {
         return true;
     });
 
-    const totalPages = Math.max(1, Math.ceil(filteredInvoices.length / PAGE_SIZE));
+    const totalPages = Math.max(1, Math.ceil(filteredInvoices.length / perPageParam));
     const currentPage = Math.min(pageParam, totalPages);
+    const startIndex = (currentPage - 1) * perPageParam;
+    const endIndex = startIndex + perPageParam;
+    const paginatedInvoices = filteredInvoices.slice(startIndex, endIndex);
+    const rangeFrom = filteredInvoices.length ? startIndex + 1 : 0;
+    const rangeTo = filteredInvoices.length
+        ? Math.min(endIndex, filteredInvoices.length)
+        : 0;
     const previewEntry = previewInvoiceId ? previewCache[previewInvoiceId] : null;
     const selectedInvoices = filteredInvoices.filter((invoice) =>
         selectedRowKeys.includes(invoice._id)
@@ -812,6 +880,7 @@ const InvoiceTable = () => {
             key: "actions",
             render: (_: unknown, record: InvoiceRow) => {
                 const isDuplicating = duplicatingId === record._id;
+                const isDownloading = downloadingId === record._id;
                 const items = [
                     {
                         key: "view",
@@ -828,6 +897,12 @@ const InvoiceTable = () => {
                         label: isDuplicating ? "Duplicating..." : "Duplicate",
                         icon: <FiCopy />,
                         disabled: isDuplicating,
+                    },
+                    {
+                        key: "download",
+                        label: isDownloading ? "Preparing PDF..." : "Download PDF",
+                        icon: <FiDownload />,
+                        disabled: isDownloading,
                     },
                     { type: "divider" as const },
                     {
@@ -851,6 +926,9 @@ const InvoiceTable = () => {
                                 }
                                 if (key === "duplicate") {
                                     handleDuplicate(record._id);
+                                }
+                                if (key === "download") {
+                                    handleDownloadPdf(record._id, record.invoiceNumber);
                                 }
                                 if (key === "delete") {
                                     handleDelete(record._id);
@@ -1102,7 +1180,7 @@ const InvoiceTable = () => {
                         </span>
                     ),
                 }}
-                dataSource={filteredInvoices.map((inv) => ({
+                dataSource={paginatedInvoices.map((inv) => ({
                     ...inv,
                     key: inv._id,
                 }))}
@@ -1123,14 +1201,45 @@ const InvoiceTable = () => {
                     tabIndex: 0,
                     role: "button",
                 })}
-                pagination={{
-                    pageSize: PAGE_SIZE,
-                    current: currentPage,
-                    total: filteredInvoices.length,
-                    onChange: (page) =>
-                        (clearSelection(), setQueryParams({ page: String(page) })),
-                }}
+                pagination={false}
             />
+
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+                <span>
+                    {filteredInvoices.length
+                        ? `Showing ${rangeFrom}\u2013${rangeTo} of ${filteredInvoices.length}`
+                        : "Showing 0 of 0"}
+                </span>
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2">
+                        <span className="text-slate-500">Rows per page</span>
+                        <Select
+                            value={perPageParam}
+                            onChange={(value) =>
+                                (clearSelection(),
+                                setQueryParams(
+                                    { per_page: String(value), page: "1" },
+                                    true
+                                ))
+                            }
+                            className="w-24"
+                            options={PER_PAGE_OPTIONS.map((option) => ({
+                                label: option,
+                                value: option,
+                            }))}
+                        />
+                    </div>
+                    <Pagination
+                        current={currentPage}
+                        total={filteredInvoices.length}
+                        pageSize={perPageParam}
+                        onChange={(page) =>
+                            (clearSelection(), setQueryParams({ page: String(page) }))
+                        }
+                        showSizeChanger={false}
+                    />
+                </div>
+            </div>
 
             <Drawer
                 title={
@@ -1191,6 +1300,20 @@ const InvoiceTable = () => {
                             }
                         >
                             Edit
+                        </Button>
+                        <Button
+                            size="small"
+                            icon={<FiDownload />}
+                            disabled={!previewInvoiceId || Boolean(downloadingId)}
+                            onClick={() =>
+                                previewInvoiceId &&
+                                handleDownloadPdf(
+                                    previewInvoiceId,
+                                    previewEntry?.invoice.invoiceNumber
+                                )
+                            }
+                        >
+                            Download PDF
                         </Button>
                         <Button
                             size="small"
