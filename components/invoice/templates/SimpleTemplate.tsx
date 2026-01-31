@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { InvoiceTemplateProps } from "./types";
 import { getCustomTotals, getRoleTotals } from "./utils";
+import TermsBlock from "./TermsBlock";
 
 const SimpleTemplate = ({
   data,
@@ -16,6 +17,7 @@ const SimpleTemplate = ({
   const paidAmount = Number(data.paid ?? 0);
   const balanceDue = Number(data.balanceDue ?? data.total ?? 0);
   const logoUrl = getValidImageUrl(business?.logoUrl);
+  const showTerms = Boolean(data.terms) || Boolean(data.notes?.trim());
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-[0_18px_40px_rgba(15,23,42,0.08)] print:border-0 print:shadow-none">
@@ -111,12 +113,16 @@ const SimpleTemplate = ({
       </div>
 
       <div className="mt-6 grid gap-6 md:grid-cols-[1.3fr_1fr] print:grid-cols-[1.3fr_1fr]">
-        <div className="text-sm text-slate-500">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-            Notes
-          </p>
-          <p className="mt-2 whitespace-pre-line">{data.notes}</p>
-        </div>
+        {showTerms && (
+          <div className="text-sm text-slate-500">
+            <TermsBlock
+              terms={data.terms}
+              notes={data.notes}
+              headingClassName="text-xs uppercase tracking-[0.2em] text-slate-400"
+              listClassName="mt-2 space-y-2 text-sm text-slate-500"
+            />
+          </div>
+        )}
         <div className="text-sm">
           <div className="flex justify-between text-slate-500">
             <span>Subtotal</span>

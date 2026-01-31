@@ -79,10 +79,6 @@ export const GET_MY_INVOICES = gql`
     myInvoices {
       _id
       invoiceNumber
-      businessInfo{
-        companyName
-        contactEmail
-      }
       clientInfo{
         name
       }
@@ -93,6 +89,9 @@ export const GET_MY_INVOICES = gql`
       totals {
         subTotal
         grandTotal
+        subtractions {
+          paid
+        }
       }
       publicShare
       createdAt
@@ -108,15 +107,22 @@ export const SINGLE_INVOICE_QUERY = gql`
       _id
       businessId
       businessInfo {
+        _id
         companyName
         location
         contactEmail
+        logoUrl
+        phoneNumber
+        websiteUrl
       }
       clientId
       clientName
       clientInfo {
+        _id
         name
         address
+        email
+        phone
       }
       invoiceNumber
       currency

@@ -23,6 +23,7 @@ import {
   FiPercent,
   FiPlus,
   FiPlusCircle,
+  FiSave,
   FiTrash2,
 } from "react-icons/fi";
 import { useMutation, useQuery } from "@apollo/client/react";
@@ -61,7 +62,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { FaTimes } from "react-icons/fa";
 import { v4 as uuid } from "uuid";
 import { LiveCalculation } from "./LiveCalculation";
-import { Input, Modal, Popconfirm, Popover, Tooltip } from "antd";
+import { AutoComplete, Input, Modal, Popconfirm, Popover, Tooltip } from "antd";
 import {
   INVOICE_CURRENCY_OPTIONS,
   INVOICE_STATUS_OPTIONS,
@@ -76,6 +77,7 @@ import {
   getColumnMeta,
   normalizeNumber,
 } from "./columnUtils";
+import TermsManager from "./TermsManager";
 
 /* ================= PROPS ================= */
 
@@ -92,6 +94,18 @@ interface InvoiceFormProps {
 }
 
 type InvoiceFieldProps = FieldProps<string | number, InvoiceFormValues>;
+
+type SavedService = {
+  id: string;
+  description: string;
+  price: number;
+  discount?: number;
+  discountFormat?: "PERCENT" | "FIXED";
+  tax?: number;
+  taxFormat?: "PERCENT" | "FIXED";
+};
+
+const savedServicesStorageKey = "sellyx:saved-services";
 
 /* ================= VALIDATION ================= */
 
@@ -628,6 +642,41 @@ const InvoiceForm = ({
       return acc;
     }, { _rowId: rowId ?? uuid() } as InvoiceItem);
 
+  const [savedServices, setSavedServices] = React.useState<SavedService[]>([]);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(savedServicesStorageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setSavedServices(
+          parsed.filter(
+            (item) =>
+              item &&
+              typeof item.description === "string" &&
+              item.description.trim().length > 0
+          )
+        );
+      }
+    } catch {
+      // ignore storage issues
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        savedServicesStorageKey,
+        JSON.stringify(savedServices)
+      );
+    } catch {
+      // ignore storage issues
+    }
+  }, [savedServices]);
+
   const [invoiceNumberMode, setInvoiceNumberMode] = React.useState<
     "auto" | "custom"
   >(() => (editing ? "auto" : "auto"));
@@ -668,7 +717,8 @@ const InvoiceForm = ({
     dueDate: "",
     invoiceNumber: defaultInvoiceNumber ?? "",
     items: [createEmptyItem(initialRowId)],
-    notes: "Thank you for your business.",
+    notes: "",
+    terms: null,
     subtotal: 0,
     total: 0,
     paid: 0,
@@ -800,12 +850,14 @@ const InvoiceForm = ({
         ? "Calculated as a % of Qty x Price."
         : "Uses a fixed amount.";
 
-    return `${behaviorText}. ${formatText}`;
+    const discountHint =
+      meta.role === "discount" ? " Discount is applied before tax." : "";
+    return `${behaviorText}. ${formatText}${discountHint}`;
   };
 
-  const buildLineTotalFormula = () => {
-    const lines = ["Qty x Price"];
-    columns.forEach((column) => {
+const buildLineTotalFormula = () => {
+  const lines = ["Qty x Price"];
+  columns.forEach((column) => {
       if (column.type !== "number") return;
       if (["quantity", "price", "total"].includes(column.fieldKey)) return;
       const meta = getColumnMeta(column);
@@ -814,9 +866,74 @@ const InvoiceForm = ({
       const suffix = meta.format === "PERCENT" ? " (% of base)" : "";
       lines.push(`${sign} ${column.label}${suffix}`);
     });
-    lines.push("= Line total");
-    return lines;
-  };
+  lines.push("= Line total");
+  return lines;
+};
+
+const formatLineNumber = (value: number) => {
+  if (!Number.isFinite(value)) return "0";
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+};
+
+const toPercentOrFixed = (format?: string) =>
+  format === "PERCENT" ? "PERCENT" : "FIXED";
+
+const getZeroWarning = (item: InvoiceItem, fieldKey: string) => {
+  const value = normalizeNumber(item[fieldKey]);
+  if (fieldKey === "quantity" && value <= 0) {
+    return "Quantity must be at least 1";
+  }
+  if (fieldKey === "price" && value <= 0) {
+    return "Price must be greater than 0";
+  }
+  if (fieldKey === "total" && value <= 0) {
+    return "Total must be greater than 0";
+  }
+  return null;
+};
+
+const buildLineItemBreakdown = (
+  item: InvoiceItem,
+  columns: InvoiceColumnInput[]
+) => {
+  const qty = normalizeNumber(item.quantity);
+  const price = normalizeNumber(item.price);
+  const baseAmount = qty * price;
+  let lineTotal = baseAmount;
+  const steps: string[] = [`(${formatLineNumber(qty)} × ${formatLineNumber(price)})`];
+
+  columns.forEach((column) => {
+    if (column.type !== "number") return;
+    if (["quantity", "price", "total"].includes(column.fieldKey)) return;
+    const meta = getColumnMeta(column);
+    if (!meta.affectsTotal || column.behavior === "NONE") return;
+
+    const rawValue = normalizeNumber(item[column.fieldKey]);
+    const value =
+      meta.format === "PERCENT"
+        ? clampNumber(rawValue, 0, 100)
+        : clampNumber(rawValue, 0);
+    const amount = computeColumnAmount({
+      base: baseAmount,
+      value,
+      format: meta.format,
+    });
+
+    const sign = column.behavior === "ADD" ? "+" : "-";
+    const valueLabel =
+      meta.format === "PERCENT" ? `${formatLineNumber(value)}% ` : "";
+    const label = `${sign} ${valueLabel}${column.label} (${formatLineNumber(
+      Math.abs(amount)
+    )})`;
+    steps.push(label);
+
+    if (column.behavior === "ADD") lineTotal += amount;
+    if (column.behavior === "SUBTRACT") lineTotal -= amount;
+  });
+
+  steps.push(`= ${formatLineNumber(lineTotal)}`);
+  return steps;
+};
 
   /* ================= QUERIES ================= */
 
@@ -883,6 +1000,82 @@ const InvoiceForm = ({
             issueDate: values.issueDate,
           });
           const lineFormula = buildLineTotalFormula();
+          const lineItemPreviews = values.items
+            .map((item) => ({
+              item,
+              lines: buildLineItemBreakdown(item, columns),
+            }))
+            .filter(({ item }) => {
+              const qty = normalizeNumber(item.quantity);
+              const price = normalizeNumber(item.price);
+              return qty > 0 || price > 0;
+            })
+            .slice(0, 3);
+
+          const totalCalculationContent = (
+            <div className="space-y-3 text-xs text-slate-600">
+              {lineItemPreviews.length === 0 ? (
+                <div>Add items to see the calculation.</div>
+              ) : (
+                <>
+                  {lineItemPreviews.map(({ item, lines }, index) => (
+                    <div key={String(item._rowId ?? index)} className="space-y-1">
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                        Item {index + 1}
+                      </div>
+                      {lines.map((line, lineIndex) => (
+                        <div key={`${line}-${lineIndex}`}>{line}</div>
+                      ))}
+                    </div>
+                  ))}
+                  {values.items.length > lineItemPreviews.length && (
+                    <div className="text-[11px] text-slate-400">
+                      + {values.items.length - lineItemPreviews.length} more item
+                      {values.items.length - lineItemPreviews.length === 1 ? "" : "s"}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {values.totalsCustom?.length ? (
+                <div className="border-t border-dashed border-slate-200 pt-2 space-y-1">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    Adjustments
+                  </div>
+                  {values.totalsCustom.map((field) => {
+                    const rawValue = Number(field.value || 0);
+                    const amount =
+                      field.valueType === "PERCENT"
+                        ? (values.subtotal * rawValue) / 100
+                        : rawValue;
+                    const sign = field.behavior === "SUBTRACT" ? "-" : "+";
+                    const label = field.label?.trim() || "Adjustment";
+                    return (
+                      <div key={field.key ?? label}>
+                        {sign} {label} ({formatLineNumber(Math.abs(amount))})
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+
+              <div className="border-t border-dashed border-slate-200 pt-2 text-slate-900 font-semibold">
+                Total = {formatLineNumber(values.total)}
+              </div>
+            </div>
+          );
+
+          const savedServiceOptions = savedServices.map((service) => ({
+            value: service.description,
+            label: (
+              <div className="flex items-center justify-between gap-3">
+                <span>{service.description}</span>
+                <span className="text-[11px] text-slate-400">
+                  {formatLineNumber(service.price)}
+                </span>
+              </div>
+            ),
+          }));
 
           const roleTotals = (() => {
             let discount = 0;
@@ -1005,6 +1198,103 @@ const InvoiceForm = ({
               })
             );
             setUndoState(null);
+          };
+
+          const handleSelectService = (description: string, index: number) => {
+            const match = savedServices.find(
+              (service) =>
+                service.description.toLowerCase() === description.toLowerCase()
+            );
+            if (!match) return;
+
+            setFieldValue(`items.${index}.description`, match.description, false);
+            if (Number.isFinite(match.price)) {
+              setFieldValue(`items.${index}.price`, match.price, false);
+            }
+
+            const discountColumns = columns.filter((column) => {
+              const meta = getColumnMeta(column);
+              return column.type === "number" && meta.role === "discount";
+            });
+            const taxColumns = columns.filter((column) => {
+              const meta = getColumnMeta(column);
+              return column.type === "number" && meta.role === "tax";
+            });
+
+            if (match.discount != null && discountColumns.length) {
+              const exact = discountColumns.filter(
+                (column) => getColumnMeta(column).format === match.discountFormat
+              );
+              const targets = exact.length ? exact : discountColumns;
+              targets.forEach((column) => {
+                setFieldValue(
+                  `items.${index}.${column.fieldKey}`,
+                  match.discount,
+                  false
+                );
+              });
+            }
+
+            if (match.tax != null && taxColumns.length) {
+              const exact = taxColumns.filter(
+                (column) => getColumnMeta(column).format === match.taxFormat
+              );
+              const targets = exact.length ? exact : taxColumns;
+              targets.forEach((column) => {
+                setFieldValue(
+                  `items.${index}.${column.fieldKey}`,
+                  match.tax,
+                  false
+                );
+              });
+            }
+          };
+
+          const handleSaveService = (index: number) => {
+            const item = values.items[index];
+            const description = String(item.description ?? "").trim();
+            if (!description) return;
+
+            const price = normalizeNumber(item.price);
+            const discountColumn = columns.find((column) => {
+              const meta = getColumnMeta(column);
+              return column.type === "number" && meta.role === "discount";
+            });
+            const taxColumn = columns.find((column) => {
+              const meta = getColumnMeta(column);
+              return column.type === "number" && meta.role === "tax";
+            });
+
+            const nextService: SavedService = {
+              id: uuid(),
+              description,
+              price,
+              ...(discountColumn
+                ? {
+                    discount: normalizeNumber(item[discountColumn.fieldKey]),
+                    discountFormat: toPercentOrFixed(
+                      getColumnMeta(discountColumn).format
+                    ),
+                  }
+                : {}),
+              ...(taxColumn
+                ? {
+                    tax: normalizeNumber(item[taxColumn.fieldKey]),
+                    taxFormat: toPercentOrFixed(getColumnMeta(taxColumn).format),
+                  }
+                : {}),
+            };
+
+            setSavedServices((prev) => {
+              const idx = prev.findIndex(
+                (service) =>
+                  service.description.toLowerCase() === description.toLowerCase()
+              );
+              if (idx === -1) return [nextService, ...prev];
+              const updated = [...prev];
+              updated[idx] = { ...updated[idx], ...nextService, id: updated[idx].id };
+              return updated;
+            });
           };
 
           return (
@@ -1447,10 +1737,17 @@ const InvoiceForm = ({
                                     >
                                       {draggableColumns.map((column) => {
                                       const isTotal = column.fieldKey === "total";
+                                      const isDescription = column.fieldKey === "description";
 
                                       const isHidden = Boolean(column.hidden);
                                       const meta = getColumnMeta(column);
                                       const icon = getColumnIcon(column);
+                                      const showPercent =
+                                        column.type === "number" && meta.format === "PERCENT";
+                                      const zeroWarning = getZeroWarning(item, column.fieldKey);
+                                      const canSaveService = Boolean(
+                                        String(item.description ?? "").trim()
+                                      );
                                       const labelContent = (
                                         <Tooltip title={getColumnTooltip(column)}>
                                           <span
@@ -1463,8 +1760,51 @@ const InvoiceForm = ({
                                           </span>
                                         </Tooltip>
                                       );
-                                      const fieldEl =
-                                        column.fieldKey === "price" ||
+                                      const fieldEl = isDescription ? (
+                                          <Field name={`items.${i}.${column.fieldKey}`}>
+                                            {({ field, form }: InvoiceFieldProps) => (
+                                              <div className="flex flex-col gap-2">
+                                                <AutoComplete
+                                                  className="w-full"
+                                                  value={field.value ?? ""}
+                                                  options={savedServiceOptions}
+                                                  onSelect={(value) =>
+                                                    handleSelectService(String(value), i)
+                                                  }
+                                                  onChange={(value) => {
+                                                    form.setFieldValue(field.name, value);
+                                                  }}
+                                                  onBlur={() => {
+                                                    form.setFieldTouched(field.name, true);
+                                                  }}
+                                                  filterOption={(inputValue, option) =>
+                                                    (option?.value ?? "")
+                                                      .toLowerCase()
+                                                      .includes(inputValue.toLowerCase())
+                                                  }
+                                                >
+                                                  <Input
+                                                    placeholder="Service or description"
+                                                    className="w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                                                  />
+                                                </AutoComplete>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleSaveService(i)}
+                                                  disabled={!canSaveService}
+                                                  className={`inline-flex items-center gap-1 self-end text-[11px] font-semibold ${
+                                                    canSaveService
+                                                      ? "text-slate-500 hover:text-slate-700"
+                                                      : "text-slate-300 cursor-not-allowed"
+                                                  }`}
+                                                >
+                                                  <FiSave className="text-xs" />
+                                                  Save as service
+                                                </button>
+                                              </div>
+                                            )}
+                                          </Field>
+                                        ) : column.fieldKey === "price" ||
                                         column.fieldKey === "total" ? (
                                           <Field name={`items.${i}.${column.fieldKey}`}>
                                             {({ field }: InvoiceFieldProps) => (
@@ -1503,67 +1843,97 @@ const InvoiceForm = ({
                                         ) : (
                                           <Field name={`items.${i}.${column.fieldKey}`}>
                                             {({ field }: InvoiceFieldProps) => (
-                                              <input
-                                                {...field}
-                                                readOnly={isTotal}
-                                                type={
-                                                  column.type === "number"
-                                                    ? "number"
-                                                    : "text"
-                                                }
-                                                inputMode={
-                                                  column.type === "number" ? "decimal" : undefined
-                                                }
-                                                min={column.type === "number" ? 0 : undefined}
-                                                max={
-                                                  column.type === "number" && meta.format === "PERCENT"
-                                                    ? 100
-                                                    : undefined
-                                                }
-                                                step={
-                                                  column.type === "number" && meta.format === "PERCENT"
-                                                    ? "0.01"
-                                                    : column.type === "number"
-                                                      ? "0.01"
+                                              <div className="relative">
+                                                <input
+                                                  {...field}
+                                                  readOnly={isTotal}
+                                                  type={
+                                                    column.type === "number"
+                                                      ? "number"
+                                                      : "text"
+                                                  }
+                                                  inputMode={
+                                                    column.type === "number" ? "decimal" : undefined
+                                                  }
+                                                  min={column.type === "number" ? 0 : undefined}
+                                                  max={
+                                                    column.type === "number" && meta.format === "PERCENT"
+                                                      ? 100
                                                       : undefined
-                                                }
-                                                placeholder={
-                                                  i === 0 &&
-                                                  column.type === "number" &&
-                                                  meta.role !== "base" &&
-                                                  !columnHintUsed[column.fieldKey]
-                                                    ? meta.format === "PERCENT"
-                                                      ? "10%"
-                                                      : "500"
-                                                    : undefined
-                                                }
-                                                value={field.value ?? ""}
-                                                onBlur={(event) => {
-                                                  field.onBlur(event);
-                                                  if (column.type !== "number") return;
-                                                  const raw = event.target.value;
-                                                  if (raw === "") return;
-                                                  const numeric = Number(raw);
-                                                  if (Number.isNaN(numeric)) return;
-                                                  const normalized =
-                                                    meta.format === "PERCENT"
-                                                      ? clampNumber(numeric, 0, 100)
-                                                      : clampNumber(numeric, 0);
-                                                  setFieldValue(
-                                                    field.name,
-                                                    Number(normalized.toFixed(2))
-                                                  );
-                                                  setColumnHintUsed((prev) => ({
-                                                    ...prev,
-                                                    [column.fieldKey]: true,
-                                                  }));
-                                                }}
-                                                className={`w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 ${
-                                                  isTotal
-                                                    ? "bg-slate-50 text-center font-semibold"
-                                                    : ""
-                                                } ${isHidden ? "text-slate-500" : ""}`}
-                                              />
+                                                  }
+                                                  step={
+                                                    column.type === "number" && meta.format === "PERCENT"
+                                                      ? "0.01"
+                                                      : column.type === "number"
+                                                        ? "0.01"
+                                                        : undefined
+                                                  }
+                                                  placeholder={
+                                                    i === 0 &&
+                                                    column.type === "number" &&
+                                                    meta.role !== "base" &&
+                                                    !columnHintUsed[column.fieldKey]
+                                                      ? meta.format === "PERCENT"
+                                                        ? "10%"
+                                                        : "500"
+                                                      : undefined
+                                                  }
+                                                  value={field.value ?? ""}
+                                                  onChange={(event) => {
+                                                    if (
+                                                      column.type === "number" &&
+                                                      meta.format === "PERCENT"
+                                                    ) {
+                                                      const raw = event.target.value;
+                                                      if (raw === "") {
+                                                        setFieldValue(field.name, "");
+                                                        return;
+                                                      }
+                                                      const numeric = Number(raw);
+                                                      if (Number.isNaN(numeric)) {
+                                                        field.onChange(event);
+                                                        return;
+                                                      }
+                                                      const normalized = clampNumber(numeric, 0, 100);
+                                                      setFieldValue(field.name, normalized);
+                                                      return;
+                                                    }
+                                                    field.onChange(event);
+                                                  }}
+                                                  onBlur={(event) => {
+                                                    field.onBlur(event);
+                                                    if (column.type !== "number") return;
+                                                    const raw = event.target.value;
+                                                    if (raw === "") return;
+                                                    const numeric = Number(raw);
+                                                    if (Number.isNaN(numeric)) return;
+                                                    const normalized =
+                                                      meta.format === "PERCENT"
+                                                        ? clampNumber(numeric, 0, 100)
+                                                        : clampNumber(numeric, 0);
+                                                    setFieldValue(
+                                                      field.name,
+                                                      Number(normalized.toFixed(2))
+                                                    );
+                                                    setColumnHintUsed((prev) => ({
+                                                      ...prev,
+                                                      [column.fieldKey]: true,
+                                                    }));
+                                                  }}
+                                                  className={`w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 ${
+                                                    isTotal
+                                                      ? "bg-slate-50 text-center font-semibold"
+                                                      : ""
+                                                  } ${isHidden ? "text-slate-500" : ""} ${
+                                                    showPercent ? "pr-7" : ""
+                                                  }`}
+                                                />
+                                                {showPercent && (
+                                                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+                                                    %
+                                                  </span>
+                                                )}
+                                              </div>
                                             )}
                                           </Field>
                                         );
@@ -1640,6 +2010,11 @@ const InvoiceForm = ({
                                           <FieldError
                                             name={`items.${i}.${column.fieldKey}`}
                                           />
+                                          {zeroWarning && (
+                                            <div className="text-xs text-amber-600">
+                                              {zeroWarning}
+                                            </div>
+                                          )}
                                         </SortableCell>
                                       );
                                     })}
@@ -1729,6 +2104,11 @@ const InvoiceForm = ({
                                             />
                                           )}
                                         </Field>
+                                        {getZeroWarning(item, totalColumn.fieldKey) && (
+                                          <div className="text-xs text-amber-600">
+                                            {getZeroWarning(item, totalColumn.fieldKey)}
+                                          </div>
+                                        )}
                                       </StaticCell>
                                     )}
                                     </div>
@@ -1739,10 +2119,17 @@ const InvoiceForm = ({
                                 <div className="flex gap-3 w-full flex-1">
                                   {displayColumns.map((column) => {
                                     const isTotal = column.fieldKey === "total";
+                                    const isDescription = column.fieldKey === "description";
 
                                     const isHidden = Boolean(column.hidden);
                                     const meta = getColumnMeta(column);
                                     const icon = getColumnIcon(column);
+                                    const showPercent =
+                                      column.type === "number" && meta.format === "PERCENT";
+                                    const zeroWarning = getZeroWarning(item, column.fieldKey);
+                                    const canSaveService = Boolean(
+                                      String(item.description ?? "").trim()
+                                    );
                                     const labelContent = (
                                       <Tooltip title={getColumnTooltip(column)}>
                                         <span
@@ -1785,7 +2172,51 @@ const InvoiceForm = ({
                                           )}
                                         </div>
 
-                                        {column.fieldKey === "price" ||
+                                        {isDescription ? (
+                                          <Field name={`items.${i}.${column.fieldKey}`}>
+                                            {({ field, form }: InvoiceFieldProps) => (
+                                              <div className="flex flex-col gap-2">
+                                                <AutoComplete
+                                                  className="w-full"
+                                                  value={field.value ?? ""}
+                                                  options={savedServiceOptions}
+                                                  onSelect={(value) =>
+                                                    handleSelectService(String(value), i)
+                                                  }
+                                                  onChange={(value) => {
+                                                    form.setFieldValue(field.name, value);
+                                                  }}
+                                                  onBlur={() => {
+                                                    form.setFieldTouched(field.name, true);
+                                                  }}
+                                                  filterOption={(inputValue, option) =>
+                                                    (option?.value ?? "")
+                                                      .toLowerCase()
+                                                      .includes(inputValue.toLowerCase())
+                                                  }
+                                                >
+                                                  <Input
+                                                    placeholder="Service or description"
+                                                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                                                  />
+                                                </AutoComplete>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleSaveService(i)}
+                                                  disabled={!canSaveService}
+                                                  className={`inline-flex items-center gap-1 self-end text-[11px] font-semibold ${
+                                                    canSaveService
+                                                      ? "text-slate-500 hover:text-slate-700"
+                                                      : "text-slate-300 cursor-not-allowed"
+                                                  }`}
+                                                >
+                                                  <FiSave className="text-xs" />
+                                                  Save as service
+                                                </button>
+                                              </div>
+                                            )}
+                                          </Field>
+                                        ) : column.fieldKey === "price" ||
                                         column.fieldKey === "total" ? (
                                           <Field name={`items.${i}.${column.fieldKey}`}>
                                             {({ field }: InvoiceFieldProps) => (
@@ -1824,53 +2255,81 @@ const InvoiceForm = ({
                                         ) : (
                                           <Field name={`items.${i}.${column.fieldKey}`}>
                                             {({ field }: InvoiceFieldProps) => (
-                                              <input
-                                                {...field}
-                                                readOnly={isTotal}
-                                                type={
-                                                  column.type === "number"
-                                                    ? "number"
-                                                    : "text"
-                                                }
-                                                inputMode={
-                                                  column.type === "number" ? "decimal" : undefined
-                                                }
-                                                min={column.type === "number" ? 0 : undefined}
-                                                max={
-                                                  column.type === "number" && meta.format === "PERCENT"
-                                                    ? 100
-                                                    : undefined
-                                                }
-                                                step={
-                                                  column.type === "number" && meta.format === "PERCENT"
-                                                    ? "0.01"
-                                                    : column.type === "number"
-                                                      ? "0.01"
+                                              <div className="relative">
+                                                <input
+                                                  {...field}
+                                                  readOnly={isTotal}
+                                                  type={
+                                                    column.type === "number"
+                                                      ? "number"
+                                                      : "text"
+                                                  }
+                                                  inputMode={
+                                                    column.type === "number" ? "decimal" : undefined
+                                                  }
+                                                  min={column.type === "number" ? 0 : undefined}
+                                                  max={
+                                                    column.type === "number" && meta.format === "PERCENT"
+                                                      ? 100
                                                       : undefined
-                                                }
-                                                value={field.value ?? ""}
-                                                onBlur={(event) => {
-                                                  field.onBlur(event);
-                                                  if (column.type !== "number") return;
-                                                  const raw = event.target.value;
-                                                  if (raw === "") return;
-                                                  const numeric = Number(raw);
-                                                  if (Number.isNaN(numeric)) return;
-                                                  const normalized =
-                                                    meta.format === "PERCENT"
-                                                      ? clampNumber(numeric, 0, 100)
-                                                      : clampNumber(numeric, 0);
-                                                  setFieldValue(
-                                                    field.name,
-                                                    Number(normalized.toFixed(2))
-                                                  );
-                                                }}
-                                                className={`w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 ${
-                                                  isTotal
-                                                    ? "bg-slate-50 text-center font-semibold"
-                                                    : ""
-                                                }`}
-                                              />
+                                                  }
+                                                  step={
+                                                    column.type === "number" && meta.format === "PERCENT"
+                                                      ? "0.01"
+                                                      : column.type === "number"
+                                                        ? "0.01"
+                                                        : undefined
+                                                  }
+                                                  value={field.value ?? ""}
+                                                  onChange={(event) => {
+                                                    if (
+                                                      column.type === "number" &&
+                                                      meta.format === "PERCENT"
+                                                    ) {
+                                                      const raw = event.target.value;
+                                                      if (raw === "") {
+                                                        setFieldValue(field.name, "");
+                                                        return;
+                                                      }
+                                                      const numeric = Number(raw);
+                                                      if (Number.isNaN(numeric)) {
+                                                        field.onChange(event);
+                                                        return;
+                                                      }
+                                                      const normalized = clampNumber(numeric, 0, 100);
+                                                      setFieldValue(field.name, normalized);
+                                                      return;
+                                                    }
+                                                    field.onChange(event);
+                                                  }}
+                                                  onBlur={(event) => {
+                                                    field.onBlur(event);
+                                                    if (column.type !== "number") return;
+                                                    const raw = event.target.value;
+                                                    if (raw === "") return;
+                                                    const numeric = Number(raw);
+                                                    if (Number.isNaN(numeric)) return;
+                                                    const normalized =
+                                                      meta.format === "PERCENT"
+                                                        ? clampNumber(numeric, 0, 100)
+                                                        : clampNumber(numeric, 0);
+                                                    setFieldValue(
+                                                      field.name,
+                                                      Number(normalized.toFixed(2))
+                                                    );
+                                                  }}
+                                                  className={`w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 ${
+                                                    isTotal
+                                                      ? "bg-slate-50 text-center font-semibold"
+                                                      : ""
+                                                  } ${showPercent ? "pr-7" : ""}`}
+                                                />
+                                                {showPercent && (
+                                                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+                                                    %
+                                                  </span>
+                                                )}
+                                              </div>
                                             )}
                                           </Field>
                                         )}
@@ -1878,6 +2337,11 @@ const InvoiceForm = ({
                                           <FieldError
                                             name={`items.${i}.${column.fieldKey}`}
                                           />
+                                        )}
+                                        {zeroWarning && (
+                                          <div className="text-xs text-amber-600">
+                                            {zeroWarning}
+                                          </div>
                                         )}
                                       </div>
                                     );
@@ -2052,7 +2516,18 @@ const InvoiceForm = ({
 
                 <div className="border-t border-dashed border-slate-200 pt-3 text-base font-semibold text-slate-900">
                   <div className="flex items-center justify-between">
-                    <span>Total</span>
+                    <span className="inline-flex items-center gap-2">
+                      Total
+                      <Popover content={totalCalculationContent} title="Calculation">
+                        <button
+                          type="button"
+                          className="text-slate-400 hover:text-slate-600"
+                          aria-label="Show total calculation"
+                        >
+                          <FiInfo className="text-xs" />
+                        </button>
+                      </Popover>
+                    </span>
                     <span>
                       {values.currency} {values.total.toFixed(2)}
                     </span>
@@ -2102,23 +2577,27 @@ const InvoiceForm = ({
           </div>
 
 
-          {/* ================= NOTES ================= */}
+          {/* ================= TERMS ================= */}
 
           <section className={cardBaseClass}>
             <div>
               <p className="text-xs uppercase tracking-[0.28em] text-slate-400">
-                Notes and terms
+                Terms
               </p>
               <h3 className="text-lg font-semibold text-slate-900">
-                Add a closing note
+                Terms & Conditions
               </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Manage the payment terms that appear on the invoice PDF.
+              </p>
             </div>
-            <Field
-              as="textarea"
-              name="notes"
-              rows={3}
-              className={`${inputBaseClass} mt-4`}
-            />
+
+            <div className="mt-4">
+              <TermsManager
+                value={values.terms ?? null}
+                onChange={(next) => setFieldValue("terms", next)}
+              />
+            </div>
           </section>
 
           {/* ================= SUBMIT ================= */}

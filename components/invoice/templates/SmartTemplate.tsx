@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { InvoiceTemplateProps } from "./types";
 import { getCustomTotals, getRoleTotals } from "./utils";
+import TermsBlock from "./TermsBlock";
 
 const SmartTemplate = ({
   data,
@@ -16,6 +17,7 @@ const SmartTemplate = ({
   const paidAmount = Number(data.paid ?? 0);
   const balanceDue = Number(data.balanceDue ?? data.total ?? 0);
   const logoUrl = getValidImageUrl(business?.logoUrl);
+  const showTerms = Boolean(data.terms) || Boolean(data.notes?.trim());
 
   return (
     <div className="relative overflow-hidden rounded-[30px] border border-amber-100 bg-white shadow-[0_30px_70px_rgba(88,28,135,0.18)] print:border-0 print:shadow-none">
@@ -144,12 +146,16 @@ const SmartTemplate = ({
         </div>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_1fr] print:grid-cols-[1.2fr_1fr]">
-          <div className="rounded-[26px] border border-amber-100 bg-white/90 p-5 text-sm text-amber-800">
-            <p className="text-xs uppercase tracking-[0.25em] text-amber-600">
-              Notes
-            </p>
-            <p className="mt-3 whitespace-pre-line">{data.notes}</p>
-          </div>
+          {showTerms && (
+            <div className="rounded-[26px] border border-amber-100 bg-white/90 p-5 text-sm text-amber-800">
+              <TermsBlock
+                terms={data.terms}
+                notes={data.notes}
+                headingClassName="text-xs uppercase tracking-[0.25em] text-amber-600"
+                listClassName="mt-3 space-y-2 text-sm text-amber-800"
+              />
+            </div>
+          )}
 
           <div className="rounded-[26px] bg-linear-to-br from-[#3b1c59] via-[#5a2b73] to-[#7f4a1d] p-6 text-sm text-white shadow-[0_18px_40px_rgba(88,28,135,0.35)]">
             <div className="flex justify-between text-white/80">

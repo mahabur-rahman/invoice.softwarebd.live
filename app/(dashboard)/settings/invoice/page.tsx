@@ -56,6 +56,8 @@ const InvoiceSettingsPage = () => {
   const [paddingDigits, setPaddingDigits] = useState("6");
   const [resetYearly, setResetYearly] = useState(true);
   const [startNumber, setStartNumber] = useState("1");
+  const [defaultTerms, setDefaultTerms] = useState("");
+  const defaultTermsKey = "sellyx:default-terms";
 
   useEffect(() => {
     if (!defaultBusiness?._id || selectedBusinessId) return;
@@ -73,6 +75,14 @@ const InvoiceSettingsPage = () => {
     setResetYearly(selected.invoiceNumberResetYearly ?? true);
     setStartNumber(String(selected.invoiceNumberStartNumber ?? 1));
   }, [businesses, selectedBusinessId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem(defaultTermsKey);
+    if (stored) {
+      setDefaultTerms(stored);
+    }
+  }, []);
 
   const preview = useMemo(() => {
     const padding = toNumberOrUndefined(paddingDigits) ?? 6;
@@ -99,6 +109,11 @@ const InvoiceSettingsPage = () => {
         },
       },
     });
+  };
+
+  const handleSaveDefaultTerms = () => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(defaultTermsKey, defaultTerms.trim());
   };
 
   return (
@@ -237,6 +252,33 @@ const InvoiceSettingsPage = () => {
               </button>
             </div>
           )}
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="space-y-3">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Default terms template
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Stored locally. Use line breaks for each term.
+              </p>
+            </div>
+            <textarea
+              rows={5}
+              value={defaultTerms}
+              onChange={(event) => setDefaultTerms(event.target.value)}
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              placeholder="e.g. Payment due within 15 days..."
+            />
+            <button
+              type="button"
+              onClick={handleSaveDefaultTerms}
+              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-900"
+            >
+              Save default terms
+            </button>
+          </div>
         </div>
       </div>
     </div>

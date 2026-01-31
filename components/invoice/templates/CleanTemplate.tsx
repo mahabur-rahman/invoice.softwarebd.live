@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { InvoiceTemplateProps } from "./types";
 import { getCustomTotals, getRoleTotals } from "./utils";
+import TermsBlock from "./TermsBlock";
 
 const CleanTemplate = ({
   data,
@@ -16,6 +17,7 @@ const CleanTemplate = ({
   const paidAmount = Number(data.paid ?? 0);
   const balanceDue = Number(data.balanceDue ?? data.total ?? 0);
   const logoUrl = getValidImageUrl(business?.logoUrl);
+  const showTerms = Boolean(data.terms) || Boolean(data.notes?.trim());
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_20px_45px_rgba(15,23,42,0.08)] print:border-0 print:shadow-none">
@@ -137,12 +139,16 @@ const CleanTemplate = ({
         </div>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr] print:grid-cols-[1.4fr_1fr]">
-          <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-              Notes
-            </p>
-            <p className="mt-3 whitespace-pre-line text-slate-600">{data.notes}</p>
-          </div>
+          {showTerms && (
+            <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+              <TermsBlock
+                terms={data.terms}
+                notes={data.notes}
+                headingClassName="text-xs uppercase tracking-[0.2em] text-slate-400"
+                listClassName="mt-3 space-y-2 text-sm text-slate-600"
+              />
+            </div>
+          )}
 
           <div className="rounded-xl border border-slate-200 bg-slate-900 p-5 text-sm text-white">
             <div className="flex justify-between text-slate-200">

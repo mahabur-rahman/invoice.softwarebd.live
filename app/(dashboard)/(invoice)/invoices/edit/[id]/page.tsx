@@ -16,6 +16,10 @@ import InvoicePreview from "@/components/invoice/InvoicePreview";
 import { InvoiceTemplateKey } from "@/components/invoice/templates";
 import { SINGLE_INVOICE_QUERY } from "@/lib/graphql/queries/invoice.queries";
 import { UPDATE_INVOICE } from "@/lib/graphql/mutations/invoice.mutations";
+import {
+  parseTermsFromNotes,
+  serializeTermsToNotes,
+} from "@/components/invoice/termsUtils";
 
 interface SingleInvoiceQueryResponse {
   singleInvoice: {
@@ -123,6 +127,8 @@ const EditInvoicePage = () => {
         };
       });
 
+    const parsedTerms = parseTermsFromNotes(invoice.notes ?? "");
+
     setInvoiceData({
       client: invoice.clientId,
       business: invoice.businessId,
@@ -132,7 +138,8 @@ const EditInvoicePage = () => {
       dueDate: toDateInputValue(invoice.dueDate),
       invoiceNumber: invoice.invoiceNumber ?? "",
       items,
-      notes: invoice.notes ?? "",
+      notes: "",
+      terms: parsedTerms,
       subtotal: invoice.totals?.subTotal ?? 0,
       total: invoice.totals?.grandTotal ?? 0,
       paid: Number(invoice.totals?.subtractions?.paid ?? 0),
@@ -193,7 +200,7 @@ const EditInvoicePage = () => {
           currency: invoiceData.currency,
           issueDate: invoiceData.issueDate,
           dueDate: invoiceData.dueDate,
-          notes: invoiceData.notes,
+          notes: serializeTermsToNotes(invoiceData.terms),
           status: invoiceData.status,
           columns: columnsForApi,
           items: itemsForApi,
@@ -218,6 +225,7 @@ const EditInvoicePage = () => {
     return {
       ...invoiceData,
       invoiceNumber: invoiceData.invoiceNumber ?? data?.singleInvoice.invoiceNumber ?? "",
+      terms: invoiceData.terms ?? null,
       template,
       items: invoiceData.items.map((item) => ({
         ...item,

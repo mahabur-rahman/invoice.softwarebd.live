@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { InvoiceTemplateProps } from "./types";
 import { getCustomTotals, getRoleTotals } from "./utils";
+import TermsBlock from "./TermsBlock";
 
 const BusinessTemplate = ({
   data,
@@ -15,6 +16,7 @@ const BusinessTemplate = ({
   const roleTotals = getRoleTotals(data, columns);
   const paidAmount = Number(data.paid ?? 0);
   const balanceDue = Number(data.balanceDue ?? data.total ?? 0);
+  const showTerms = Boolean(data.terms) || Boolean(data.notes?.trim());
   const logoUrl = getValidImageUrl(business?.logoUrl);
 
   return (
@@ -118,10 +120,16 @@ const BusinessTemplate = ({
         </table>
 
         <div className="mt-8 flex flex-wrap justify-between gap-6 print:flex-nowrap">
-          <div className="max-w-md text-sm text-slate-500">
-            <p className="font-semibold text-slate-700">Notes</p>
-            <p className="mt-2 whitespace-pre-line">{data.notes}</p>
-          </div>
+          {showTerms && (
+            <div className="max-w-md text-sm text-slate-500">
+              <TermsBlock
+                terms={data.terms}
+                notes={data.notes}
+                headingClassName="font-semibold text-slate-700"
+                listClassName="mt-2 space-y-2 text-sm text-slate-500"
+              />
+            </div>
+          )}
 
           <div className="min-w-[220px] rounded-xl bg-slate-50 p-4 text-sm">
             <div className="flex justify-between text-slate-500">

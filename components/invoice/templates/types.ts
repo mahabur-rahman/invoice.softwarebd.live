@@ -1,5 +1,6 @@
 import { InvoiceColumnInput } from "@/app/(dashboard)/(invoice)/generate-invoice/page";
 import { BusinessType, ClientType } from "@/lib/graphql/generated-types";
+import { InvoiceTerms } from "@/components/invoice/termsUtils";
 
 export type InvoiceTemplateKey =
   | "BUSINESS"
@@ -22,7 +23,8 @@ export interface InvoiceData {
   dueDate: string;
   invoiceNumber?: string;
   items: Record<string, string | number>[];
-  notes: string;
+  notes?: string;
+  terms?: InvoiceTerms | null;
   subtotal: number;
   total: number;
   paid?: number;

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { InvoiceTemplateProps } from "./types";
 import { getCustomTotals, getRoleTotals } from "./utils";
+import TermsBlock from "./TermsBlock";
 
 const ModernTemplate = ({
   data,
@@ -16,19 +17,20 @@ const ModernTemplate = ({
   const paidAmount = Number(data.paid ?? 0);
   const balanceDue = Number(data.balanceDue ?? data.total ?? 0);
   const logoUrl = getValidImageUrl(business?.logoUrl);
+  const showTerms = Boolean(data.terms) || Boolean(data.notes?.trim());
 
   return (
     <div className="relative overflow-hidden rounded-[28px] bg-white shadow-[0_30px_70px_rgba(15,23,42,0.14)] print:shadow-none">
       <div className="relative px-6 py-8 sm:px-10 sm:py-10 print:px-6 print:py-6">
         {/* Header */}
-        <div className="flex flex-col gap-6 md:flex-row md:flex-nowrap md:items-center md:justify-between md:gap-6 print:flex-row print:flex-nowrap print:items-center print:justify-between print:gap-5">
-          <div className="flex h-20 w-full max-w-[520px] items-center justify-center rounded-[32px] bg-teal-600 text-white sm:h-24 sm:w-[520px] md:h-[72px] md:w-[420px] md:max-w-none md:flex-shrink-0 print:h-[60px] print:w-[300px] print:max-w-none print:flex-shrink-0">
+        <div className="flex flex-col gap-6 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-4 print:flex-row print:flex-nowrap print:items-center print:justify-between print:gap-5">
+          <div className="flex h-20 w-full max-w-[520px] items-center justify-center rounded-[32px] bg-teal-600 text-white sm:h-24 sm:w-[520px] md:h-[72px] md:w-auto md:max-w-[420px] md:flex-1 md:min-w-[220px] print:h-[60px] print:w-[300px] print:max-w-none print:flex-shrink-0">
             <h2 className="text-3xl font-semibold tracking-[0.2em] sm:text-4xl sm:tracking-[0.25em] md:text-3xl md:tracking-[0.18em] print:text-2xl print:tracking-[0.12em]">
               INVOICE
             </h2>
           </div>
 
-          <div className="flex w-full items-center justify-end gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:w-auto md:ml-auto md:w-[460px] md:max-w-none md:flex-shrink-0 md:px-5 md:py-4 print:ml-auto print:w-[360px] print:max-w-none print:flex-shrink-0 print:gap-3 print:px-3 print:py-2">
+          <div className="flex w-full items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:w-auto md:ml-auto md:w-auto md:flex-1 md:min-w-[260px] md:max-w-[520px] md:px-5 md:py-4 print:ml-auto print:w-[360px] print:max-w-none print:flex-shrink-0 print:gap-3 print:px-3 print:py-2">
             {logoUrl && (
               <div className="rounded-xl border border-slate-200 bg-white p-2">
                 <Image
@@ -41,13 +43,13 @@ const ModernTemplate = ({
               </div>
             )}
             <div className="flex min-w-0 flex-col text-sm text-slate-600 print:text-xs">
-              <p className="text-base font-semibold text-slate-900 print:text-sm whitespace-nowrap">
+              <p className="truncate text-base font-semibold text-slate-900 print:text-sm">
                 {business?.companyName || "Brand Name"}
               </p>
-              <p className="text-xs text-teal-700">
+              <p className="truncate text-xs text-teal-700">
                 {business?.contactEmail || "Tagline here"}
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="truncate text-xs text-slate-500">
                 {business?.phoneNumber || ""}
               </p>
             </div>
@@ -137,10 +139,7 @@ const ModernTemplate = ({
         {/* Notes + Totals */}
         <div className="mt-8 grid gap-6 md:grid-cols-[1.3fr_1fr] print:grid-cols-[1.3fr_1fr]">
           <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600">
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
-              Terms & Conditions
-            </p>
-            <p className="mt-3 whitespace-pre-line">{data.notes}</p>
+            {showTerms && <TermsBlock terms={data.terms} notes={data.notes} />}
 
             <div className="mt-8">
               <p className="text-xs uppercase tracking-[0.3em] text-slate-400">

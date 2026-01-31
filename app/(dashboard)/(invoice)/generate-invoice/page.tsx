@@ -10,6 +10,8 @@ import { useMutation } from "@apollo/client/react";
 import { v4 as uuid } from "uuid";
 import { useRouter } from "next/navigation";
 import { GET_MY_INVOICES } from "@/lib/graphql/queries/invoice.queries";
+import { serializeTermsToNotes } from "@/components/invoice/termsUtils";
+import type { InvoiceTerms } from "@/components/invoice/termsUtils";
 
 /* ================= TYPES ================= */
 
@@ -28,6 +30,7 @@ export interface InvoiceFormValues {
   invoiceNumber?: string;
   items: InvoiceItem[];
   notes: string;
+  terms?: InvoiceTerms | null;
   subtotal: number;
   total: number;
   paid: number;
@@ -130,6 +133,7 @@ const Page = () => {
       dueDate: invoiceData.dueDate,
       invoiceNumber: invoiceData.invoiceNumber?.trim() || "Auto-generated",
       notes: invoiceData.notes,
+      terms: invoiceData.terms ?? null,
       subtotal: invoiceData.subtotal,
       total: invoiceData.total,
       paid: invoiceData.paid ?? 0,
@@ -201,7 +205,7 @@ const Page = () => {
             currency: invoiceData.currency,
             issueDate: invoiceData.issueDate,
             dueDate: invoiceData.dueDate,
-            notes: invoiceData.notes,
+            notes: serializeTermsToNotes(invoiceData.terms),
             status: invoiceData.status,
 
             columns: columnsForApi,

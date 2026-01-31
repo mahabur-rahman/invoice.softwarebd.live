@@ -12,6 +12,7 @@ import {
   SingleBusinessQueryResponse,
   SingleClientQueryResponse,
 } from "@/lib/interfaces/responseTypes";
+import { BusinessType, ClientType } from "@/lib/graphql/generated-types";
 import {
   INVOICE_TEMPLATE_OPTIONS,
   TEMPLATE_COMPONENTS,
@@ -27,6 +28,8 @@ interface InvoicePreviewProps {
   showPrintButton?: boolean;
   template?: InvoiceTemplateKey;
   onTemplateChange?: (template: InvoiceTemplateKey) => void;
+  businessOverride?: BusinessType | null;
+  clientOverride?: ClientType | null;
 }
 
 const formatDate = (value?: string) => {
@@ -64,6 +67,8 @@ const InvoicePreview = ({
   showPrintButton,
   template = "CLASSIC",
   onTemplateChange,
+  businessOverride,
+  clientOverride,
 }: InvoicePreviewProps) => {
   const componentRef = useRef<HTMLDivElement>(null);
   const activeTemplate = template ?? data?.template ?? "CLASSIC";
@@ -96,7 +101,7 @@ const InvoicePreview = ({
   const { data: businessData } = useQuery<SingleBusinessQueryResponse>(
     SINGLE_BUSINESS_QUERY,
     {
-      skip: !data?.business,
+      skip: Boolean(businessOverride) || !data?.business,
       variables: { id: data?.business ?? "" },
     }
   );
@@ -104,10 +109,13 @@ const InvoicePreview = ({
   const { data: clientData } = useQuery<SingleClientQueryResponse>(
     FIND_ONE_CLIENT,
     {
-      skip: !data?.client,
+      skip: Boolean(clientOverride) || !data?.client,
       variables: { id: data?.client ?? "" },
     }
   );
+
+  const business = businessOverride ?? businessData?.singleBusiness ?? null;
+  const client = clientOverride ?? clientData?.findOneClient ?? null;
 
   const templateCards = useMemo(
     () =>
@@ -180,8 +188,8 @@ const InvoicePreview = ({
           <TemplateComponent
             data={data}
             columns={orderedColumns}
-            business={businessData?.singleBusiness}
-            client={clientData?.findOneClient}
+            business={business}
+            client={client}
             formatDate={formatDate}
             getValidImageUrl={getValidImageUrl}
           />

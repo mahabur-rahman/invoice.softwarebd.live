@@ -7,6 +7,7 @@ import InvoicePreview from "@/components/invoice/InvoicePreview";
 import { InvoiceColumnInput } from "@/app/(dashboard)/(invoice)/generate-invoice/page";
 import { VIEW_INVOICE_QUERY } from "@/lib/graphql/queries/invoice.queries";
 import { InvoiceTemplateKey } from "@/components/invoice/templates";
+import { parseTermsFromNotes } from "@/components/invoice/termsUtils";
 
 interface ViewInvoiceQueryResponse {
   viewInvoice: {
@@ -73,6 +74,7 @@ const Page = () => {
       invoice.totals?.balanceDue ??
         (invoice.totals?.grandTotal ?? 0) - paid
     );
+    const terms = parseTermsFromNotes(invoice.notes ?? "");
 
     return {
       client: invoice.clientId,
@@ -81,7 +83,8 @@ const Page = () => {
       status: invoice.status,
       issueDate: invoice.issueDate,
       dueDate: invoice.dueDate,
-      notes: invoice.notes ?? "",
+      notes: "",
+      terms,
       subtotal: invoice.totals.subTotal,
       total: invoice.totals.grandTotal,
       paid,

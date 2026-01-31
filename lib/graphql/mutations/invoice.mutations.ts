@@ -107,6 +107,27 @@ export const DELETE_INVOICE = gql`
   }
 `;
 
+export const BULK_DELETE_INVOICES = gql`
+  mutation BulkDeleteInvoices($invoiceIds: [ID!]!) {
+    bulkDeleteInvoices(input: { invoiceIds: $invoiceIds }) {
+      success
+      requested
+      deleted
+      deletedIds
+      failedIds
+    }
+  }
+`;
+
+export const DUPLICATE_INVOICE = gql`
+  mutation DuplicateInvoice($id: ID!) {
+    duplicateInvoice(id: $id) {
+      newInvoiceId
+      redirectUrl
+    }
+  }
+`;
+
 export const ENABLE_INVOICE_PUBLIC_SHARE = gql`
   mutation EnableInvoicePublicShare($id: ID!, $enabled: Boolean = true) {
     enableInvoicePublicShare(id: $id, enabled: $enabled)

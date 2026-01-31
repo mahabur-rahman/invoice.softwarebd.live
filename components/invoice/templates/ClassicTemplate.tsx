@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { InvoiceTemplateProps } from "./types";
 import { getCustomTotals, getRoleTotals } from "./utils";
+import TermsBlock from "./TermsBlock";
 
 const ClassicTemplate = ({
   data,
@@ -15,6 +16,7 @@ const ClassicTemplate = ({
   const roleTotals = getRoleTotals(data, columns);
   const paidAmount = Number(data.paid ?? 0);
   const balanceDue = Number(data.balanceDue ?? data.total ?? 0);
+  const showTerms = Boolean(data.terms) || Boolean(data.notes?.trim());
   const logoUrl = getValidImageUrl(business?.logoUrl);
 
   return (
@@ -128,11 +130,17 @@ const ClassicTemplate = ({
         </h3>
       </div>
 
-      {/* ================= NOTES ================= */}
-      <div className="mt-4 border-t pt-4 text-sm text-gray-600">
-        <p className="font-semibold">Notes:</p>
-        <pre>{data.notes}</pre>
-      </div>
+      {/* ================= TERMS ================= */}
+      {showTerms && (
+        <div className="mt-4 border-t pt-4 text-sm text-gray-600">
+          <TermsBlock
+            terms={data.terms}
+            notes={data.notes}
+            headingClassName="font-semibold"
+            listClassName="mt-2 space-y-2 text-sm text-gray-600"
+          />
+        </div>
+      )}
     </div>
   );
 };
