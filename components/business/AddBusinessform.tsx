@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { uploadLogo } from "@/utils/uploadLogo";
 import { GET_MY_BUSINESSES } from "@/lib/graphql/queries";
 import { COUNTRY_OPTIONS } from "@/lib/constants/countries";
+import { useUserStore } from "@/lib/store/userStore";
 
 interface Business {
   _id?: string;
@@ -181,16 +182,7 @@ const AddBusinessForm: React.FC<AddBusinessFormProps> = ({
   const toast = useToast();
   const router = useRouter();
 
-  const [userId] = useState(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("user");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return parsed?.userId || "";
-      }
-    }
-    return "";
-  });
+  const userId = useUserStore((state) => state.userId) ?? "";
 
   const mode = business ? "edit" : "add";
   const isModal = variant === "modal";

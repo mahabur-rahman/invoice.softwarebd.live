@@ -1,13 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@apollo/client/react";
 import { ME_QUERY } from "@/lib/graphql/queries";
-import {
-  mergeStoredUser,
-  readStoredUser,
-  type StoredUser,
-} from "@/utils/auth-storage";
+import { useUserStore } from "@/lib/store/userStore";
+import { UserRole } from "@/lib/constants/constants";
 
 type MeResponse = {
   me: {
@@ -15,29 +12,20 @@ type MeResponse = {
     email: string;
     name?: string | null;
     picture?: string | null;
+    role?: UserRole | null;
   };
 };
 
 export const useAuthUser = () => {
-  const [storedUser, setStoredUser] = useState<StoredUser | null>(null);
+  const accessToken = useUserStore((state) => state.accessToken);
+  const refreshToken = useUserStore((state) => state.refreshToken);
+  const userId = useUserStore((state) => state.userId);
+  const user = useUserStore((state) => state.user);
+  const setUser = useUserStore((state) => state.setUser);
 
-  useEffect(() => {
-    setStoredUser(readStoredUser());
-  }, []);
-
-  useEffect(() => {
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key !== "user") return;
-      setStoredUser(readStoredUser());
-    };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []);
-
-  const accessToken = storedUser?.accessToken;
   const shouldFetchUser = useMemo(
-    () => Boolean(accessToken) && !storedUser?.user,
-    [accessToken, storedUser?.user]
+    () => Boolean(accessToken) && !user,
+    [accessToken, user]
   );
 
   const { data } = useQuery<MeResponse>(ME_QUERY, {
@@ -47,13 +35,22 @@ export const useAuthUser = () => {
 
   useEffect(() => {
     if (!data?.me) return;
-    const next = mergeStoredUser({ user: data.me });
-    setStoredUser(next);
-  }, [data]);
+    setUser(data.me);
+  }, [data, setUser]);
+
+  const storedUser = useMemo(
+    () => ({
+      accessToken: accessToken ?? undefined,
+      refreshToken: refreshToken ?? undefined,
+      userId: userId ?? undefined,
+      user: user ?? undefined,
+    }),
+    [accessToken, refreshToken, userId, user]
+  );
 
   return {
     storedUser,
-    user: storedUser?.user ?? null,
+    user: user ?? null,
     isLoggedIn: Boolean(accessToken),
   };
 };

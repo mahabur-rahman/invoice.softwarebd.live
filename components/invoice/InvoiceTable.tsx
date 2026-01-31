@@ -30,6 +30,7 @@ import { InvoiceColumnInput } from "@/app/(dashboard)/(invoice)/generate-invoice
 import { InvoiceTemplateKey } from "@/components/invoice/templates";
 import { parseTermsFromNotes } from "@/components/invoice/termsUtils";
 import { InvoiceData } from "@/components/invoice/templates/types";
+import { useUserStore } from "@/lib/store/userStore";
 
 /* ================= TYPES ================= */
 
@@ -146,6 +147,7 @@ const InvoiceTable = () => {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const accessToken = useUserStore((state) => state.accessToken);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -476,22 +478,12 @@ const InvoiceTable = () => {
         try {
             const safeId = encodeURIComponent(id);
             const base = apiBase ? apiBase.replace(/\/$/, "") : "";
-            let token = "";
-            if (typeof window !== "undefined") {
-                try {
-                    const storedUser = localStorage.getItem("user");
-                    const user = storedUser ? JSON.parse(storedUser) : null;
-                    token = user?.accessToken ?? "";
-                } catch {
-                    token = "";
-                }
-            }
-            if (!token) {
+            if (!accessToken) {
                 toast?.error("Login required to download PDF.");
                 setDownloadingId(null);
                 return;
             }
-            const tokenParam = `token=${encodeURIComponent(token)}`;
+            const tokenParam = `token=${encodeURIComponent(accessToken)}`;
             const url = base
                 ? `${base}/api/invoices/${safeId}/pdf?${tokenParam}`
                 : `/api/invoices/${safeId}/pdf?${tokenParam}`;
