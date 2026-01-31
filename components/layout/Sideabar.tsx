@@ -2,9 +2,11 @@
 
 import dynamic from "next/dynamic";
 import { Layout, Menu } from "antd";
-import { menuItems } from "./menuItems";
+import { getMenuItems } from "./menuItems";
 import { usePathname } from "next/navigation";
 import React from "react";
+import { useUserStore } from "@/lib/store/userStore";
+import { UserRole } from "@/lib/constants/constants";
 
 const { Sider } = Layout;
 
@@ -14,29 +16,20 @@ interface SidebarProps {
 
 const SidebarContent = ({ collapsed }: SidebarProps) => {
   const pathname = usePathname();
+  const role = useUserStore((state) => state.role);
+  const isAdmin = role === UserRole.ADMIN || role === "ADMIN";
+  const menuItems = React.useMemo(
+    () => getMenuItems({ isAdmin }),
+    [isAdmin]
+  );
 
   const selectedKey = React.useMemo(() => {
     if (!pathname) return "1";
-    if (pathname.startsWith("/generate-invoice")) return "102";
-    if (pathname.startsWith("/invoices")) return "101";
-    if (pathname.startsWith("/clients")) return "3";
-    if (pathname.startsWith("/my-business")) return "4";
-    if (pathname.startsWith("/settings/invoice")) return "5";
-    if (pathname.startsWith("/settings")) return "6";
+    if (pathname.startsWith("/admin/users")) return "701";
+    if (pathname.startsWith("/admin/invoices")) return "702";
     if (pathname.startsWith("/dashboard")) return "1";
     return "1";
   }, [pathname]);
-
-  const derivedOpenKeys = React.useMemo(() => {
-    if (selectedKey === "101" || selectedKey === "102") return ["2"];
-    return [];
-  }, [selectedKey]);
-
-  const [openKeys, setOpenKeys] = React.useState<string[]>(derivedOpenKeys);
-
-  React.useEffect(() => {
-    setOpenKeys(derivedOpenKeys);
-  }, [derivedOpenKeys]);
 
   return (
     <Sider
@@ -61,15 +54,6 @@ const SidebarContent = ({ collapsed }: SidebarProps) => {
       <Menu
         mode="inline"
         selectedKeys={[selectedKey]}
-        openKeys={openKeys}
-        onOpenChange={(keys) => {
-          const latest = keys[keys.length - 1];
-          if (!latest) {
-            setOpenKeys([]);
-            return;
-          }
-          setOpenKeys([latest]);
-        }}
         style={{ height: "100%", borderRight: 0 }}
         items={menuItems}
       />
