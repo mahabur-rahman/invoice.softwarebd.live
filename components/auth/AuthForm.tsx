@@ -6,10 +6,11 @@ import { useMutation } from "@apollo/client/react";
 import { LOGIN_MUTATION, REGISTER_MUTATION } from "@/lib/graphql/mutations";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useUserStore } from "@/lib/store/userStore";
-import { writeStoredUser } from "@/utils/auth-storage";
 import Image from "next/image";
 import loginImage from "@/assets/login.png";
 import registerImage from "@/assets/register.png";
+import { UserRole } from "@/lib/constants/constants";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 interface AuthFormProps {
   type: "login" | "register";
@@ -19,6 +20,7 @@ interface AuthUser {
   _id: string;
   email: string;
   name?: string | null;
+  role?: UserRole | null;
   picture?: string | null;
 }
 
@@ -60,7 +62,7 @@ interface LoginVariables {
 const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const setUserId = useUserStore((state) => state.setUserId);
+  const setAuth = useUserStore((state) => state.setAuth);
   const isRegister = type === "register";
   const googleAuthUrl = useMemo(() => {
     const explicitUrl = process.env.NEXT_PUBLIC_GOOGLE_AUTH_URL;
@@ -78,6 +80,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
     email: "",
     password: ""
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
@@ -95,12 +98,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
 
     if (accessToken && refreshToken && userId) {
       if (typeof window !== "undefined") {
-        writeStoredUser({ accessToken, refreshToken, userId });
-        setUserId(userId);
+        setAuth({ accessToken, refreshToken, userId });
       }
       router.replace("/dashboard");
     }
-  }, [searchParams, router, isRegister, setUserId]);
+  }, [searchParams, router, isRegister, setAuth]);
 
   const [registerUser, { loading: registerLoading }] = useMutation<
     RegisterResponse,
@@ -174,8 +176,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
 
       if (data?.login) {
         if (typeof window !== "undefined") {
-          writeStoredUser(data.login);
-          setUserId(data.login.userId);
+          setAuth({
+            accessToken: data.login.accessToken,
+            refreshToken: data.login.refreshToken,
+            userId: data.login.userId,
+            user: data.login.user ?? null,
+          });
         }
         setFormSuccess("Logged in successfully.");
         setFormData((prev) => ({ ...prev, password: "", email: "" }));
@@ -307,15 +313,25 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
             </div>
 
             <div>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Password"
-                className="mt-2 w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-slate-900 shadow-sm outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-emerald-100"
-                required
-              />
+              <div className="relative mt-2">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Password"
+                  className="w-full rounded-full border border-slate-200 bg-white px-5 py-3 pr-12 text-slate-900 shadow-sm outline-none transition focus:border-slate-300 focus:ring-4 focus:ring-emerald-100"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-slate-500 transition hover:text-slate-700"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
+              </div>
             </div>
 
             {formError && (

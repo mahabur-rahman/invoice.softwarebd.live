@@ -11,6 +11,7 @@ export const REGISTER_MUTATION = gql`
         email
         name
         picture
+        role
       }
     }
   }
@@ -27,6 +28,7 @@ export const LOGIN_MUTATION = gql`
         email
         name
         picture
+        role
       }
     }
   }

@@ -3,6 +3,7 @@ import { SetContextLink } from "@apollo/client/link/context";
 import { onError } from "@apollo/client/link/error";
 import { CombinedGraphQLErrors } from "@apollo/client/errors";
 import { logout } from "@/utils/auth";
+import { useUserStore } from "@/lib/store/userStore";
 
 const endpoint = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT;
 
@@ -14,21 +15,14 @@ if (!endpoint) {
 
 // 1️⃣ Auth Link using NEW SetContextLink
 const authLink = new SetContextLink((prevContext) => {
-  if (typeof window !== "undefined") {
-    const storedUser = localStorage.getItem("user");
-    const user = storedUser ? JSON.parse(storedUser) : null;
-    const token = user?.accessToken;
-
-    return {
-      ...prevContext,
-      headers: {
-        ...prevContext.headers,
-        Authorization: token ? `Bearer ${token}` : "",
-      },
-    };
-  }
-
-  return prevContext;
+  const token = useUserStore.getState().accessToken;
+  return {
+    ...prevContext,
+    headers: {
+      ...prevContext.headers,
+      Authorization: token ? `Bearer ${token}` : "",
+    },
+  };
 });
 
 // 2️⃣ HTTP Link
