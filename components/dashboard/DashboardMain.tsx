@@ -16,7 +16,6 @@ import type {
 } from "@/lib/graphql/generated-types";
 
 type InvoiceItem = MyInvoicesQuery["myInvoices"][number];
-type ClientItem = FindAllClientsQuery["findAllClients"][number];
 
 const monthLabel = (date: Date) =>
   new Intl.DateTimeFormat("en-US", { month: "short" }).format(date);

@@ -35,6 +35,7 @@ export const GET_ALL_CLIENTS = gql`
       email
       name
       phone
+      invoicesCount
       updatedAt
       user {
         _id

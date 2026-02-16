@@ -426,7 +426,7 @@ const InvoiceTable = () => {
             toast?.success(
                 enabled ? "Public share enabled" : "Public share disabled"
             );
-        } catch (err) {
+        } catch (_err) {
             setShareState((prev) => ({
                 ...prev,
                 [record._id]: { enabled: !enabled, link: prev[record._id]?.link },
@@ -462,14 +462,14 @@ const InvoiceTable = () => {
             }
             toast?.success("Invoice duplicated");
             router.push(payload.redirectUrl || `/invoices/edit/${payload.newInvoiceId}`);
-        } catch (err) {
+        } catch (_err) {
             toast?.error("Failed to duplicate invoice");
         } finally {
             setDuplicatingId(null);
         }
     };
 
-    const handleDownloadPdf = (id: string, invoiceNumber?: string | null) => {
+    const handleDownloadPdf = (id: string, _invoiceNumber?: string | null) => {
         if (downloadingId) return;
         setDownloadingId(id);
         toast?.info("Preparing PDF...");
@@ -496,7 +496,7 @@ const InvoiceTable = () => {
                 ? `${base}/api/invoices/${safeId}/pdf?${tokenParam}`
                 : `/api/invoices/${safeId}/pdf?${tokenParam}`;
             window.open(url, "_blank", "noopener,noreferrer");
-        } catch (err) {
+        } catch (_err) {
             toast?.error("Failed to download PDF. Please try again.");
         } finally {
             setTimeout(() => {
@@ -570,7 +570,7 @@ const InvoiceTable = () => {
             }
             await refetch();
             setBulkDeleteOpen(false);
-        } catch (err) {
+        } catch (_err) {
             toast?.error("Failed to delete invoices");
         } finally {
             setBulkActionLoading(false);
@@ -706,7 +706,7 @@ const InvoiceTable = () => {
                 );
             }
             clearSelection();
-        } catch (err) {
+        } catch (_err) {
             toast?.error("Failed to mark invoices as paid");
         } finally {
             setBulkActionLoading(false);
@@ -1387,7 +1387,7 @@ const InvoiceTable = () => {
                         });
                         toast?.success("Payment recorded");
                         closePaymentModal();
-                    } catch (err) {
+                    } catch (_err) {
                         toast?.error("Failed to record payment");
                     }
                 }}

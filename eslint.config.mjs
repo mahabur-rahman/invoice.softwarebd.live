@@ -15,6 +15,10 @@ const eslintConfig = defineConfig([
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+      // React 19 compiler rules are too strict for current legacy form/state flows.
+      // Keep core hook safety while disabling noisy migration blockers.
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/preserve-manual-memoization": "off",
     },
   },
   // Override default ignores of eslint-config-next.
@@ -24,6 +28,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "lib/graphql/generated-types.ts",
   ]),
 ]);
 

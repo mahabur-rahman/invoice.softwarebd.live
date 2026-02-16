@@ -149,7 +149,7 @@ const Page = () => {
         total: Number(item.total ?? 0),
       })),
     };
-  }, [invoiceData]);
+  }, [invoiceData, template]);
 
   /* ================= SUBMIT ================= */
 

@@ -171,7 +171,17 @@ const EditInvoicePage = () => {
     });
 
     const columnsForApi = columns.map((col) => {
-      const { __typename, hidden, format, role, affectsTotal, ...c } = col as any;
+      const {
+        __typename: _typename,
+        hidden: _hidden,
+        format,
+        role,
+        affectsTotal,
+        ...c
+      } = col as InvoiceColumnInput & {
+        __typename?: unknown;
+        hidden?: boolean;
+      };
       return {
         id: c.id ?? uuid(),
         fieldKey: c.fieldKey,

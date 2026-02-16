@@ -7,6 +7,7 @@ import {
   Field,
   FieldArray,
   FieldProps,
+  FormikProps,
   useFormikContext,
   ErrorMessage,
 } from "formik";
@@ -601,6 +602,42 @@ const ItemsColumnSync = ({ columns }: { columns: InvoiceColumnInput[] }) => {
   return null;
 };
 
+const SyncFormikEffects = ({
+  invoiceNumberMode,
+  invoiceNumber,
+  businessId,
+  clientId,
+  filteredClients,
+  setFieldValue,
+  lastAutoInvoiceRef,
+}: {
+  invoiceNumberMode: "auto" | "custom";
+  invoiceNumber?: string;
+  businessId?: string;
+  clientId?: string;
+  filteredClients?: ClientType[];
+  setFieldValue: FormikProps<InvoiceFormValues>["setFieldValue"];
+  lastAutoInvoiceRef: React.MutableRefObject<string | null>;
+}) => {
+  React.useEffect(() => {
+    if (invoiceNumberMode !== "auto") return;
+    const current = String(invoiceNumber ?? "").trim();
+    if (current) {
+      lastAutoInvoiceRef.current = current;
+    }
+  }, [invoiceNumberMode, invoiceNumber, lastAutoInvoiceRef]);
+
+  React.useEffect(() => {
+    if (!businessId || !clientId) return;
+    const isValid = filteredClients?.some((client) => client._id === clientId);
+    if (!isValid) {
+      setFieldValue("client", "", false);
+    }
+  }, [businessId, clientId, filteredClients, setFieldValue]);
+
+  return null;
+};
+
 const FieldError = ({ name }: { name: string }) => (
   <ErrorMessage
     name={name}
@@ -945,7 +982,9 @@ const buildLineItemBreakdown = (
   const [businessModalOpen, setBusinessModalOpen] = React.useState(false);
   const [clientModalOpen, setClientModalOpen] = React.useState(false);
   const [clientModalClient, setClientModalClient] = React.useState<ClientType | undefined>(undefined);
-  const setFieldValueRef = React.useRef<((field: string, value: any) => void) | null>(null);
+  const setFieldValueRef = React.useRef<
+    FormikProps<InvoiceFormValues>["setFieldValue"] | null
+  >(null);
 
   /* ================= RENDER ================= */
 
@@ -1118,24 +1157,17 @@ const buildLineItemBreakdown = (
             return { discount, tax, hasDiscountColumn, hasTaxColumn };
           })();
 
-          React.useEffect(() => {
-            if (invoiceNumberMode !== "auto") return;
-            const current = String(values.invoiceNumber ?? "").trim();
-            if (current) {
-              lastAutoInvoiceRef.current = current;
-            }
-          }, [invoiceNumberMode, values.invoiceNumber]);
-
-          React.useEffect(() => {
-            if (!values.business) return;
-            if (!values.client) return;
-            const isValid = filteredClients?.some(
-              (client) => client._id === values.client
-            );
-            if (!isValid) {
-              setFieldValue("client", "", false);
-            }
-          }, [filteredClients, setFieldValue, values.business, values.client]);
+          const syncEffects = (
+            <SyncFormikEffects
+              invoiceNumberMode={invoiceNumberMode}
+              invoiceNumber={values.invoiceNumber}
+              businessId={values.business}
+              clientId={values.client}
+              filteredClients={filteredClients ?? undefined}
+              setFieldValue={setFieldValue}
+              lastAutoInvoiceRef={lastAutoInvoiceRef}
+            />
+          );
 
           const handleRemoveColumn = (column: InvoiceColumnInput) => {
             const removedIndex = columns.findIndex(
@@ -1143,7 +1175,14 @@ const buildLineItemBreakdown = (
             );
             const removedValues = values.items.map((item, index) => {
               const rowKey = String(item._rowId ?? item._apiId ?? index);
-              return { rowKey, value: item[column.fieldKey] as any };
+              const rawValue = item[column.fieldKey];
+              const normalizedValue =
+                typeof rawValue === "number" || typeof rawValue === "string"
+                  ? rawValue
+                  : rawValue == null
+                    ? undefined
+                    : String(rawValue);
+              return { rowKey, value: normalizedValue };
             });
 
             setColumns((prev) =>
@@ -1305,6 +1344,7 @@ const buildLineItemBreakdown = (
           <DefaultBusiness businesses={businessData?.myBusinesses} />
           <BusinessCurrencySync businesses={businessData?.myBusinesses} />
           <InvoiceNumberAutoFill enabled={!editing} mode={invoiceNumberMode} />
+          {syncEffects}
           <LiveCalculation columns={columns} onUpdate={onUpdate} />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>

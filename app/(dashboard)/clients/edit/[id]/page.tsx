@@ -1,8 +1,7 @@
 "use client";
 
-import AddBusinessForm from "@/components/business/AddBusinessform";
 import AddNewClient from "@/components/client/AddNewClient";
-import { FIND_ONE_CLIENT, SINGLE_BUSINESS_QUERY } from "@/lib/graphql/queries/invoice.queries";
+import { FIND_ONE_CLIENT } from "@/lib/graphql/queries/invoice.queries";
 import { SingleClientQueryResponse } from "@/lib/interfaces/responseTypes";
 import ItemNotFound from "@/utils/ItemNotFound";
 import { useQuery } from "@apollo/client/react";

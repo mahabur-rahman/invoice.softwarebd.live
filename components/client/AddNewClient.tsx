@@ -8,7 +8,15 @@ import { Button, Input, Select } from "antd";
 import { FiMail, FiMapPin, FiUser } from "react-icons/fi";
 import { useQuery, useMutation } from "@apollo/client/react";
 
-import { ClientType } from "@/lib/graphql/generated-types";
+import {
+  ClientType,
+  CreateClientInput,
+  CreateClientMutation,
+  CreateClientMutationVariables,
+  UpdateClientInput,
+  UpdateClientMutation,
+  UpdateClientMutationVariables,
+} from "@/lib/graphql/generated-types";
 import {
   CREATE_CLIENT,
   UPDATE_CLIENT,
@@ -177,11 +185,17 @@ const AddNewClient: React.FC<AddNewClientProps> = ({
   const { data: businessList, loading: bizLoading } =
     useQuery<BusinessQueryResponse>(GET_MY_BUSINESSES_ID);
 
-  const [createClient] = useMutation(CREATE_CLIENT, {
+  const [createClient] = useMutation<
+    CreateClientMutation,
+    CreateClientMutationVariables
+  >(CREATE_CLIENT, {
     refetchQueries: [{ query: GET_ALL_CLIENTS }],
     awaitRefetchQueries: true,
   });
-  const [updateClient] = useMutation(UPDATE_CLIENT);
+  const [updateClient] = useMutation<
+    UpdateClientMutation,
+    UpdateClientMutationVariables
+  >(UPDATE_CLIENT);
 
   const [autoDetect, setAutoDetect] = useState<{
     country: string;
@@ -237,25 +251,35 @@ const AddNewClient: React.FC<AddNewClientProps> = ({
 
   const handleSubmit = async (values: ClientFormValues) => {
     try {
+      const baseInput: CreateClientInput = {
+        name: values.name,
+        clientCompanyName: values.clientCompanyName,
+        address: values.address,
+        email: values.email,
+        country: values.country ?? null,
+        countryCode: values.countryCode ?? null,
+        phone: values.phone,
+        businessId: values.businessId,
+        userId: values.userId || null,
+        socialProfiles: null,
+      };
+
       if (client) {
+        const updateInput: UpdateClientInput = {
+          id: client._id,
+          ...baseInput,
+        };
         const { data: updated } = await updateClient({
           variables: {
-            input: {
-              id: client._id,
-              ...values,
-            },
+            input: updateInput,
           },
         });
-        if (!redirectOnSuccess) {
-          onSuccess?.((updated as any)?.updateClient?._id);
-        }
+        if (!redirectOnSuccess) onSuccess?.(updated?.updateClient?._id);
       } else {
         const { data: created } = await createClient({
-          variables: { input: values },
+          variables: { input: baseInput },
         });
-        if (!redirectOnSuccess) {
-          onSuccess?.((created as any)?.createClient?._id);
-        }
+        if (!redirectOnSuccess) onSuccess?.(created?.createClient?._id);
       }
 
       if (redirectOnSuccess) {
